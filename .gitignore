@@ -1,0 +1,19 @@
+# Système & IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Ansible
+*.retry
+ansible/inventory/group_vars/all/secrets.yml
+ansible/inventory/group_vars/all/vault_pass
+
+# Docker & Secrets
+.env
+*.log
+
+# Backups temporaires & Clés SSH
+*.bak
+*.swp
+id_rsa
+id_rsa.pub
