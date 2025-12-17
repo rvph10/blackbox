@@ -4,8 +4,9 @@
 
 - **Isolation Réseau :** Création d'un réseau Homelab dédié (Subnet `192.168.10.0/24`) isolé de la Box Proximus via une VM OPNsense en mode PPPoE Passthrough.
 - **Cœur Virtualisé :** Le GMKtec NucBox M6 centralise le routage (OPNsense) et la puissance de calcul (Docker/LXC).
+- **Accès Distant "Zéro Trust" :** Utilisation de la stratégie "DNS Public / IP Privée". Les services (Jellyfin, etc.) disposent d'un nom de domaine HTTPS valide (`*.blackbox.homes`) mais ne sont accessibles que via le réseau Mesh Tailscale, sans ouverture de ports.
 - **Résilience des Services de Base :** Le DNS (AdGuard) et la Domotique (Home Assistant) sont externalisés sur un Raspberry Pi 5 pour rester fonctionnels indépendamment de la pile logicielle principale.
-- **Acceptation du Risque :** En cas d'arrêt du GMKtec (maintenance Proxmox), le réseau local perd sa connectivité internet. C'est un choix assumé pour simplifier l'infrastructure physique.
+- **Acceptation du Risque :** En cas d'arrêt du GMKtec (maintenance Proxmox), le réseau local perd sa connectivité internet.
 
 ---
 
@@ -36,10 +37,10 @@ _Note : L'imprimante Bambu Lab A1 est exclue de l'infrastructure Homelab (connec
 - **IP de Management :** `192.168.10.10`
 - **Passerelle :** `192.168.10.1` (VM OPNsense)
 
-| VM/CT      | Service          | Description                                    |
-| :--------- | :--------------- | :--------------------------------------------- |
-| **VM 100** | **OPNsense**     | Routeur, Pare-feu, DHCP (Plage .100 - .200).   |
-| **VM 110** | **Docker Stack** | Jellyfin, Suite \*Arr, Immich, Spoolman, etc.. |
+| VM/CT      | Service          | Description                                                  |
+| :--------- | :--------------- | :----------------------------------------------------------- |
+| **VM 100** | **OPNsense**     | Routeur, Pare-feu, DHCP (Plage .100 - .200).                 |
+| **VM 110** | **Docker Stack** | Jellyfin, Suite \*Arr, Immich, **Tailscale (Node Partagé)**. |
 
 ### 🍓 Serveur B : Raspberry Pi 5
 
@@ -49,7 +50,7 @@ _Note : L'imprimante Bambu Lab A1 est exclue de l'infrastructure Homelab (connec
 | Catégorie      | Services           | Description                                           |
 | :------------- | :----------------- | :---------------------------------------------------- |
 | **Réseau**     | **AdGuard Home**   | DNS filtrant. Point de passage obligé avant OPNsense. |
-|                | **Tailscale**      | Accès distant sécurisé (VPN Mesh).                    |
+|                | **Tailscale**      | Accès de secours (Subnet Router) & Admin.             |
 | **Domotique**  | **Home Assistant** | Cerveau domotique (Intégration monitoring).           |
 | **Monitoring** | **Homepage**       | Dashboard principal affiché sur l'écran 7".           |
 
@@ -64,11 +65,11 @@ _Note : L'imprimante Bambu Lab A1 est exclue de l'infrastructure Homelab (connec
 - **DNS Primaire (AdGuard) :** `192.168.10.2`
 - **Proxmox Host :** `192.168.10.10`
 
-### 🔗 Rôle de l'OPNsense (VM 100)
+### 🔗 Stratégie DNS & Accès
 
-1. **WAN (vtnet1) :** Configuré en **PPPoE** avec identifiants Proximus.
-2. **LAN (vtnet0) :** Serveur DHCP et passerelle par défaut du Lab.
-3. **DNS :** Redirige les requêtes vers le Raspberry Pi (`192.168.10.2`).
+1. **Interne :** Les clients DHCP reçoivent le Pi (`.2`) comme DNS.
+2. **Externe (Amis/Mobile) :** Accès via URL `https://service.blackbox.homes` qui pointe vers l'IP Tailscale (`100.x.y.z`).
+3. **Sécurité :** Nginx Proxy Manager (sur VM 110) gère les certificats SSL via DNS Challenge.
 
 ---
 
@@ -79,4 +80,4 @@ Pour assurer la cohérence des services lors d'une reconstruction ou d'une coupu
 1. **Démarrer le GMKtec :** Attendre le boot de Proxmox et le lancement auto de la VM OPNsense.
 2. **Vérifier le WAN :** S'assurer que le tunnel PPPoE est établi sur OPNsense.
 3. **Démarrer le Raspberry Pi :** Une fois le réseau actif, le Pi peut démarrer ses services DNS et monitoring.
-4. **Démarrer les services Docker :** Montage des partages NAS et lancement des conteneurs media/productivité.
+4. **Démarrer les services Docker :** Montage des partages NAS et lancement des conteneurs.
