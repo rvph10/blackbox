@@ -1,0 +1,99 @@
+---
+- name: Configuration Post-Install Proxmox (GMKtec M6)
+  hosts: proxmox
+  become: yes
+  vars:
+    # Basé sur votre doc : Debian Trixie pour Proxmox 9.1
+    pve_distribution: "trixie"
+
+  tasks:
+    # --- Section 1 : Configuration SSH ---
+    - name: Assurer que le répertoire .ssh existe pour root
+      ansible.builtin.file:
+        path: /root/.ssh
+        state: directory
+        mode: "0700"
+        owner: root
+        group: root
+
+    - name: Configurer la clé SSH autorisée pour root
+      ansible.builtin.authorized_key:
+        user: root
+        key: "{{ vault_ssh_public_key }}"
+        state: present
+
+    - name: Configurer SSH pour plus de sécurité
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - {
+            regexp: "^#?PasswordAuthentication",
+            line: "PasswordAuthentication no",
+          }
+        - {
+            regexp: "^#?PermitRootLogin",
+            line: "PermitRootLogin prohibit-password",
+          }
+        - {
+            regexp: "^#?ChallengeResponseAuthentication",
+            line: "ChallengeResponseAuthentication no",
+          }
+        - {
+            regexp: "^#?PubkeyAuthentication",
+            line: "PubkeyAuthentication yes",
+          }
+      notify: Restart SSH
+
+    # --- Section 2 : Configuration DNS locale (facultatif) ---
+    - name: Ajouter entrée DNS locale dans /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ vault_pve_ip | regex_escape }}"
+        line: "{{ vault_pve_ip }}    {{ vault_pve_hostname }} {{ vault_pve_alias }}"
+        state: present
+
+    # --- Section 3.A : Gestion des Dépôts ---
+    - name: Désactiver le dépôt Enterprise (Payant)
+      ansible.builtin.apt_repository:
+        repo: "deb https://enterprise.proxmox.com/debian/pve {{ pve_distribution }} pve-enterprise"
+        state: absent
+        filename: pve-enterprise
+
+    - name: Ajouter le dépôt No-Subscription (Gratuit)
+      ansible.builtin.apt_repository:
+        repo: "deb http://download.proxmox.com/debian/pve {{ pve_distribution }} pve-no-subscription"
+        state: present
+        filename: pve-no-subscription
+        update_cache: yes
+
+    # --- Section 3.B : Activation IOMMU ---
+    - name: Configurer GRUB pour AMD IOMMU
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: "^GRUB_CMDLINE_LINUX_DEFAULT="
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_iommu=on"'
+      notify: Update GRUB
+
+    # --- Section 4 : Mise à jour système ---
+    - name: Mettre à jour le cache APT
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Mettre à jour tous les paquets
+      ansible.builtin.apt:
+        upgrade: dist
+        autoremove: yes
+        autoclean: yes
+
+  handlers:
+    - name: Update GRUB
+      ansible.builtin.command: update-grub
+
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: sshd
+        state: restarted

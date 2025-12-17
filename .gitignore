@@ -6,6 +6,7 @@
 # Ansible
 *.retry
 ansible/inventory/group_vars/all/secrets.yml
+ansible/.vault_pass
 ansible/inventory/group_vars/all/vault_pass
 
 # Docker & Secrets
@@ -15,5 +16,5 @@ ansible/inventory/group_vars/all/vault_pass
 # Backups temporaires & Clés SSH
 *.bak
 *.swp
-id_rsa
-id_rsa.pub
+id_homelab
+id_homelab.pub

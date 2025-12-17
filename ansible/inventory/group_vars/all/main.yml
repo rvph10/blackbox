@@ -1,0 +1,4 @@
+---
+# ansible_host is set from vault variable
+ansible_host: "{{ vault_pve_ip }}"
+
