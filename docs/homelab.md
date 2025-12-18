@@ -53,7 +53,7 @@ _Note : L'imprimante Bambu Lab A1 est exclue de l'infrastructure Homelab (connec
 | ✅     | **Tailscale**      | Subnet Router (`192.168.10.0/24`). | AuthKey via Vault + MagicDNS activé.                        |
 | ✅     | **Home Assistant** | Conteneur Docker.                  | Volume persistant : `/opt/blackbox/homeassistant`.          |
 | ⚠️     | **Homepage**       | Dashboard.                         | Installé mais widgets non configurés (API Keys manquantes). |
-| ❌     | **Mode Kiosk**     | Écran Tactile 7".                  | En attente d'implémentation.                                |
+| ✅     | **Mode Kiosk**     | Écran Tactile 3.5".                | Dashboard persistant sur le Pi.                             |
 
 ---
 
