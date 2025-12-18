@@ -10,7 +10,7 @@ Ce homelab repose sur une philosophie "Nuke & Pave" avec un cœur virtualisé su
 - **Routeur :** OPNsense (Virtualisé)
 - **Services :** Docker (VM Debian) & Raspberry Pi 5 (DNS/Domotique)
 
-👉 [Voir la documentation d'architecture complète](docs/architecture/homelab.md)
+👉 [Voir la documentation d'architecture complète](docs/homelab.md)
 
 ## Démarrage rapide
 
