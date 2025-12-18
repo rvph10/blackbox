@@ -1,0 +1,40 @@
+---
+- name: Configure Physical Dashboard
+  hosts: raspberry
+  become: yes
+  tasks:
+    - name: Install Python dependencies for the image
+      ansible.builtin.apt:
+        name:
+          - python3-pip
+          - python3-pil
+          - fonts-dejavu-core
+        state: present
+
+    - name: Deploy the dashboard script
+      ansible.builtin.template:
+        src: ../templates/rpi/status_dashboard.py.j2
+        dest: /opt/blackbox/status_dashboard.py
+        mode: "0755"
+
+    - name: Create the systemd service for the dashboard
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/dashboard.service
+        content: |
+          [Unit]
+          Description=Blackbox LCD Dashboard
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/bin/python3 /opt/blackbox/status_dashboard.py
+          Restart=always
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable and start the dashboard
+      ansible.builtin.systemd:
+        name: dashboard
+        enabled: yes
+        state: restarted

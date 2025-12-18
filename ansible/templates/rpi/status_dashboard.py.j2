@@ -1,0 +1,445 @@
+#!/usr/bin/env python3
+"""
+Raspberry Pi Homelab Dashboard
+Displays system status on 480x320 framebuffer display
+"""
+
+import os
+import time
+import subprocess
+import struct
+import socket
+import re
+import requests
+from datetime import timedelta, datetime
+from PIL import Image, ImageDraw, ImageFont
+import urllib3
+
+# Disable SSL warnings for self-signed certificates
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# --- CONFIGURATION ---
+FB_DEVICE = "/dev/fb1"
+SCREEN_WIDTH = 480
+SCREEN_HEIGHT = 320
+
+# OPNsense API Configuration
+OPNSENSE_IP = "{{ vault_gateway_ip }}"
+OPNSENSE_API_KEY = "{{ vault_opnsense_api_key }}"
+OPNSENSE_API_SECRET = "{{ vault_opnsense_api_secret }}"
+WAN_INTERFACE = "pppoe2"
+
+# Colors
+COLOR_BG = (0, 0, 0)
+COLOR_TEXT = (255, 255, 255)
+COLOR_ACCENT = (0, 200, 255)  # Cyan
+COLOR_OK = (0, 255, 0)
+COLOR_WARN = (255, 165, 0)
+COLOR_ERR = (255, 0, 0)
+COLOR_DIM = (100, 100, 100)
+COLOR_CARD_BG = (10, 10, 10)
+COLOR_BORDER = (40, 40, 40)
+
+# Services to monitor
+# (Name, IP, Port/None for ping)
+SERVICES = [
+    ("Router", "{{ vault_opnsense_ip }}", None),
+    ("Proxmox", "{{ vault_pve_ip }}", None),
+    ("AdGuard", "127.0.0.1", 53),
+    ("HomeAsst", "127.0.0.1", 8123),
+    ("Homepage", "127.0.0.1", 8082),
+]
+
+# Global variables for tracking network stats
+last_wan_stats = None
+last_wan_time = None
+
+# --- SYSTEM STATS HELPERS ---
+
+def get_uptime():
+    """Get system uptime in human readable format"""
+    try:
+        with open('/proc/uptime', 'r') as f:
+            uptime_seconds = float(f.readline().split()[0])
+        td = timedelta(seconds=uptime_seconds)
+        days = td.days
+        hours = td.seconds // 3600
+        minutes = (td.seconds // 60) % 60
+        
+        if days > 0:
+            return f"{days}d {hours}h {minutes}m"
+        return f"{hours}h {minutes}m"
+    except:
+        return "Unknown"
+
+def get_temp():
+    """Get Raspberry Pi temperature"""
+    try:
+        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+            temp = int(f.read().strip()) / 1000.0
+        return temp
+    except:
+        return 0.0
+
+def get_internet_latency():
+    """Ping Cloudflare DNS to check internet latency"""
+    try:
+        cmd = ['ping', '-c', '1', '-W', '1', '1.1.1.1']
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
+        match = re.search(r'time=([\d.]+)', output)
+        if match:
+            return float(match.group(1))
+        return None
+    except:
+        return None
+
+# --- OPNsense API ---
+
+def get_opnsense_wan_stats():
+    """
+    Get WAN interface statistics from OPNsense API
+    Returns tuple: (bytes_received, bytes_sent) or (None, None) on error
+    """
+    try:
+        url = f"https://{OPNSENSE_IP}/api/diagnostics/interface/getInterfaceStatistics"
+        response = requests.get(
+            url,
+            auth=(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
+            verify=False,
+            timeout=2
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            stats = data.get('statistics', {})
+            
+            # Find WAN interface stats
+            for interface_name, interface_data in stats.items():
+                if interface_data.get('name') == WAN_INTERFACE and 'received-bytes' in interface_data:
+                    rx_bytes = int(interface_data.get('received-bytes', 0))
+                    tx_bytes = int(interface_data.get('sent-bytes', 0))
+                    return (rx_bytes, tx_bytes)
+        
+        return (None, None)
+    except Exception as e:
+        print(f"Error fetching OPNsense stats: {e}")
+        return (None, None)
+
+def calculate_wan_bandwidth():
+    """
+    Calculate WAN bandwidth usage (download/upload speeds)
+    Returns tuple: (download_mbps, upload_mbps) or (None, None)
+    """
+    global last_wan_stats, last_wan_time
+    
+    current_stats = get_opnsense_wan_stats()
+    current_time = time.time()
+    
+    if current_stats[0] is None:
+        return (None, None)
+    
+    # First run - just store the baseline
+    if last_wan_stats is None or last_wan_time is None:
+        last_wan_stats = current_stats
+        last_wan_time = current_time
+        return (0.0, 0.0)
+    
+    # Calculate delta
+    time_delta = current_time - last_wan_time
+    if time_delta < 1:  # Avoid division by very small numbers
+        return (0.0, 0.0)
+    
+    rx_delta = current_stats[0] - last_wan_stats[0]
+    tx_delta = current_stats[1] - last_wan_stats[1]
+    
+    # Convert to MB/s
+    download_mbps = (rx_delta / time_delta) / (1024 * 1024)
+    upload_mbps = (tx_delta / time_delta) / (1024 * 1024)
+    
+    # Update last values
+    last_wan_stats = current_stats
+    last_wan_time = current_time
+    
+    return (download_mbps, upload_mbps)
+
+# --- NETWORK CHECKS ---
+
+def check_ping(ip):
+    """Ping an IP address"""
+    try:
+        subprocess.check_call(
+            ['ping', '-c', '1', '-W', '1', ip],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        return True
+    except:
+        return False
+
+def check_port(ip, port):
+    """Check if a TCP port is open"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(1.0)
+    try:
+        s.connect((ip, int(port)))
+        s.close()
+        return True
+    except:
+        return False
+
+def check_service(service):
+    """Check if a service is up (ping or port check)"""
+    name, ip, port = service
+    if port:
+        return check_port(ip, port)
+    else:
+        return check_ping(ip)
+
+# --- SCREEN POWER MANAGEMENT ---
+
+def should_screen_be_on():
+    """Check if screen should be on based on time"""
+    current_hour = datetime.now().hour
+    return 8 <= current_hour < 24  # ON de 8h à 23h59, OFF de 0h à 7h59
+
+def set_screen_power(on=True):
+    """Turn screen on/off (for SPI displays, we write black to framebuffer)"""
+    if not on:
+        try:
+            # Write black screen to framebuffer
+            image = Image.new("RGB", (SCREEN_WIDTH, SCREEN_HEIGHT), (0, 0, 0))
+            pixels = image.getdata()
+            buf = bytearray(SCREEN_WIDTH * SCREEN_HEIGHT * 2)
+            for i, (r, g, b) in enumerate(pixels):
+                color = rgb888_to_rgb565(r, g, b)
+                struct.pack_into("<H", buf, i * 2, color)
+            
+            with open(FB_DEVICE, "wb") as f:
+                f.write(buf)
+            print("Screen turned OFF (black)")
+        except Exception as e:
+            print(f"Could not blank screen: {e}")
+    else:
+        print("Screen turned ON (resuming render)")
+
+# --- GRAPHICS HELPERS ---
+
+def rgb888_to_rgb565(r, g, b):
+    """Convert RGB888 to RGB565 format for framebuffer"""
+    return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+
+def draw_rounded_rect(draw, x, y, width, height, radius, fill, outline=None):
+    """Draw a rounded rectangle"""
+    draw.rectangle((x + radius, y, x + width - radius, y + height), fill=fill)
+    draw.rectangle((x, y + radius, x + width, y + height - radius), fill=fill)
+    draw.pieslice((x, y, x + radius * 2, y + radius * 2), 180, 270, fill=fill)
+    draw.pieslice((x + width - radius * 2, y, x + width, y + radius * 2), 270, 360, fill=fill)
+    draw.pieslice((x, y + height - radius * 2, x + radius * 2, y + height), 90, 180, fill=fill)
+    draw.pieslice((x + width - radius * 2, y + height - radius * 2, x + width, y + height), 0, 90, fill=fill)
+    
+    if outline:
+        draw.arc((x, y, x + radius * 2, y + radius * 2), 180, 270, fill=outline)
+        draw.arc((x + width - radius * 2, y, x + width, y + radius * 2), 270, 360, fill=outline)
+        draw.arc((x, y + height - radius * 2, x + radius * 2, y + height), 90, 180, fill=outline)
+        draw.arc((x + width - radius * 2, y + height - radius * 2, x + width, y + height), 0, 90, fill=outline)
+        draw.line((x + radius, y, x + width - radius, y), fill=outline)
+        draw.line((x + radius, y + height, x + width - radius, y + height), fill=outline)
+        draw.line((x, y + radius, x, y + height - radius), fill=outline)
+        draw.line((x + width, y + radius, x + width, y + height - radius), fill=outline)
+
+# --- MAIN DASHBOARD ---
+
+def draw_dashboard():
+    """Main dashboard rendering loop"""
+    try:
+        font_xl = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
+        font_lg = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+        font_md = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
+        font_sm = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+        font_xs = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
+    except:
+        print("Warning: Could not load fonts, using default")
+        font_xl = ImageFont.load_default()
+        font_lg = ImageFont.load_default()
+        font_md = ImageFont.load_default()
+        font_sm = ImageFont.load_default()
+        font_xs = ImageFont.load_default()
+
+    screen_on = False
+
+    while True:
+        # Check if screen should be on based on time
+        if should_screen_be_on():
+            if not screen_on:  # Éviter de rallumer constamment
+                set_screen_power(True)
+                screen_on = True
+            # Render dashboard normalement
+            image = Image.new("RGB", (SCREEN_WIDTH, SCREEN_HEIGHT), COLOR_BG)
+            draw = ImageDraw.Draw(image)
+            
+            # === TOP STATUS BAR ===
+            draw.rectangle((0, 0, SCREEN_WIDTH, 50), fill=(26, 26, 26))
+            draw.line((0, 50, SCREEN_WIDTH, 50), fill=COLOR_ACCENT, width=2)
+            
+            # Time
+            timestamp = time.strftime('%H:%M')
+            draw.text((15, 9), timestamp, fill=COLOR_ACCENT, font=font_xl)
+            
+            # Uptime
+            uptime = get_uptime()
+            draw.text((150, 15), "UP", fill=COLOR_DIM, font=font_sm)
+            draw.text((180, 15), uptime, fill=COLOR_TEXT, font=font_sm)
+            # Temperature
+            temp = get_temp()
+            temp_color = COLOR_OK if temp < 60 else (COLOR_WARN if temp < 75 else COLOR_ERR)
+            draw.text((300, 7), "TEMP", fill=COLOR_DIM, font=font_xs)
+            draw.text((300, 22), f"{temp:.1f}°C", fill=temp_color, font=font_md)
+            
+            # Internet latency
+            latency = get_internet_latency()
+            if latency is not None:
+                lat_color = COLOR_OK if latency < 50 else (COLOR_WARN if latency < 150 else COLOR_ERR)
+                lat_txt = f"{latency:.0f}ms"
+            else:
+                lat_color = COLOR_ERR
+                lat_txt = "DOWN"
+            
+            draw.text((390, 7), "NET", fill=COLOR_DIM, font=font_xs)
+            draw.text((390, 22), lat_txt, fill=lat_color, font=font_md)
+            
+            # === VERTICAL SEPARATOR ===
+            draw.line((235, 60, 235, 300), fill=COLOR_BORDER, width=1)
+            
+            # === LEFT COLUMN: SERVICES ===
+            y_svc = 65
+            draw.text((15, y_svc), "SERVICES", fill=COLOR_ACCENT, font=font_lg)
+            y_svc += 35
+            
+            for svc in SERVICES:
+                name, _, _ = svc
+                status = check_service(svc)
+                
+                # Status indicator (pulsing dot)
+                ind_color = COLOR_OK if status else COLOR_ERR
+                draw.ellipse((20, y_svc + 4, 30, y_svc + 14), fill=ind_color)
+                
+                # Service name
+                draw.text((40, y_svc), name, fill=COLOR_TEXT, font=font_sm)
+                
+                # Status text
+                status_text = "ON" if status else "OFF"
+                status_bg = (0, 60, 0) if status else (60, 0, 0)
+                
+                # Status badge
+                badge_x = 160
+                draw.rectangle(
+                    (badge_x, y_svc + 2, badge_x + 40, y_svc + 16),
+                    fill=status_bg,
+                    outline=ind_color
+                )
+                draw.text((badge_x + 8, y_svc + 2), status_text, fill=ind_color, font=font_xs)
+                
+                y_svc += 35
+            
+            # === RIGHT COLUMN: INFO CARDS ===
+            
+            # WAN Traffic Card
+            card_x = 250
+            card_y = 65
+            card_width = 215
+            card_height = 80
+            
+            draw_rounded_rect(draw, card_x, card_y, card_width, card_height, 8, COLOR_CARD_BG, COLOR_BORDER)
+            draw.text((card_x + 10, card_y + 8), "WAN TRAFFIC", fill=COLOR_DIM, font=font_xs)
+            draw.text((card_x + 100, card_y + 8), "(OPNsense)", fill=(60, 60, 60), font=font_xs)
+            
+            # Get WAN bandwidth
+            download, upload = calculate_wan_bandwidth()
+            
+            # Download
+            draw.text((card_x + 15, card_y + 28), "↓ Download", fill=COLOR_DIM, font=font_xs)
+            if download is not None:
+                if download < 1:
+                    dl_text = f"{download * 1024:.0f} KB/s"
+                else:
+                    dl_text = f"{download:.2f} MB/s"
+                draw.text((card_x + 15, card_y + 44), dl_text, fill=COLOR_ACCENT, font=font_md)
+            else:
+                draw.text((card_x + 15, card_y + 44), "N/A", fill=COLOR_ERR, font=font_md)
+            
+            # Upload
+            draw.text((card_x + 125, card_y + 28), "↑ Upload", fill=COLOR_DIM, font=font_xs)
+            if upload is not None:
+                if upload < 1:
+                    ul_text = f"{upload * 1024:.0f} KB/s"
+                else:
+                    ul_text = f"{upload:.2f} MB/s"
+                draw.text((card_x + 125, card_y + 44), ul_text, fill=COLOR_ACCENT, font=font_md)
+            else:
+                draw.text((card_x + 125, card_y + 44), "N/A", fill=COLOR_ERR, font=font_md)
+            
+            # Backup Status Card
+            card_y = 160
+            card_height = 130
+            
+            draw_rounded_rect(draw, card_x, card_y, card_width, card_height, 8, COLOR_CARD_BG, COLOR_BORDER)
+            draw.text((card_x + 10, card_y + 8), "BACKUPS STATUS", fill=COLOR_DIM, font=font_xs)
+            
+            # Sample backup entries (to be implemented later)
+            backups = [
+                ("HomeAssistant", "2h ago", True),
+                ("AdGuard Config", "5h ago", True),
+                ("System Config", "pending", False),
+                ("Proxmox VM", "1d ago", True),
+            ]
+            
+            backup_y = card_y + 28
+            for backup_name, backup_time, is_ok in backups:
+                draw.text((card_x + 15, backup_y), backup_name, fill=COLOR_DIM, font=font_xs)
+                time_color = COLOR_OK if is_ok else COLOR_WARN
+                draw.text((card_x + 150, backup_y), backup_time, fill=time_color, font=font_xs)
+                backup_y += 22
+            
+            # === BOTTOM BAR ===
+            draw.rectangle((0, 300, SCREEN_WIDTH, 320), fill=(10, 10, 10))
+            draw.line((0, 300, SCREEN_WIDTH, 300), fill=(26, 26, 26))
+            draw.text((SCREEN_WIDTH - 130, 305), "Pi Dashboard v1.0", fill=COLOR_DIM, font=font_xs)
+            
+            # === RENDER TO FRAMEBUFFER ===
+            try:
+                pixels = image.getdata()
+                buf = bytearray(SCREEN_WIDTH * SCREEN_HEIGHT * 2)
+                for i, (r, g, b) in enumerate(pixels):
+                    color = rgb888_to_rgb565(r, g, b)
+                    struct.pack_into("<H", buf, i * 2, color)
+                
+                with open(FB_DEVICE, "wb") as f:
+                    f.write(buf)
+            except Exception as e:
+                print(f"Error writing to framebuffer: {e}")
+            
+            # Update every 5 seconds
+            time.sleep(5)
+        else:
+            if screen_on:
+                set_screen_power(False)
+                screen_on = False
+            # Juste attendre sans render
+            time.sleep(60)  # Check toutes les minutes
+
+# --- ENTRY POINT ---
+
+if __name__ == "__main__":
+    print("Starting Homelab Dashboard...")
+    print(f"OPNsense: {OPNSENSE_IP}")
+    print(f"WAN Interface: {WAN_INTERFACE}")
+    print(f"Framebuffer: {FB_DEVICE}")
+    print("Press Ctrl+C to stop")
+    
+    try:
+        draw_dashboard()
+    except KeyboardInterrupt:
+        print("\nDashboard stopped")
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        raise
