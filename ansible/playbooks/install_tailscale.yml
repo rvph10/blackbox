@@ -1,0 +1,57 @@
+---
+- name: Install & Configure Tailscale (Subnet Router)
+  hosts: raspberry
+  become: yes
+  vars:
+    # The subnet that the Pi will expose to the Tailscale network
+    lan_subnet: "192.168.10.0/24"
+
+  tasks:
+    # --- 1. Install ---
+    - name: Add Tailscale GPG key
+      ansible.builtin.get_url:
+        url: https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg
+        dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+        mode: "0644"
+
+    - name: Add Tailscale repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/debian bookworm main"
+        state: present
+        filename: tailscale
+
+    - name: Install Tailscale
+      ansible.builtin.apt:
+        name: tailscale
+        state: present
+        update_cache: yes
+
+    # --- 2. System configuration (For Subnet Router) ---
+    - name: Enable IP forwarding (IPv4)
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: "1"
+        sysctl_set: yes
+        state: present
+        reload: yes
+
+    - name: Enable IP forwarding (IPv6)
+      ansible.posix.sysctl:
+        name: net.ipv6.conf.all.forwarding
+        value: "1"
+        sysctl_set: yes
+        state: present
+        reload: yes
+
+    # --- 3. Start and Register ---
+    - name: Connect Tailscale (Advertise Routes)
+      ansible.builtin.command:
+        cmd: >
+          tailscale up 
+          --authkey={{ vault_tailscale_auth_key }} 
+          --advertise-routes={{ lan_subnet }} 
+          --accept-routes
+          --reset
+      # We only run the command if we're not already connected (or to force the update of the routes)
+      register: tailscale_up
+      changed_when: "'Success' in tailscale_up.stdout or 'Logged out' not in tailscale_up.stdout"

@@ -42,17 +42,18 @@ _Note : L'imprimante Bambu Lab A1 est exclue de l'infrastructure Homelab (connec
 | **VM 100** | **OPNsense**     | Routeur, Pare-feu, DHCP (Plage .100 - .200).                 |
 | **VM 110** | **Docker Stack** | Jellyfin, Suite \*Arr, Immich, **Tailscale (Node Partagé)**. |
 
-### 🍓 Serveur B : Raspberry Pi 5
+### 🍓 Serveur B : Raspberry Pi 5 (Tour de Contrôle)
 
-- **IP Statique :** `192.168.10.2` (Configurée hors plage DHCP).
-- **Rôle :** DNS de sortie et Dashboard local.
+- **IP Statique :** `192.168.10.2` (Fixée via Ansible).
+- **OS :** Raspberry Pi OS Lite 64-bit.
 
-| Catégorie      | Services           | Description                                           |
-| :------------- | :----------------- | :---------------------------------------------------- |
-| **Réseau**     | **AdGuard Home**   | DNS filtrant. Point de passage obligé avant OPNsense. |
-|                | **Tailscale**      | Accès de secours (Subnet Router) & Admin.             |
-| **Domotique**  | **Home Assistant** | Cerveau domotique (Intégration monitoring).           |
-| **Monitoring** | **Homepage**       | Dashboard principal affiché sur l'écran 7".           |
+| Statut | Service            | Description                        | Configuration                                               |
+| :----- | :----------------- | :--------------------------------- | :---------------------------------------------------------- |
+| ✅     | **AdGuard Home**   | DNS Primaire du réseau.            | Upstream DoT/DoH + Réécritures locales.                     |
+| ✅     | **Tailscale**      | Subnet Router (`192.168.10.0/24`). | AuthKey via Vault + MagicDNS activé.                        |
+| ✅     | **Home Assistant** | Conteneur Docker.                  | Volume persistant : `/opt/blackbox/homeassistant`.          |
+| ⚠️     | **Homepage**       | Dashboard.                         | Installé mais widgets non configurés (API Keys manquantes). |
+| ❌     | **Mode Kiosk**     | Écran Tactile 7".                  | En attente d'implémentation.                                |
 
 ---
 

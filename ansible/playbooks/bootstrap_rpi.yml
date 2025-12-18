@@ -1,0 +1,56 @@
+---
+- name: Bootstrap Raspberry Pi (Control Tower)
+  hosts: raspberry
+  become: yes
+  vars:
+    # Target configuration
+    target_ip: "{{ vault_rpi_ip }}/24"
+    gateway: "{{ vault_gateway_ip }}"
+    # Using Cloudflare as DNS server for now until AdGuard is active
+    dns_server: "1.1.1.1"
+
+  tasks:
+    # --- Section 1: System Preparation ---
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ vault_rpi_hostname }}"
+
+    - name: Install essential packages
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - network-manager
+        state: present
+        update_cache: yes
+
+    # --- Section 2: Install Docker ---
+    - name: Install Docker (via official script)
+      ansible.builtin.shell:
+        cmd: "curl -fsSL https://get.docker.com | sh"
+        creates: /usr/bin/docker
+
+    - name: Add user to Docker group
+      ansible.builtin.user:
+        name: "{{ vault_rpi_user }}"
+        groups: docker
+        append: yes
+
+    # --- Section 3: Data Tree ---
+    - name: Create root folder
+      ansible.builtin.file:
+        path: /opt/blackbox
+        state: directory
+        mode: "0755"
+        owner: "{{ vault_rpi_user }}"
+        group: "{{ vault_rpi_user }}"
+
+    # --- Section 4: Network Configuration ---
+    - name: Configure static IP (NetworkManager)
+      # This command forces the IP .2. The SSH connection will break here, it's normal.
+      ansible.builtin.shell: |
+        nmcli con mod "Wired connection 1" ipv4.addresses {{ target_ip }} ipv4.gateway {{ gateway }} ipv4.dns {{ dns_server }} ipv4.method manual
+        nmcli con up "Wired connection 1"
+      async: 10
+      poll: 0
+      ignore_errors: true

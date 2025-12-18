@@ -1,0 +1,3 @@
+---
+ansible_host: "{{ vault_rpi_ip }}"
+ansible_user: "{{ vault_rpi_user }}"

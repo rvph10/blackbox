@@ -1,0 +1,55 @@
+---
+- name: Deploy Raspberry Pi Stack
+  hosts: raspberry
+  become: yes
+
+  tasks:
+    # --- 1. System preparation (Port 53) ---
+    - name: Disable systemd-resolved (Release port 53 for AdGuard)
+      ansible.builtin.service:
+        name: systemd-resolved
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
+    - name: Remove symbolic link resolv.conf managed by systemd
+      ansible.builtin.file:
+        path: /etc/resolv.conf
+        state: absent
+      ignore_errors: yes
+
+    - name: Create a new temporary resolv.conf (Cloudflare)
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        content: "nameserver 1.1.1.1"
+        mode: "0644"
+      # We do this so the Pi keeps internet access while AdGuard is launching
+
+    # --- 2. Directory Structure ---
+    - name: Create data directories
+      ansible.builtin.file:
+        path: "/opt/blackbox/{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user }}"
+        group: docker
+      loop:
+        - adguard/work
+        - adguard/conf
+        - homeassistant/config
+        - homepage/config
+
+    # --- 3. Deploy Docker ---
+    - name: Copy docker-compose file
+      ansible.builtin.template:
+        src: ../templates/rpi/docker-compose.yml.j2
+        dest: /opt/blackbox/docker-compose.yml
+        owner: "{{ ansible_user }}"
+        group: docker
+        mode: "0640"
+
+    - name: Launch Docker stack
+      community.docker.docker_compose_v2:
+        project_src: /opt/blackbox
+        state: present
+        pull: always

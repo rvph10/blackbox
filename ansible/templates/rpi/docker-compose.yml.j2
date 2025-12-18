@@ -1,0 +1,38 @@
+services:
+  # --- DNS & Security ---
+  adguard:
+    container_name: adguard
+    image: adguard/adguardhome
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /opt/blackbox/adguard/work:/opt/adguardhome/work
+      - /opt/blackbox/adguard/conf:/opt/adguardhome/conf
+    # Ports used (via host mode) :
+    # 53 (DNS), 80 (Web Admin), 3000 (Setup initial)
+
+  # --- Home Automation ---
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    volumes:
+      - /opt/blackbox/homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+
+  # --- Monitoring Dashboard ---
+  homepage:
+    container_name: homepage
+    image: ghcr.io/gethomepage/homepage:latest
+    restart: unless-stopped
+    ports:
+      # Move Homepage to 8082 to avoid conflict with AdGuard (port 3000)
+      - "8082:3000"
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: "*"
+    volumes:
+      - /opt/blackbox/homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
