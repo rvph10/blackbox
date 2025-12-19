@@ -26,13 +26,12 @@
       # We do this so the Pi keeps internet access while AdGuard is launching
 
     # --- 2. Directory Structure ---
-    - name: Create data directories
+    - name: Create data directories on NFS mount
       ansible.builtin.file:
-        path: "/opt/blackbox/{{ item }}"
+        path: "/mnt/appdata/{{ item }}"
         state: directory
         mode: "0755"
-        owner: "{{ ansible_user }}"
-        group: docker
+
       loop:
         - adguard/work
         - adguard/conf

@@ -21,6 +21,7 @@
           - git
           - curl
           - network-manager
+          - nfs-common
         state: present
         update_cache: yes
 
@@ -54,3 +55,24 @@
       async: 10
       poll: 0
       ignore_errors: true
+
+    # --- Section 5: NAS Persistence ---
+    - name: Check if /mnt/appdata exists
+      ansible.builtin.stat:
+        path: /mnt/appdata
+      register: appdata_mount
+
+    - name: Ensure mount point for NAS appdata exists
+      ansible.builtin.file:
+        path: /mnt/appdata
+        state: directory
+        mode: "0755"
+      when: not appdata_mount.stat.exists
+
+    - name: Mount appdata from NAS
+      ansible.posix.mount:
+        src: "{{ vault_cargo_ip }}:/volume1/appdata"
+        path: /mnt/appdata
+        fstype: nfs
+        opts: defaults,rw,_netdev
+        state: mounted

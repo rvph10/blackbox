@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
-      - /opt/blackbox/adguard/work:/opt/adguardhome/work
-      - /opt/blackbox/adguard/conf:/opt/adguardhome/conf
+      - /mnt/appdata/adguard/work:/opt/adguardhome/work
+      - /mnt/appdata/adguard/conf:/opt/adguardhome/conf
     # Ports used (via host mode) :
     # 53 (DNS), 80 (Web Admin), 3000 (Setup initial)
 
@@ -19,7 +19,7 @@ services:
     network_mode: host
     privileged: true
     volumes:
-      - /opt/blackbox/homeassistant/config:/config
+      - /mnt/appdata/homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
       - /run/dbus:/run/dbus:ro
 
@@ -34,5 +34,5 @@ services:
     environment:
       HOMEPAGE_ALLOWED_HOSTS: "*"
     volumes:
-      - /opt/blackbox/homepage/config:/app/config
+      - /mnt/appdata/homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro

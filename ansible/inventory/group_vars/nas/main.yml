@@ -1,0 +1,5 @@
+---
+# NAS Configuration
+ansible_user: "{{ vault_cargo_user }}"
+ansible_password: "{{ vault_cargo_pwd }}"
+ansible_become_password: "{{ vault_cargo_pwd }}"

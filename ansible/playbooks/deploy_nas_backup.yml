@@ -1,0 +1,52 @@
+---
+- name: Deploy Rclone Backup to Backblaze B2
+  hosts: nas
+  become: yes
+  vars:
+    rclone_config_dir: "/volume1/appdata/rclone/config"
+    backup_script_path: "/volume1/appdata/rclone/backup_to_b2.sh"
+
+  tasks:
+    - name: Create Rclone configuration directory
+      ansible.builtin.file:
+        path: "{{ rclone_config_dir }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user }}"
+
+    - name: Deploy rclone.conf template
+      ansible.builtin.template:
+        src: ../templates/nas/rclone.conf.j2
+        dest: "{{ rclone_config_dir }}/rclone.conf"
+        mode: "0600"
+
+    - name: Create backup script
+      ansible.builtin.copy:
+        dest: "{{ backup_script_path }}"
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # Script de sauvegarde vers Backblaze B2
+          LOG_FILE="/volume1/appdata/rclone/backup.log"
+          echo "$(date): Début de la sauvegarde" >> $LOG_FILE
+
+          # Sauvegarde de appdata
+          docker run --rm \
+            -v {{ rclone_config_dir }}:/config/rclone \
+            -v /volume1/appdata:/data:ro \
+            rclone/rclone sync /data b2_remote:{{ vault_b2_bucket }}/appdata --fast-list >> $LOG_FILE 2>&1
+
+          # Sauvegarde de backups-configs
+          docker run --rm \
+            -v {{ rclone_config_dir }}:/config/rclone \
+            -v /volume1/backups-configs:/data:ro \
+            rclone/rclone sync /data b2_remote:{{ vault_b2_bucket }}/backups-configs --fast-list >> $LOG_FILE 2>&1
+
+          echo "$(date): Sauvegarde terminée" >> $LOG_FILE
+
+    - name: Schedule daily backup at 03:00 AM
+      ansible.builtin.cron:
+        name: "Daily off-site backup to Backblaze B2"
+        minute: "0"
+        hour: "3"
+        job: "{{ backup_script_path }}"
