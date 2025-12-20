@@ -11,6 +11,7 @@ Ce homelab repose sur une philosophie "Nuke & Pave" avec un cœur virtualisé su
 - **Services :** Docker (VM Debian) & Raspberry Pi 5 (DNS/Domotique)
 
 👉 [Voir la documentation d'architecture complète](docs/homelab.md)
+👉 [Guide d'Opérations & Maintenance (Secrets, Restauration)](docs/operations.md)
 
 ## Démarrage rapide
 

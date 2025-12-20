@@ -8,6 +8,7 @@
         name:
           - python3-pip
           - python3-pil
+          - python3-evdev
           - fonts-dejavu-core
         state: present
 
