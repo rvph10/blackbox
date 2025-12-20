@@ -9,6 +9,8 @@
           - python3-pip
           - python3-pil
           - python3-evdev
+          - python3-requests
+          - python3-psutil
           - fonts-dejavu-core
         state: present
 

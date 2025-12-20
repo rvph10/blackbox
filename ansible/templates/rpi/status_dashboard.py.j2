@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Raspberry Pi Homelab Dashboard
+Raspberry Pi Homelab Dashboard (Enhanced)
 Displays system status on 480x320 framebuffer display
 """
 
@@ -14,9 +14,19 @@ import requests
 import json
 import shutil
 import threading
+import math
 from datetime import timedelta, datetime, timezone
 from PIL import Image, ImageDraw, ImageFont
 import urllib3
+
+# Try importing psutil for better system stats
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
+
+# Try importing evdev for input
 try:
     import evdev
     from select import select
@@ -24,612 +34,546 @@ try:
 except ImportError:
     HAS_EVDEV = False
 
-# Disable SSL warnings for self-signed certificates
+# Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- CONFIGURATION ---
 FB_DEVICE = "/dev/fb1"
 SCREEN_WIDTH = 480
 SCREEN_HEIGHT = 320
+SCREEN_TIMEOUT = 300  # 5 minutes
 
-# OPNsense API Configuration
+# API Config
 OPNSENSE_IP = "{{ vault_gateway_ip }}"
 OPNSENSE_API_KEY = "{{ vault_opnsense_api_key }}"
 OPNSENSE_API_SECRET = "{{ vault_opnsense_api_secret }}"
 WAN_INTERFACE = "pppoe2"
 
-# Weather Configuration (Brussels)
+# Weather (Brussels)
 LATITUDE = "50.8503"
 LONGITUDE = "4.3517"
 
-# Colors
-COLOR_BG = (0, 0, 0)
-COLOR_TEXT = (255, 255, 255)
-COLOR_ACCENT = (0, 200, 255)  # Cyan
-COLOR_OK = (0, 255, 0)
-COLOR_WARN = (255, 165, 0)
-COLOR_ERR = (255, 0, 0)
-COLOR_DIM = (100, 100, 100)
-COLOR_CARD_BG = (10, 10, 10)
-COLOR_BORDER = (40, 40, 40)
-
-# Backup status file
-BACKUP_JSON_PATH = "/mnt/appdata/rclone/backup_status.json"
-
 # Services to monitor
-# (Name, IP, Port/None for ping)
 SERVICES = [
     ("Router", "{{ vault_gateway_ip }}", None),
     ("Proxmox", "{{ vault_pve_ip }}", None),
     ("AdGuard", "127.0.0.1", 53),
     ("HomeAsst", "127.0.0.1", 8123),
     ("Homepage", "127.0.0.1", 8082),
+    ("NAS", "{{ vault_cargo_ip }}", None),
 ]
 
-# Global variables
-current_page = 0
-TOTAL_PAGES = 3
-last_wan_stats = None
-last_wan_time = None
-screen_on = False
-cached_weather = None
-last_weather_time = 0
-last_input_time = time.time()  # Track last interaction
-SCREEN_TIMEOUT = 300  # 5 minutes in seconds
+BACKUP_JSON_PATH = "/mnt/appdata/rclone/backup_status.json"
 
-# --- SYSTEM STATS HELPERS ---
+# --- THEME ---
+class Colors:
+    BG = (18, 18, 18)       # #121212 Very Dark Grey
+    CARD_BG = (30, 30, 30)  # #1E1E1E Dark Grey
+    TEXT_MAIN = (224, 224, 224) # #E0E0E0
+    TEXT_SEC = (160, 160, 160)  # #A0A0A0
+    ACCENT = (52, 152, 219) # #3498DB Blue
+    SUCCESS = (46, 204, 113) # #2ECC71 Green
+    WARNING = (241, 196, 15) # #F1C40F Yellow
+    ERROR = (231, 76, 60)   # #E74C3C Red
+    BORDER = (50, 50, 50)
 
-def get_disk_usage(path):
-    """Get disk usage for a path"""
-    try:
-        total, used, free = shutil.disk_usage(path)
-        percent = (used / total) * 100
-        return percent, total, used, free
-    except:
-        return 0, 0, 0, 0
-
-def get_uptime():
-    """Get system uptime in human readable format"""
-    try:
-        with open('/proc/uptime', 'r') as f:
-            uptime_seconds = float(f.readline().split()[0])
-        td = timedelta(seconds=uptime_seconds)
-        days = td.days
-        hours = td.seconds // 3600
-        minutes = (td.seconds // 60) % 60
+# --- DATA MANAGER ---
+class DataManager:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.data = {
+            'weather': None,
+            'wan_stats': {'dl': 0.0, 'ul': 0.0},
+            'latency': None,
+            'services': {},
+            'backups': {},
+            'system': {'cpu': 0, 'ram': 0, 'temp': 0}
+        }
+        self.last_wan_rx = 0
+        self.last_wan_tx = 0
+        self.last_wan_check = 0
         
-        if days > 0:
-            return f"{days}d {hours}h {minutes}m"
-        return f"{hours}h {minutes}m"
-    except:
+        # Start background threads
+        threading.Thread(target=self._update_weather, daemon=True).start()
+        threading.Thread(target=self._update_network, daemon=True).start()
+        threading.Thread(target=self._update_services, daemon=True).start()
+        threading.Thread(target=self._update_system, daemon=True).start()
+
+    def _update_weather(self):
+        while True:
+            try:
+                url = f"https://api.open-meteo.com/v1/forecast?latitude={LATITUDE}&longitude={LONGITUDE}&current_weather=true"
+                r = requests.get(url, timeout=10)
+                if r.status_code == 200:
+                    with self.lock:
+                        self.data['weather'] = r.json().get('current_weather')
+            except:
+                pass
+            time.sleep(900) # 15 min
+
+    def _update_network(self):
+        while True:
+            # WAN Stats
+            try:
+                url = f"https://{OPNSENSE_IP}/api/diagnostics/interface/getInterfaceStatistics"
+                r = requests.get(url, auth=(OPNSENSE_API_KEY, OPNSENSE_API_SECRET), verify=False, timeout=5)
+                if r.status_code == 200:
+                    stats = r.json().get('statistics', {})
+                    for iface in stats.values():
+                        if iface.get('name') == WAN_INTERFACE:
+                            rx = int(iface.get('received-bytes', 0))
+                            tx = int(iface.get('sent-bytes', 0))
+                            now = time.time()
+                            
+                            if self.last_wan_check > 0:
+                                dt = now - self.last_wan_check
+                                # Ensure dt is reasonable to avoid division by near-zero
+                                if dt > 0.5:
+                                    dl = (rx - self.last_wan_rx) / dt * 8 / (1024*1024)
+                                    ul = (tx - self.last_wan_tx) / dt * 8 / (1024*1024)
+                                    
+                                    # Sanity check: cap at 10000 Mbps (10Gbps) to avoid glitch spikes
+                                    if dl < 0 or dl > 10000: dl = 0
+                                    if ul < 0 or ul > 10000: ul = 0
+
+                                    with self.lock:
+                                        self.data['wan_stats'] = {'dl': dl, 'ul': ul}
+                            
+                            self.last_wan_rx = rx
+                            self.last_wan_tx = tx
+                            self.last_wan_check = now
+            except Exception as e:
+                # print(f"WAN Error: {e}")
+                pass
+
+            # Latency
+            try:
+                cmd = ['ping', '-c', '1', '-W', '1', '1.1.1.1']
+                out = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
+                match = re.search(r'time=([\d.]+)', out)
+                lat = float(match.group(1)) if match else None
+                with self.lock:
+                    self.data['latency'] = lat
+            except:
+                with self.lock:
+                    self.data['latency'] = None
+            
+            time.sleep(5)
+
+    def _update_services(self):
+        while True:
+            results = {}
+            for name, ip, port in SERVICES:
+                try:
+                    if port:
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.settimeout(1.0)
+                        s.connect((ip, int(port)))
+                        s.close()
+                        results[name] = True
+                    else:
+                        subprocess.check_call(['ping', '-c', '1', '-W', '1', ip], 
+                                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        results[name] = True
+                except:
+                    results[name] = False
+            
+            # Backups
+            try:
+                if os.path.exists(BACKUP_JSON_PATH):
+                    with open(BACKUP_JSON_PATH, 'r') as f:
+                        backups = json.load(f)
+                else:
+                    backups = {}
+            except:
+                backups = {}
+
+            with self.lock:
+                self.data['services'] = results
+                self.data['backups'] = backups
+            
+            time.sleep(30)
+
+    def _update_system(self):
+        while True:
+            cpu = 0
+            ram = 0
+            temp = 0
+            
+            if HAS_PSUTIL:
+                cpu = psutil.cpu_percent()
+                ram = psutil.virtual_memory().percent
+            
+            try:
+                with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+                    temp = int(f.read().strip()) / 1000.0
+            except:
+                pass
+
+            with self.lock:
+                self.data['system'] = {'cpu': cpu, 'ram': ram, 'temp': temp}
+            
+            time.sleep(2)
+
+    def get(self, key):
+        with self.lock:
+            return self.data.get(key)
+
+# --- UI RENDERER ---
+class DashboardUI:
+    def __init__(self):
+        self.dm = DataManager()
+        self.width = SCREEN_WIDTH
+        self.height = SCREEN_HEIGHT
+        self.fonts = self._load_fonts()
+        self.page = 0
+        self.total_pages = 3
+        
+    def _load_fonts(self):
+        try:
+            base = "/usr/share/fonts/truetype/dejavu/DejaVuSans"
+            return {
+                'huge': ImageFont.truetype(f"{base}-Bold.ttf", 56),
+                'xl': ImageFont.truetype(f"{base}-Bold.ttf", 32),
+                'lg': ImageFont.truetype(f"{base}-Bold.ttf", 20),
+                'md': ImageFont.truetype(f"{base}-Bold.ttf", 16),
+                'sm': ImageFont.truetype(f"{base}.ttf", 14),
+                'xs': ImageFont.truetype(f"{base}.ttf", 11),
+            }
+        except:
+            d = ImageFont.load_default()
+            return {k: d for k in ['huge', 'xl', 'lg', 'md', 'sm', 'xs']}
+
+    def _draw_card(self, draw, x, y, w, h, title=None):
+        # Draw rounded card background
+        r = 8
+        draw.rounded_rectangle((x, y, x+w, y+h), r, fill=Colors.CARD_BG)
+        # draw.rounded_rectangle((x, y, x+w, y+h), r, outline=Colors.BORDER, width=1)
+        if title:
+            draw.text((x+10, y+8), title, fill=Colors.TEXT_SEC, font=self.fonts['xs'])
+
+    def _draw_progress_bar(self, draw, x, y, w, h, percent, color):
+        draw.rectangle((x, y, x+w, y+h), fill=(40,40,40))
+        fill_w = int(w * (percent / 100))
+        draw.rectangle((x, y, x+fill_w, y+h), fill=color)
+
+    def draw_home(self, draw):
+        # Time & Date (Top)
+        now = datetime.now()
+        t_str = now.strftime("%H:%M")
+        d_str = now.strftime("%A, %d %B")
+        
+        # Center Time
+        tw = draw.textlength(t_str, font=self.fonts['huge'])
+        draw.text(((self.width - tw)/2, 10), t_str, fill=Colors.TEXT_MAIN, font=self.fonts['huge'])
+        
+        dw = draw.textlength(d_str, font=self.fonts['lg'])
+        draw.text(((self.width - dw)/2, 75), d_str, fill=Colors.ACCENT, font=self.fonts['lg'])
+
+        # Left Card: Weather
+        wx, wy, ww, wh = 10, 110, 225, 130
+        self._draw_card(draw, wx, wy, ww, wh, "BRUSSELS")
+        weather = self.dm.get('weather')
+        if weather:
+            temp = weather.get('temperature')
+            code = weather.get('weathercode')
+            desc = self._get_weather_desc(code)
+            draw.text((wx+15, wy+35), f"{temp}°C", fill=Colors.TEXT_MAIN, font=self.fonts['xl'])
+            draw.text((wx+15, wy+80), desc, fill=Colors.TEXT_SEC, font=self.fonts['md'])
+            draw.text((wx+15, wy+100), f"Wind: {weather.get('windspeed')} km/h", fill=Colors.TEXT_SEC, font=self.fonts['sm'])
+        else:
+            draw.text((wx+15, wy+50), "Loading...", fill=Colors.TEXT_SEC, font=self.fonts['sm'])
+
+        # Right Card: System Resources
+        sys = self.dm.get('system')
+        sx, sy, sw, sh = 245, 110, 225, 130
+        self._draw_card(draw, sx, sy, sw, sh, "SYSTEM HEALTH")
+        
+        # CPU
+        draw.text((sx+15, sy+35), "CPU", fill=Colors.TEXT_MAIN, font=self.fonts['sm'])
+        self._draw_progress_bar(draw, sx+55, sy+38, 140, 10, sys['cpu'], Colors.ACCENT)
+        draw.text((sx+205, sy+35), f"{int(sys['cpu'])}%", fill=Colors.TEXT_SEC, font=self.fonts['xs'])
+        
+        # RAM
+        draw.text((sx+15, sy+65), "RAM", fill=Colors.TEXT_MAIN, font=self.fonts['sm'])
+        self._draw_progress_bar(draw, sx+55, sy+68, 140, 10, sys['ram'], Colors.ACCENT)
+        draw.text((sx+205, sy+65), f"{int(sys['ram'])}%", fill=Colors.TEXT_SEC, font=self.fonts['xs'])
+        
+        # Temp
+        t_col = Colors.SUCCESS if sys['temp'] < 60 else Colors.WARNING
+        draw.text((sx+15, sy+95), f"Temp: {sys['temp']:.1f}°C", fill=t_col, font=self.fonts['md'])
+
+        # Bottom Status
+        failed = [k for k,v in self.dm.get('services').items() if not v]
+        if failed:
+            status_text = f"ALERT: {', '.join(failed[:2])}"
+            status_col = Colors.ERROR
+        else:
+            status_text = "ALL SYSTEMS OPERATIONAL"
+            status_col = Colors.SUCCESS
+            
+        sw = draw.textlength(status_text, font=self.fonts['md'])
+        draw.rounded_rectangle(((self.width-sw)/2 - 10, 260, (self.width+sw)/2 + 10, 290), 15, fill=(30,30,30))
+        draw.text(((self.width-sw)/2, 265), status_text, fill=status_col, font=self.fonts['md'])
+
+    def draw_network(self, draw):
+        self._draw_page_header(draw, "NETWORK STATUS")
+        
+        # WAN Card
+        wx, wy, ww, wh = 10, 50, 460, 100
+        self._draw_card(draw, wx, wy, ww, wh, "WAN INTERFACE")
+        wan = self.dm.get('wan_stats')
+        
+        # DL
+        draw.text((wx+30, wy+35), "DOWNLOAD", fill=Colors.TEXT_SEC, font=self.fonts['xs'])
+        draw.text((wx+30, wy+50), f"{wan['dl']:.1f}", fill=Colors.SUCCESS, font=self.fonts['xl'])
+        draw.text((wx+140, wy+62), "MB/s", fill=Colors.TEXT_SEC, font=self.fonts['sm'])
+        
+        # UL
+        draw.text((wx+250, wy+35), "UPLOAD", fill=Colors.TEXT_SEC, font=self.fonts['xs'])
+        draw.text((wx+250, wy+50), f"{wan['ul']:.1f}", fill=Colors.ACCENT, font=self.fonts['xl'])
+        draw.text((wx+360, wy+62), "MB/s", fill=Colors.TEXT_SEC, font=self.fonts['sm'])
+        
+        # Services Grid
+        gy = 165
+        self._draw_card(draw, 10, gy, 460, 140, "SERVICES & LATENCY")
+        
+        services = self.dm.get('services')
+        lat = self.dm.get('latency')
+        
+        # Latency
+        lx = 30
+        ly = gy + 35
+        lat_txt = f"{lat:.0f} ms" if lat else "N/A"
+        lat_col = Colors.SUCCESS if lat and lat < 50 else Colors.WARNING
+        draw.text((lx, ly), "LATENCY:", fill=Colors.TEXT_MAIN, font=self.fonts['sm'])
+        draw.text((lx+80, ly), lat_txt, fill=lat_col, font=self.fonts['md'])
+        
+        # Service list
+        sx = 30
+        sy = ly + 30
+        cols = 2
+        col_w = 200
+        count = 0
+        for name, status in services.items():
+            r = count // cols
+            c = count % cols
+            px = sx + (c * col_w)
+            py = sy + (r * 25)
+            
+            dot_col = Colors.SUCCESS if status else Colors.ERROR
+            draw.ellipse((px, py+2, px+10, py+12), fill=dot_col)
+            draw.text((px+20, py), name, fill=Colors.TEXT_MAIN, font=self.fonts['sm'])
+            count += 1
+
+    def draw_storage(self, draw):
+        self._draw_page_header(draw, "STORAGE & BACKUPS")
+        
+        # Storage Card
+        percent, total, used, free = self._get_disk_usage("/mnt/appdata")
+        self._draw_card(draw, 10, 50, 460, 80, "NAS STORAGE (/mnt/appdata)")
+        
+        self._draw_progress_bar(draw, 30, 85, 420, 15, percent, Colors.ACCENT)
+        info = f"Used: {used//1024**3} GB  /  Total: {total//1024**3} GB  ({percent:.1f}%)"
+        draw.text((30, 105), info, fill=Colors.TEXT_SEC, font=self.fonts['sm'])
+        
+        # Backups
+        self._draw_card(draw, 10, 140, 460, 160, "BACKUP STATUS")
+        backups = self.dm.get('backups')
+        by = 175
+        
+        if not backups:
+            draw.text((30, by), "No backup data available", fill=Colors.WARNING, font=self.fonts['md'])
+        else:
+            for k, v in list(backups.items())[:4]: # Max 4 items
+                lbl = v.get('label', k)
+                status = v.get('status') == 'ok'
+                ago = self._get_time_ago(v.get('last_run'))
+                
+                col = Colors.SUCCESS if status else Colors.ERROR
+                draw.text((30, by), "•", fill=col, font=self.fonts['lg'])
+                draw.text((50, by+2), lbl, fill=Colors.TEXT_MAIN, font=self.fonts['md'])
+                draw.text((300, by+2), ago, fill=Colors.TEXT_SEC, font=self.fonts['sm'])
+                by += 30
+
+    def _draw_page_header(self, draw, title):
+        draw.text((10, 10), title, fill=Colors.TEXT_MAIN, font=self.fonts['lg'])
+        draw.line((10, 40, 50, 40), fill=Colors.ACCENT, width=2)
+
+    def _get_disk_usage(self, path):
+        try:
+            t, u, f = shutil.disk_usage(path)
+            return (u/t)*100, t, u, f
+        except:
+            return 0, 0, 0, 0
+
+    def _get_time_ago(self, date_str):
+        if not date_str: return "-"
+        try:
+            # Handle timestamps with or without timezone info
+            if date_str.endswith('Z'):
+                 dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            else:
+                 # Assume UTC if no TZ info provided
+                 dt = datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
+                 
+            delta = datetime.now(timezone.utc) - dt
+            
+            # Handle small clock skews or future dates slightly
+            total_seconds = int(delta.total_seconds())
+            if total_seconds < 0: total_seconds = 0
+            
+            days = total_seconds // 86400
+            if days > 0: return f"{days}d ago"
+            
+            hours = total_seconds // 3600
+            if hours > 0: return f"{hours}h ago"
+            
+            mins = total_seconds // 60
+            return f"{mins}m ago"
+        except Exception as e:
+            # print(f"Date error: {e}")
+            return "?"
+
+    def _get_weather_desc(self, code):
+        if code == 0: return "Clear"
+        if code in [1,2,3]: return "Cloudy"
+        if code in [45,48]: return "Fog"
+        if code in [51,53,55]: return "Drizzle"
+        if code in [61,63,65]: return "Rain"
+        if code in [71,73,75]: return "Snow"
         return "Unknown"
 
-def get_temp():
-    """Get Raspberry Pi temperature"""
-    try:
-        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
-            temp = int(f.read().strip()) / 1000.0
-        return temp
-    except:
-        return 0.0
-
-def get_internet_latency():
-    """Ping Cloudflare DNS to check internet latency"""
-    try:
-        cmd = ['ping', '-c', '1', '-W', '1', '1.1.1.1']
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
-        match = re.search(r'time=([\d.]+)', output)
-        if match:
-            return float(match.group(1))
-        return None
-    except:
-        return None
-
-# --- WEATHER ---
-
-def get_weather():
-    """Get current weather from Open-Meteo"""
-    global cached_weather, last_weather_time
-    
-    # Update every 15 minutes
-    if time.time() - last_weather_time < 900 and cached_weather:
-        return cached_weather
+    def render(self):
+        image = Image.new("RGB", (self.width, self.height), Colors.BG)
+        draw = ImageDraw.Draw(image)
         
+        if self.page == 0: self.draw_home(draw)
+        elif self.page == 1: self.draw_network(draw)
+        elif self.page == 2: self.draw_storage(draw)
+        
+        # Page Indicators
+        for i in range(self.total_pages):
+            c = Colors.ACCENT if i == self.page else Colors.CARD_BG
+            draw.ellipse((220 + (i*15), 305, 230 + (i*15), 315), fill=c)
+            
+        return image
+
+# --- MAIN LOOP ---
+def set_backlight(on):
+    """Turn display backlight/power on or off"""
+    # Method 1: Sysfs Backlight (standard)
+    bl_found = False
+    for path in ["/sys/class/backlight/rpi_backlight", 
+                 "/sys/class/backlight/soc:backlight", 
+                 "/sys/class/backlight/gpio-backlight"]:
+        if os.path.exists(path):
+            try:
+                # Get max brightness
+                val = 0
+                if on:
+                    max_path = os.path.join(path, "max_brightness")
+                    if os.path.exists(max_path):
+                        with open(max_path, "r") as f:
+                            val = int(f.read().strip())
+                    else:
+                        val = 255
+                
+                with open(os.path.join(path, "brightness"), "w") as f:
+                    f.write(str(val))
+                bl_found = True
+            except:
+                pass
+
+    # Method 2: Framebuffer Blanking (fallback)
     try:
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={LATITUDE}&longitude={LONGITUDE}&current_weather=true"
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            cached_weather = response.json().get('current_weather')
-            last_weather_time = time.time()
-            return cached_weather
+        fb_blank_path = f"/sys/class/graphics/{os.path.basename(FB_DEVICE)}/blank"
+        if os.path.exists(fb_blank_path):
+            val = "0" if on else "1"
+            with open(fb_blank_path, "w") as f:
+                f.write(val)
     except:
         pass
-    return cached_weather
 
-def get_weather_desc(code):
-    """Map WMO weather code to text"""
-    # Simplified WMO codes
-    if code == 0: return "Clear Sky"
-    if code in [1, 2, 3]: return "Partly Cloudy"
-    if code in [45, 48]: return "Foggy"
-    if code in [51, 53, 55]: return "Drizzle"
-    if code in [61, 63, 65]: return "Rain"
-    if code in [71, 73, 75]: return "Snow"
-    if code in [95, 96, 99]: return "Thunderstorm"
-    return "Unknown"
-
-# --- BACKUP STATUS ---
-def get_time_ago(date_str):
-    """Calcule le temps écoulé depuis une date ISO en UTC"""
-    if not date_str or date_str == "N/A":
-        return "N/A"
+def write_to_fb(img):
     try:
-        if date_str.endswith('Z'):
-            dt = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-        else:
-            dt = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
-            
-        diff = datetime.now(timezone.utc) - dt
-        seconds = int(diff.total_seconds())
-        if seconds < 0: seconds = 0
+        pixels = img.getdata()
+        buf = bytearray(SCREEN_WIDTH * SCREEN_HEIGHT * 2)
+        for i, (r, g, b) in enumerate(pixels):
+            c = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+            struct.pack_into("<H", buf, i * 2, c)
         
-        if seconds >= 86400:
-            return f"{seconds // 86400}d ago"
-        if seconds >= 3600:
-            return f"{seconds // 3600}h ago"
-        if seconds >= 60:
-            return f"{seconds // 60}m ago"
-        return "Just now"
-    except Exception as e:
-        return "Error"
-
-def get_real_backup_status():
-    """Lit les statuts réels depuis le partage NFS"""
-    try:
-        with open(BACKUP_JSON_PATH, 'r') as f:
-            return json.load(f)
+        with open(FB_DEVICE, "wb") as f:
+            f.write(buf)
     except:
-        return None
+        pass
 
-# --- OPNsense API ---
-
-def get_opnsense_wan_stats():
-    """Get WAN interface statistics from OPNsense API"""
-    try:
-        url = f"https://{OPNSENSE_IP}/api/diagnostics/interface/getInterfaceStatistics"
-        response = requests.get(
-            url,
-            auth=(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
-            verify=False,
-            timeout=2
-        )
-        if response.status_code == 200:
-            data = response.json()
-            stats = data.get('statistics', {})
-            for interface_name, interface_data in stats.items():
-                if interface_data.get('name') == WAN_INTERFACE and 'received-bytes' in interface_data:
-                    rx_bytes = int(interface_data.get('received-bytes', 0))
-                    tx_bytes = int(interface_data.get('sent-bytes', 0))
-                    return (rx_bytes, tx_bytes)
-        return (None, None)
-    except Exception as e:
-        print(f"Error fetching OPNsense stats: {e}")
-        return (None, None)
-
-def calculate_wan_bandwidth():
-    """Calculate WAN bandwidth usage (download/upload speeds)"""
-    global last_wan_stats, last_wan_time
+def main():
+    ui = DashboardUI()
     
-    current_stats = get_opnsense_wan_stats()
-    current_time = time.time()
+    # Input Handling
+    screen_on = True
+    last_interaction = time.time()
     
-    if current_stats[0] is None:
-        return (None, None)
-    
-    if last_wan_stats is None or last_wan_time is None:
-        last_wan_stats = current_stats
-        last_wan_time = current_time
-        return (0.0, 0.0)
-    
-    time_delta = current_time - last_wan_time
-    if time_delta < 1:
-        return (0.0, 0.0)
-    
-    rx_delta = current_stats[0] - last_wan_stats[0]
-    tx_delta = current_stats[1] - last_wan_stats[1]
-    
-    download_mbps = (rx_delta / time_delta) / (1024 * 1024)
-    upload_mbps = (tx_delta / time_delta) / (1024 * 1024)
-    
-    last_wan_stats = current_stats
-    last_wan_time = current_time
-    
-    return (download_mbps, upload_mbps)
-
-# --- NETWORK CHECKS ---
-
-def check_ping(ip):
-    try:
-        subprocess.check_call(
-            ['ping', '-c', '1', '-W', '1', ip],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        return True
-    except:
-        return False
-
-def check_port(ip, port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(1.0)
-    try:
-        s.connect((ip, int(port)))
-        s.close()
-        return True
-    except:
-        return False
-
-def check_service(service):
-    name, ip, port = service
-    if port:
-        return check_port(ip, port)
-    else:
-        return check_ping(ip)
-
-# --- GRAPHICS HELPERS ---
-
-def rgb888_to_rgb565(r, g, b):
-    return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
-
-def draw_rounded_rect(draw, x, y, width, height, radius, fill, outline=None):
-    draw.rectangle((x + radius, y, x + width - radius, y + height), fill=fill)
-    draw.rectangle((x, y + radius, x + width, y + height - radius), fill=fill)
-    draw.pieslice((x, y, x + radius * 2, y + radius * 2), 180, 270, fill=fill)
-    draw.pieslice((x + width - radius * 2, y, x + width, y + radius * 2), 270, 360, fill=fill)
-    draw.pieslice((x, y + height - radius * 2, x + radius * 2, y + height), 90, 180, fill=fill)
-    draw.pieslice((x + width - radius * 2, y + height - radius * 2, x + width, y + height), 0, 90, fill=fill)
-    
-    if outline:
-        draw.arc((x, y, x + radius * 2, y + radius * 2), 180, 270, fill=outline)
-        draw.arc((x + width - radius * 2, y, x + width, y + radius * 2), 270, 360, fill=outline)
-        draw.arc((x, y + height - radius * 2, x + radius * 2, y + height), 90, 180, fill=outline)
-        draw.arc((x + width - radius * 2, y + height - radius * 2, x + width, y + height), 0, 90, fill=outline)
-        draw.line((x + radius, y, x + width - radius, y), fill=outline)
-        draw.line((x + radius, y + height, x + width - radius, y + height), fill=outline)
-        draw.line((x, y + radius, x, y + height - radius), fill=outline)
-        draw.line((x + width, y + radius, x + width, y + height - radius), fill=outline)
-
-# --- PAGE RENDERERS ---
-
-def draw_page_header(draw, title, fonts):
-    draw.rectangle((0, 0, SCREEN_WIDTH, 40), fill=(26, 26, 26))
-    draw.line((0, 40, SCREEN_WIDTH, 40), fill=COLOR_ACCENT, width=2)
-    draw.text((10, 8), title, fill=COLOR_TEXT, font=fonts['lg'])
-    
-    # Page Indicator
-    for i in range(TOTAL_PAGES):
-        color = COLOR_ACCENT if i == current_page else COLOR_DIM
-        draw.ellipse((440 + (i*12), 16, 448 + (i*12), 24), fill=color)
-
-def draw_page_home(draw, fonts):
-    # === GRID LAYOUT ===
-    # Row 1: Status Bar (Height 50)
-    # Row 2: Main Clock (Height 180)
-    # Row 3: Environment (Height 90)
-
-    # --- TOP BAR ---
-    draw.rectangle((0, 0, SCREEN_WIDTH, 50), fill=(20, 20, 20))
-    draw.line((0, 50, SCREEN_WIDTH, 50), fill=COLOR_BORDER, width=1)
-    
-    # Left: Uptime
-    uptime = get_uptime()
-    draw.text((10, 8), "UPTIME", fill=COLOR_DIM, font=fonts['xs'])
-    draw.text((10, 22), uptime.split(' ')[0], fill=COLOR_TEXT, font=fonts['md']) # Show only Days
-    
-    # Right: Pi Temp
-    temp = get_temp()
-    t_color = COLOR_OK if temp < 60 else COLOR_WARN
-    draw.text((SCREEN_WIDTH - 80, 8), "PI TEMP", fill=COLOR_DIM, font=fonts['xs'])
-    draw.text((SCREEN_WIDTH - 80, 22), f"{temp:.0f}°C", fill=t_color, font=fonts['md'])
-
-    # Center: System Status Icon
-    # Check services
-    failed = []
-    for svc in SERVICES:
-         if not check_service(svc): failed.append(svc[0])
-    
-    status_color = COLOR_ERR if failed else COLOR_OK
-    status_text = "ALERTS" if failed else "ALL OK"
-    
-    # Draw status badge in center
-    cx = SCREEN_WIDTH // 2
-    draw_rounded_rect(draw, cx - 50, 5, 100, 40, 5, (0,0,0), status_color)
-    w = draw.textlength(status_text, font=fonts['md'])
-    draw.text((cx - w/2, 14), status_text, fill=status_color, font=fonts['md'])
-
-    # --- CENTER: CLOCK ---
-    timestamp = time.strftime('%H:%M')
-    date_str = time.strftime('%A %d %B')
-    
-    # Very big clock
-    w_time = draw.textlength(timestamp, font=fonts['huge'])
-    draw.text(((SCREEN_WIDTH - w_time)/2, 80), timestamp, fill=COLOR_TEXT, font=fonts['huge'])
-    
-    w_date = draw.textlength(date_str, font=fonts['lg'])
-    draw.text(((SCREEN_WIDTH - w_date)/2, 160), date_str, fill=COLOR_ACCENT, font=fonts['lg'])
-
-    # --- BOTTOM: WEATHER / ALERTS ---
-    y_btm = 230
-    h_btm = 90
-    draw.line((0, y_btm, SCREEN_WIDTH, y_btm), fill=COLOR_BORDER, width=1)
-    
-    if failed:
-        # Show specific alerts if any
-        draw.rectangle((0, y_btm, SCREEN_WIDTH, 320), fill=(40, 0, 0))
-        draw.text((20, y_btm + 10), "⚠️ SYSTEM FAILURE", fill=COLOR_ERR, font=fonts['lg'])
-        y_list = y_btm + 40
-        for f in failed[:2]: # Show max 2 lines
-             draw.text((20, y_list), f"• {f} is DOWN", fill=COLOR_TEXT, font=fonts['md'])
-             y_list += 20
-    else:
-        # Show Weather (Full Width or Centered)
-        weather = get_weather()
-        if weather:
-            w_temp = weather.get('temperature')
-            w_code = weather.get('weathercode')
-            desc = get_weather_desc(w_code)
-            
-            # Weather Icon/Text Area
-            # Split bottom into Left (Indoor/Pi) and Right (Outdoor) ? 
-            # User asked for clean design. Let's center the weather.
-            
-            # Label
-            draw.text((20, y_btm + 10), "BRUSSELS", fill=COLOR_DIM, font=fonts['xs'])
-            
-            # Big Temp
-            draw.text((20, y_btm + 30), f"{w_temp}°C", fill=COLOR_TEXT, font=fonts['xl'])
-            
-            # Condition
-            draw.text((140, y_btm + 35), desc, fill=COLOR_ACCENT, font=fonts['lg'])
-            
-            # Extra detail (Wind speed?)
-            w_wind = weather.get('windspeed')
-            draw.text((350, y_btm + 35), f"💨 {w_wind} km/h", fill=COLOR_DIM, font=fonts['sm'])
-
-        else:
-             draw.text((150, y_btm + 35), "Weather Unavailable", fill=COLOR_DIM, font=fonts['md'])
-
-def draw_page_network(draw, fonts):
-    draw_page_header(draw, "NETWORK STATUS", fonts)
-    
-    # Services List (Left)
-    y_svc = 60
-    for svc in SERVICES:
-        name, _, _ = svc
-        status = check_service(svc)
-        ind_color = COLOR_OK if status else COLOR_ERR
-        
-        draw.ellipse((20, y_svc + 6, 30, y_svc + 16), fill=ind_color)
-        draw.text((40, y_svc), name, fill=COLOR_TEXT, font=fonts['md'])
-        y_svc += 45
-
-    # WAN Stats (Right)
-    card_x = 220
-    card_y = 60
-    card_width = 240
-    
-    # Traffic
-    draw_rounded_rect(draw, card_x, card_y, card_width, 100, 8, COLOR_CARD_BG, COLOR_BORDER)
-    draw.text((card_x + 10, card_y + 10), "WAN TRAFFIC", fill=COLOR_DIM, font=fonts['xs'])
-    
-    download, upload = calculate_wan_bandwidth()
-    
-    dl_val = f"{download:.1f}" if download else "0.0"
-    ul_val = f"{upload:.1f}" if upload else "0.0"
-    
-    draw.text((card_x + 10, card_y + 35), f"DL: {dl_val} MB/s", fill=COLOR_ACCENT, font=fonts['lg'])
-    draw.text((card_x + 10, card_y + 65), f"UL: {ul_val} MB/s", fill=COLOR_ACCENT, font=fonts['lg'])
-    
-    # Latency
-    lat_y = 180
-    draw_rounded_rect(draw, card_x, lat_y, card_width, 80, 8, COLOR_CARD_BG, COLOR_BORDER)
-    draw.text((card_x + 10, lat_y + 10), "LATENCY (1.1.1.1)", fill=COLOR_DIM, font=fonts['xs'])
-    
-    latency = get_internet_latency()
-    lat_txt = f"{latency:.0f} ms" if latency else "TIMEOUT"
-    lat_color = COLOR_OK if latency and latency < 50 else COLOR_WARN
-    
-    draw.text((card_x + 10, lat_y + 35), lat_txt, fill=lat_color, font=fonts['xl'])
-
-def draw_page_storage(draw, fonts):
-    draw_page_header(draw, "STORAGE & BACKUPS", fonts)
-    
-    # NAS Usage Bar
-    percent, total, used, free = get_disk_usage("/mnt/appdata")
-    
-    bar_x, bar_y = 20, 60
-    bar_w, bar_h = 440, 30
-    
-    draw.text((bar_x, bar_y - 20), "NAS STORAGE (/mnt/appdata)", fill=COLOR_DIM, font=fonts['xs'])
-    
-    # Bar background
-    draw.rectangle((bar_x, bar_y, bar_x + bar_w, bar_y + bar_h), fill=(30,30,30))
-    # Bar fill
-    fill_w = int(bar_w * (percent / 100))
-    bar_color = COLOR_OK if percent < 80 else (COLOR_WARN if percent < 90 else COLOR_ERR)
-    draw.rectangle((bar_x, bar_y, bar_x + fill_w, bar_y + bar_h), fill=bar_color)
-    
-    draw.text((bar_x + 10, bar_y + 5), f"{used//(1024**3)}GB used of {total//(1024**3)}GB ({percent:.1f}%)", fill=COLOR_TEXT, font=fonts['sm'])
-
-    # Backups List
-    y_start = 130
-    draw.text((20, y_start - 20), "LATEST BACKUPS", fill=COLOR_DIM, font=fonts['xs'])
-    
-    real_backups = get_real_backup_status()
-    if real_backups:
-        y = y_start
-        for key, data in real_backups.items():
-            is_ok = data.get('status') == 'ok'
-            label = data.get('label', key)
-            time_str = get_time_ago(data.get('last_run'))
-            
-            # Draw row background
-            draw.rectangle((20, y, 460, y + 40), fill=COLOR_CARD_BG)
-            
-            # Status dot
-            dot_color = COLOR_OK if is_ok else COLOR_ERR
-            draw.ellipse((30, y + 15, 40, y + 25), fill=dot_color)
-            
-            draw.text((50, y + 10), label, fill=COLOR_TEXT, font=fonts['md'])
-            draw.text((300, y + 10), time_str, fill=COLOR_DIM, font=fonts['md'])
-            
-            y += 50
-    else:
-        draw.text((20, y_start), "No backup data found", fill=COLOR_WARN, font=fonts['md'])
-
-# --- INPUT HANDLING ---
-
-def input_loop():
-    """Thread to handle touch input"""
-    global current_page, screen_on, last_input_time
-    
-    if not HAS_EVDEV:
-        print("evdev not found, auto-cycling pages")
-        while True:
-            time.sleep(10)
-            current_page = (current_page + 1) % TOTAL_PAGES
-            screen_on = True # Always on if cycling
-    
-    # Find touch device
-    devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
-    touch_device = None
-    for dev in devices:
-        if 'touch' in dev.name.lower() or 'ft6x06' in dev.name.lower(): # Common names
-            touch_device = dev
-            break
-            
-    if not touch_device:
-        # Fallback to first device that supports ABS events if no explicit touch name
-        for dev in devices:
-             if evdev.ecodes.EV_ABS in dev.capabilities():
-                 touch_device = dev
-                 break
-    
-    if not touch_device:
-        print("No touch device found. Auto-cycling.")
-        while True:
-            time.sleep(10)
-            current_page = (current_page + 1) % TOTAL_PAGES
+    def input_handler():
+        nonlocal screen_on, last_interaction
+        if not HAS_EVDEV:
+            while True:
+                time.sleep(10)
+                if screen_on: ui.page = (ui.page + 1) % ui.total_pages
             return
 
-    print(f"Using input device: {touch_device.name}")
-    
-    try:
-        for event in touch_device.read_loop():
-            if event.type == evdev.ecodes.EV_KEY and (event.code == evdev.ecodes.BTN_TOUCH or event.code == evdev.ecodes.BTN_LEFT):
-                if event.value == 1: # Key down
-                    last_input_time = time.time()  # Reset timeout
+        devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
+        dev = next((d for d in devices if 'touch' in d.name.lower() or 'ft6x06' in d.name.lower()), None)
+        if not dev and devices: dev = devices[0] # Fallback
+        
+        if dev:
+            print(f"Input: {dev.name}")
+            for event in dev.read_loop():
+                if event.type == evdev.ecodes.EV_KEY and event.value == 1:
+                    last_interaction = time.time()
                     if not screen_on:
                         screen_on = True
                     else:
-                        current_page = (current_page + 1) % TOTAL_PAGES
-    except Exception as e:
-        print(f"Input error: {e}")
+                        ui.page = (ui.page + 1) % ui.total_pages
 
-# --- MAIN ---
+    threading.Thread(target=input_handler, daemon=True).start()
 
-def main():
-    global screen_on
+    print("Dashboard Running...")
     
-    try:
-        font_huge = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 64)
-        font_xl = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
-        font_lg = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
-        font_md = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
-        font_sm = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
-        font_xs = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
-    except:
-        font_huge = ImageFont.load_default()
-        font_xl = ImageFont.load_default()
-        font_lg = ImageFont.load_default()
-        font_md = ImageFont.load_default()
-        font_sm = ImageFont.load_default()
-        font_xs = ImageFont.load_default()
+    # Ensure screen is on at start
+    set_backlight(True)
+    is_screen_active = True
     
-    fonts = {
-        'huge': font_huge, 'xl': font_xl, 'lg': font_lg, 
-        'md': font_md, 'sm': font_sm, 'xs': font_xs
-    }
-
-    # Start input thread
-    input_thread = threading.Thread(target=input_loop, daemon=True)
-    input_thread.start()
-    
-    screen_on = True
-    
-    print("Dashboard started. Touch screen to switch pages.")
-
     while True:
-        current_time = time.time()
+        now = time.time()
         
-        # Power Management Logic
-        # 1. Day time (8-24h): Screen is ON by default
-        # 2. Night time (0-8h): Screen is OFF by default, unless touched recently
-        # 3. Inactivity: If no touch for SCREEN_TIMEOUT seconds, screen goes OFF (even during day? Optional)
-        
-        current_hour = datetime.now().hour
-        is_daytime = 8 <= current_hour < 24
-        is_active = (current_time - last_input_time) < SCREEN_TIMEOUT
-        
-        # Decide if screen should be ON
-        # Policy: Always ON during day, OFF at night UNLESS active
-        # Alternative Policy: Always OFF after timeout to save screen
-        
-        # Let's go with:
-        # - Night: OFF, wake on touch for 5 mins
-        # - Day: ON always (or maybe dim? we can't dim easily via SPI)
-        
-        if is_daytime:
-            # During day, we keep it ON. 
-            # If you want it to sleep during day too, change to: should_be_on = is_active
-            should_be_on = True 
-        else:
-            # At night, only ON if touched recently
-            should_be_on = is_active
-            
-        if should_be_on and not screen_on:
-            set_screen_power(True)
-            screen_on = True
-        elif not should_be_on and screen_on:
-            set_screen_power(False)
+        # Screen timeout logic
+        if screen_on and (now - last_interaction > SCREEN_TIMEOUT):
             screen_on = False
-
-        if screen_on:
-            image = Image.new("RGB", (SCREEN_WIDTH, SCREEN_HEIGHT), COLOR_BG)
-            draw = ImageDraw.Draw(image)
             
-            if current_page == 0:
-                draw_page_home(draw, fonts)
-            elif current_page == 1:
-                draw_page_network(draw, fonts)
-            elif current_page == 2:
-                draw_page_storage(draw, fonts)
-                
-            # Render to framebuffer
-            try:
-                pixels = image.getdata()
-                buf = bytearray(SCREEN_WIDTH * SCREEN_HEIGHT * 2)
-                for i, (r, g, b) in enumerate(pixels):
-                    color = rgb888_to_rgb565(r, g, b)
-                    struct.pack_into("<H", buf, i * 2, color)
-                
-                with open(FB_DEVICE, "wb") as f:
-                    f.write(buf)
-            except Exception as e:
-                # print(f"Render error: {e}") # Reduce log spam
-                pass
+        if screen_on:
+            if not is_screen_active:
+                set_backlight(True)
+                is_screen_active = True
+            
+            img = ui.render()
+            write_to_fb(img)
         
-        time.sleep(1) # Refresh rate
+        else:
+            if is_screen_active:
+                # Turning off
+                # 1. Clear screen
+                img = Image.new("RGB", (SCREEN_WIDTH, SCREEN_HEIGHT), (0,0,0))
+                write_to_fb(img)
+                # 2. Power down
+                set_backlight(False)
+                is_screen_active = False
+            
+            time.sleep(0.5)
+            continue
+        
+        time.sleep(0.5)
 
 if __name__ == "__main__":
     main()
