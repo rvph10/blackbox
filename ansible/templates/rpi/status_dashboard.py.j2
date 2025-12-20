@@ -74,6 +74,8 @@ last_wan_time = None
 screen_on = False
 cached_weather = None
 last_weather_time = 0
+last_input_time = time.time()  # Track last interaction
+SCREEN_TIMEOUT = 300  # 5 minutes in seconds
 
 # --- SYSTEM STATS HELPERS ---
 
@@ -489,7 +491,7 @@ def draw_page_storage(draw, fonts):
 
 def input_loop():
     """Thread to handle touch input"""
-    global current_page, screen_on
+    global current_page, screen_on, last_input_time
     
     if not HAS_EVDEV:
         print("evdev not found, auto-cycling pages")
@@ -526,6 +528,7 @@ def input_loop():
         for event in touch_device.read_loop():
             if event.type == evdev.ecodes.EV_KEY and (event.code == evdev.ecodes.BTN_TOUCH or event.code == evdev.ecodes.BTN_LEFT):
                 if event.value == 1: # Key down
+                    last_input_time = time.time()  # Reset timeout
                     if not screen_on:
                         screen_on = True
                     else:
@@ -567,20 +570,39 @@ def main():
     print("Dashboard started. Touch screen to switch pages.")
 
     while True:
-        # Check time for auto-off (override if touched recently? simplified for now)
+        current_time = time.time()
+        
+        # Power Management Logic
+        # 1. Day time (8-24h): Screen is ON by default
+        # 2. Night time (0-8h): Screen is OFF by default, unless touched recently
+        # 3. Inactivity: If no touch for SCREEN_TIMEOUT seconds, screen goes OFF (even during day? Optional)
+        
         current_hour = datetime.now().hour
-        should_be_on = 8 <= current_hour < 24
+        is_daytime = 8 <= current_hour < 24
+        is_active = (current_time - last_input_time) < SCREEN_TIMEOUT
         
-        # If input thread sets screen_on = True (wake up), we respect it.
-        # But we also enforce night mode if inactive? 
-        # For this version, let's keep it simple: strict time schedule unless overridden by touch (input loop sets screen_on=True)
-        # We need a timer to turn it off again? 
-        # Let's trust the input_loop handles wake, and we just render if screen_on is True.
+        # Decide if screen should be ON
+        # Policy: Always ON during day, OFF at night UNLESS active
+        # Alternative Policy: Always OFF after timeout to save screen
         
-        if not should_be_on and screen_on:
-            # It's night time, turn off unless woke up recently (TODO: Add timeout)
-            # For now, just follow schedule
-             pass 
+        # Let's go with:
+        # - Night: OFF, wake on touch for 5 mins
+        # - Day: ON always (or maybe dim? we can't dim easily via SPI)
+        
+        if is_daytime:
+            # During day, we keep it ON. 
+            # If you want it to sleep during day too, change to: should_be_on = is_active
+            should_be_on = True 
+        else:
+            # At night, only ON if touched recently
+            should_be_on = is_active
+            
+        if should_be_on and not screen_on:
+            set_screen_power(True)
+            screen_on = True
+        elif not should_be_on and screen_on:
+            set_screen_power(False)
+            screen_on = False
 
         if screen_on:
             image = Image.new("RGB", (SCREEN_WIDTH, SCREEN_HEIGHT), COLOR_BG)
