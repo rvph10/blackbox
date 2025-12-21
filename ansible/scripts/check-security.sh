@@ -191,4 +191,3 @@ else
     echo "Safe to commit."
     exit 0
 fi
-
