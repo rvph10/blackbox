@@ -23,6 +23,11 @@ Tous les équipements sont regroupés dans un même rack pour faciliter la gesti
   - **Stockage :** 3.6 To utiles (RAID 1 - Btrfs).
   - **Accélération :** SSD NVMe 1 To (500 Go alloués en cache de lecture).
 - **Réseau :** Switch Manageable 5 ports PoE+.
+  - **IP Statique :** `192.168.10.3`
+  - **Web UI :** `http://192.168.10.3`
+  - **Features actives :**
+    - LEDs désactivées
+    - IGMP Snooping (si multicast Home Assistant)
 
 ### 🔵 Zone B : Compute & Monitoring
 
@@ -57,9 +62,9 @@ Chaque dossier racine est un **Dossier Partagé** UGOS avec des permissions NFS 
 - **IP de Management :** `192.168.10.10`
 - **Passerelle :** `192.168.10.1` (VM OPNsense)
 
-| VM/CT      | Service          | Description                                                  |
-| :--------- | :--------------- | :----------------------------------------------------------- |
-| **VM 100** | **OPNsense**     | Routeur, Pare-feu, DHCP (Plage .100 - .200).                 |
+| VM/CT      | Service          | Description                                                 |
+| :--------- | :--------------- | :---------------------------------------------------------- |
+| **VM 100** | **OPNsense**     | Routeur, Pare-feu, DHCP (Plage .100 - .200).                |
 | **VM 110** | **Docker Stack** | (🚧 Planifié) Jellyfin, Suite \*Arr, Immich, **Tailscale**. |
 
 ### 🍓 Serveur B : Raspberry Pi 5 (Tour de Contrôle)
