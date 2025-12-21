@@ -124,3 +124,20 @@ Si vide :
    ```bash
    sudo mount -a -v
    ```
+
+### Contrôle des LEDs NAS
+
+Les LEDs du NAS UGREEN s'éteignent automatiquement à 23h et se rallument à 9h.
+
+**Contrôle manuel :**
+
+```bash
+# Éteindre immédiatement
+sudo /volume1/appdata/ugreen-leds/scripts/leds-off.sh
+
+# Rallumer immédiatement
+sudo /volume1/appdata/ugreen-leds/scripts/leds-on.sh
+```
+
+**Reconfiguration :**
+Si les horaires doivent être modifiés, éditer le playbook `deploy_nas_leds.yml` et redéployer.
