@@ -1,0 +1,44 @@
+from dataclasses import dataclass
+from typing import List, Tuple, Optional
+
+@dataclass
+class Config:
+    # Hardware
+    FB_DEVICE: str = "/dev/fb1"
+    SCREEN_WIDTH: int = 480
+    SCREEN_HEIGHT: int = 320
+    
+    # Schedule (24h format)
+    SCHEDULE_OFF_HOUR: int = 0  # Midnight
+    SCHEDULE_ON_HOUR: int = 9   # 9 AM
+    
+    # GPIO
+    PIN_SCREEN_POWER: int = 4      # Display power
+    PIN_BACKLIGHT: int = 25         # Backlight/LCD power
+    PIN_BUTTON: int = 22
+
+    # Network / API
+    OPNSENSE_IP: str = "{{ vault_gateway_ip }}"
+    OPNSENSE_AUTH: Tuple[str, str] = ("{{ vault_opnsense_api_key }}", "{{ vault_opnsense_api_secret }}")
+    WAN_INTERFACE: str = "pppoe2"
+    
+    # Location (Brussels)
+    LATITUDE: str = "50.8503"
+    LONGITUDE: str = "4.3517"
+    
+    # Paths
+    BACKUP_STATUS_PATH: str = "/mnt/appdata/rclone/backup_status.json"
+    FONT_PATH_BOLD: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    FONT_PATH_REGULAR: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+    @property
+    def SERVICES(self) -> List[Tuple[str, str, Optional[int]]]:
+        return [
+            ("Router", "{{ vault_gateway_ip }}", None),
+            ("Proxmox", "{{ vault_pve_ip }}", None),
+            ("AdGuard", "127.0.0.1", 53),
+            ("HomeAsst", "127.0.0.1", 8123),
+            ("Homepage", "127.0.0.1", 8082),
+            ("NAS", "{{ vault_cargo_ip }}", None),
+        ]
+

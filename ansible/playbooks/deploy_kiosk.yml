@@ -11,14 +11,58 @@
           - python3-evdev
           - python3-requests
           - python3-psutil
+          - python3-rpi.gpio
           - fonts-dejavu-core
         state: present
 
-    - name: Deploy the dashboard script
-      ansible.builtin.template:
-        src: ../templates/rpi/status_dashboard.py.j2
-        dest: /opt/blackbox/status_dashboard.py
+    - name: Create dashboard directory
+      ansible.builtin.file:
+        path: /opt/blackbox/dashboard
+        state: directory
         mode: "0755"
+
+    - name: Deploy dashboard configuration
+      ansible.builtin.template:
+        src: ../templates/rpi/dashboard/config.py.j2
+        dest: /opt/blackbox/dashboard/config.py
+        mode: "0644"
+
+    - name: Deploy dashboard application files
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../templates/rpi/dashboard/{{ item }}"
+        dest: "/opt/blackbox/dashboard/{{ item }}"
+        mode: "0644"
+      loop:
+        - display.py
+        - input.py
+        - main.py
+        - monitor.py
+        - renderer.py
+        - hardware.py
+        - __init__.py
+
+    # Ensure kernel modules are loaded at boot
+    - name: Ensure fb_ili9486 module loads at boot
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: "fb_ili9486"
+        create: yes
+
+    - name: Ensure ads7846 module loads at boot
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: "ads7846"
+        create: yes
+
+    # Create udev rule to ensure proper device permissions
+    - name: Create udev rule for touch input
+      ansible.builtin.copy:
+        dest: /etc/udev/rules.d/99-touch-input.rules
+        content: |
+          # ADS7846 Touch Controller
+          SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="*ads7846*", MODE="0666"
+          SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="*touch*", MODE="0666"
+      notify: Reload udev
 
     - name: Create the systemd service for the dashboard
       ansible.builtin.copy:
@@ -26,18 +70,35 @@
         content: |
           [Unit]
           Description=Blackbox LCD Dashboard
-          After=network.target
+          After=network.target systemd-modules-load.service
+          # Wait for both display and touch drivers
+          After=sys-devices-platform-soc-fe204000.spi-spi0-spi0.0-input-input*.device
+          Wants=sys-devices-platform-soc-fe204000.spi-spi0-spi0.0-input-input*.device
 
           [Service]
-          ExecStart=/usr/bin/python3 /opt/blackbox/status_dashboard.py
+          Type=simple
+          ExecStartPre=/bin/sleep 3
+          ExecStart=/usr/bin/python3 /opt/blackbox/dashboard/main.py
+          WorkingDirectory=/opt/blackbox/dashboard
           Restart=always
+          RestartSec=10
           User=root
+          Environment=PYTHONPATH=/opt/blackbox/dashboard
 
           [Install]
           WantedBy=multi-user.target
+      notify: Reload systemd
 
     - name: Enable and start the dashboard
       ansible.builtin.systemd:
         name: dashboard
         enabled: yes
         state: restarted
+
+  handlers:
+    - name: Reload udev
+      ansible.builtin.command: udevadm control --reload-rules
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
