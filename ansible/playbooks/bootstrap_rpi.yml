@@ -76,3 +76,30 @@
         fstype: nfs
         opts: defaults,rw,_netdev
         state: mounted
+
+    - name: Create systemd service to ensure NFS mount at boot
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/mount-nas-appdata.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Mount NAS appdata directory
+          After=network-online.target
+          Wants=network-online.target
+          Before=docker.service
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStartPre=/bin/sleep 5
+          ExecStart=/bin/mount -a -t nfs
+          ExecStop=/bin/umount /mnt/appdata
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable NFS mount service
+      ansible.builtin.systemd:
+        name: mount-nas-appdata.service
+        enabled: yes
+        daemon_reload: yes

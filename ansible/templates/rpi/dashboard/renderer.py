@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
-from typing import List, Dict
-from PIL import Image, ImageDraw, ImageFont
+from typing import List, Dict, Generator
+from PIL import Image, ImageDraw, ImageFont, ImageChops
 import logging
 
 logger = logging.getLogger("Dashboard.Renderer")
@@ -17,13 +17,15 @@ class Theme:
 
 class Renderer:
     """Handles drawing the dashboard to a PIL Image."""
-    
+
     def __init__(self, config, monitor):
         self.config = config
         self.monitor = monitor
         self.fonts = self._load_fonts()
         self.current_page = 0
         self.total_pages = 3
+        self._last_image = None
+        self._transitioning = False
 
     def _load_fonts(self) -> Dict[str, ImageFont.FreeTypeFont]:
         try:
@@ -40,8 +42,27 @@ class Renderer:
             d = ImageFont.load_default()
             return {k: d for k in ['huge', 'xl', 'lg', 'md', 'sm', 'xs']}
 
-    def next_page(self):
+    def next_page(self) -> Generator[Image.Image, None, None]:
+        """Advances to next page with optional animation. Yields transition frames."""
+        if not self.config.ANIMATION_ENABLED or self.config.ANIMATION_TYPE == "none":
+            # No animation - just change page instantly
+            self.current_page = (self.current_page + 1) % self.total_pages
+            return
+
+        # Capture current state
+        old_page = self.current_page
+        old_image = self.render()
+
+        # Move to next page
         self.current_page = (self.current_page + 1) % self.total_pages
+        new_image = self.render()
+
+        # Generate animation frames
+        self._transitioning = True
+        try:
+            yield from self._animate_transition(old_image, new_image, old_page, self.current_page)
+        finally:
+            self._transitioning = False
 
     def render(self) -> Image.Image:
         image = Image.new("RGB", (self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT), Theme.BG)
@@ -228,6 +249,64 @@ class Renderer:
             color = Theme.ACCENT if i == self.current_page else Theme.CARD_BG
             x = 220 + (i * 15)
             draw.ellipse((x, 305, x+10, 315), fill=color)
+
+    def _animate_transition(self, old_img: Image.Image, new_img: Image.Image,
+                           old_page: int, new_page: int) -> Generator[Image.Image, None, None]:
+        """Generate transition frames between two pages."""
+        total_frames = int(self.config.ANIMATION_DURATION * self.config.ANIMATION_FPS)
+
+        if self.config.ANIMATION_TYPE == "slide":
+            # Determine slide direction (right for forward, left for backward)
+            direction = 1 if new_page > old_page or (old_page == self.total_pages - 1 and new_page == 0) else -1
+
+            for frame in range(total_frames):
+                progress = (frame + 1) / total_frames
+                # Ease-out cubic for smooth deceleration
+                eased = 1 - pow(1 - progress, 3)
+
+                offset = int(self.config.SCREEN_WIDTH * eased * direction)
+
+                # Create composite frame
+                composite = Image.new("RGB", (self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT), Theme.BG)
+
+                # Position old and new images
+                composite.paste(old_img, (offset, 0))
+                composite.paste(new_img, (offset - direction * self.config.SCREEN_WIDTH, 0))
+
+                yield composite
+
+        elif self.config.ANIMATION_TYPE == "fade":
+            for frame in range(total_frames):
+                progress = (frame + 1) / total_frames
+                # Ease-in-out for smooth fade
+                eased = progress * progress * (3 - 2 * progress)
+
+                # Blend images
+                composite = Image.blend(old_img, new_img, eased)
+                yield composite
+
+        elif self.config.ANIMATION_TYPE == "minimal":
+            # Simple "Cover" animation - New page slides over the old one
+            # Direction: 1 = Next (from Right), -1 = Prev (from Left)
+            direction = 1 if new_page > old_page or (old_page == self.total_pages - 1 and new_page == 0) else -1
+            
+            for frame in range(total_frames):
+                progress = (frame + 1) / total_frames
+                # Linear movement for snappiness (minimalist feel)
+                # progress goes 0 -> 1
+                
+                composite = old_img.copy()
+                
+                if direction == 1:
+                    # Next: Slide in from Right
+                    x = int(self.config.SCREEN_WIDTH * (1 - progress))
+                    composite.paste(new_img, (x, 0))
+                else:
+                    # Prev: Slide in from Left
+                    x = int(self.config.SCREEN_WIDTH * (progress - 1))
+                    composite.paste(new_img, (x, 0))
+                    
+                yield composite
 
     @staticmethod
     def _get_disk_usage(path):

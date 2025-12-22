@@ -69,7 +69,11 @@ class DashboardApp:
             self.screen_on = True
             logger.info("Screen woke up by touch")
         else:
-            self.renderer.next_page()
+            # Trigger animated transition
+            for frame in self.renderer.next_page():
+                if self.screen_on:  # Only draw if screen is still on
+                    self.display.draw(frame)
+                    time.sleep(1.0 / self.config.ANIMATION_FPS)
 
     def run(self):
         logger.info("Starting Dashboard...")

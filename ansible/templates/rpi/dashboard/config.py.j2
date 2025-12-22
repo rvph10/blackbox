@@ -11,7 +11,13 @@ class Config:
     # Schedule (24h format)
     SCHEDULE_OFF_HOUR: int = 0  # Midnight
     SCHEDULE_ON_HOUR: int = 9   # 9 AM
-    
+
+    # Animation
+    ANIMATION_ENABLED: bool = True
+    ANIMATION_TYPE: str = "minimal"  # "slide", "fade", "minimal", or "none"
+    ANIMATION_DURATION: float = 0.25  # seconds
+    ANIMATION_FPS: int = 20
+
     # GPIO
     PIN_SCREEN_POWER: int = 4      # Display power
     PIN_BACKLIGHT: int = 25         # Backlight/LCD power
