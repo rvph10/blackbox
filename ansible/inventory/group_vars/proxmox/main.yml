@@ -1,2 +1,3 @@
 ---
 ansible_host: "{{ vault_pve_ip }}"
+ansible_user: "{{ vault_pve_user }}"

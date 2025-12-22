@@ -2,13 +2,13 @@
 # Script to turn off UGREEN NAS LEDs
 # Deployed by Ansible - Do not edit manually
 
-# Décharger le module LED UGOS
+# Unload UGOS LED module
 /usr/sbin/rmmod leds_mcu_28a48 2>/dev/null
 
-# Attendre que le module soit bien déchargé
+# Wait for the module to be unloaded
 sleep 2
 
-# Éteindre toutes les LEDs
+# Turn off all LEDs
 /volume1/appdata/ugreen-leds/ugreen_leds_cli all -off
 
 exit 0

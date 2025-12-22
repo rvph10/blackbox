@@ -71,43 +71,45 @@ Chaque dossier racine est un **Dossier Partagé** UGOS avec des permissions NFS 
 
 #### Architecture Hybride VM/LXC
 
-| Instance    | Type | vCPU | RAM   | Stockage | Description                                  |
-| :---------- | :--- | :--- | :---- | :------- | :------------------------------------------- |
-| **VM 100**  | VM   | 2    | 2 GB  | 16 GB    | OPNsense (Routeur, Pare-feu, DHCP)           |
-| **VM 110**  | VM   | 6    | 14 GB | 100 GB   | Media Stack (Jellyfin, Immich, Overseerr)    |
-| **VM 120**  | VM   | 2    | 6 GB  | 50 GB    | Download Stack (Gluetun, \*Arr, qBittorrent) |
-| **LXC 200** | LXC  | 2    | 4 GB  | 20 GB    | Infrastructure (NPM, Authentik, Bitwarden)   |
-| **LXC 210** | LXC  | 2    | 3 GB  | 30 GB    | Productivité (Paperless-ngx, Stirling-PDF)   |
-| **Hôte**    | PVE  | -    | 3 GB  | -        | Réserve Proxmox & Cache                      |
+| Instance    | Type | vCPU | RAM   | Stockage | Description                                  | Statut |
+| :---------- | :--- | :--- | :---- | :------- | :------------------------------------------- | :----: |
+| **VM 100**  | VM   | 2    | 2 GB  | 16 GB    | OPNsense (Routeur, Pare-feu, DHCP)           | ✅ |
+| **VM 110**  | VM   | 6    | 14 GB | 100 GB   | Media Stack (Jellyfin, Immich, Overseerr)    | 📋 |
+| **VM 120**  | VM   | 2    | 6 GB  | 50 GB    | Download Stack (Gluetun, \*Arr, qBittorrent) | 📋 |
+| **LXC 200** | LXC  | 2    | 4 GB  | 20 GB    | Infrastructure (NPM, Authentik, Bitwarden)   | 📋 |
+| **LXC 210** | LXC  | 2    | 3 GB  | 30 GB    | Productivité (Paperless-ngx, Stirling-PDF)   | 📋 |
+| **Hôte**    | PVE  | -    | 3 GB  | -        | Réserve Proxmox & Cache                      | ✅ |
+
+**Légende** : ✅ Déployé | 📋 Planifié
 
 #### Services par Instance
 
-**VM 100 - OPNsense (Réseau)**
+**VM 100 - OPNsense (Réseau)** ✅ DÉPLOYÉ
 
 - Routeur principal & Pare-feu
 - DHCP (Plage `192.168.10.100` - `192.168.10.200`)
 - DNS Forwarder vers AdGuard (`192.168.10.2`)
 
-**VM 110 - Media Stack (Streaming & Photos)**
+**VM 110 - Media Stack (Streaming & Photos)** 📋 PLANIFIÉ
 
 - **Jellyfin** : Streaming avec transcodage GPU (iGPU AMD passthrough)
 - **Immich** : Gestion photos/vidéos avec ML (reconnaissance faciale)
 - **Overseerr** : Interface de demande de médias
 
-**VM 120 - Download Stack (Téléchargements)**
+**VM 120 - Download Stack (Téléchargements)** 📋 PLANIFIÉ
 
 - **Gluetun** : VPN Gateway avec Killswitch (isolation réseau)
 - **qBittorrent** : Client Torrent
 - **Radarr, Sonarr, Prowlarr** : Automatisation médias
 - **Bazarr** : Gestion sous-titres
 
-**LXC 200 - Infrastructure (Accès & Sécurité)**
+**LXC 200 - Infrastructure (Accès & Sécurité)** 📋 PLANIFIÉ
 
 - **Nginx Proxy Manager** : Reverse Proxy & SSL
 - **Authentik** : SSO (Single Sign-On)
 - **Bitwarden** : Gestionnaire de mots de passe
 
-**LXC 210 - Productivité (Documents)**
+**LXC 210 - Productivité (Documents)** 📋 PLANIFIÉ
 
 - **Paperless-ngx** : GED (Gestion Électronique de Documents)
 - **Stirling-PDF** : Outils de manipulation PDF
@@ -124,13 +126,15 @@ Chaque dossier racine est un **Dossier Partagé** UGOS avec des permissions NFS 
 |                | **Tailscale**      | ✅ | VPN Mesh (Accès de secours).                   |
 | **Domotique**  | **Home Assistant** | ✅ | Cerveau domotique (Z-Wave/Zigbee/WiFi).        |
 | **Monitoring** | **Homepage**       | ✅ | Dashboard principal (Affichage Écran Tactile). |
+|                | **Grafana**        | ✅ | Visualisation métriques et logs (Dashboard 1860). |
+|                | **Prometheus**     | ✅ | Collecte métriques (CPU, RAM, I/O).            |
+|                | **Loki**           | ✅ | Agrégation logs centralisée.                   |
+|                | **Promtail**       | ✅ | Agent collecte logs pour Loki.                 |
+|                | **Node Exporter**  | ✅ | Métriques système (tous hôtes).                |
 |                | **Uptime Kuma**    | 📋 | Monitoring disponibilité (planifié).           |
 |                | **Scrutiny (Web)** | 📋 | Dashboard santé disques (planifié).            |
 |                | **Dozzle**         | 📋 | Visualiseur logs Docker (planifié).            |
 |                | **Diun**           | 📋 | Notifications updates Docker (planifié).       |
-|                | **Grafana**        | 📋 | Visualisation métriques (planifié).            |
-|                | **Prometheus**     | 📋 | Collecte métriques (planifié).                 |
-|                | **Loki**           | 📋 | Agrégation logs (planifié).                    |
 
 **Légende** : ✅ Déployé | 📋 Planifié | 🔄 En cours
 

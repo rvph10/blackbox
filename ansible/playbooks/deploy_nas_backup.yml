@@ -26,36 +26,36 @@
         mode: "0755"
         content: |
           #!/bin/bash
-          # Fichiers de suivi
+          # Tracking files
           LOG_FILE="/volume1/appdata/rclone/backup.log"
           STATUS_FILE="/volume1/appdata/rclone/backup_status.json"
 
-          echo "$(date): Début de la sauvegarde" >> $LOG_FILE
+          echo "$(date): Backup started" >> $LOG_FILE
 
-          # Fonction pour mettre à jour le JSON
+          # Function to update JSON
           update_status() {
             local key=$1
             local label=$2
             local status=$3
             local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S")
             
-            # Création/Mise à jour simple du JSON (nécessite que le fichier existe)
-            # Pour un homelab, un cat propre suffit pour reconstruire le fichier
+            # Simple JSON creation/update (requires file to exist)
+            # For a homelab, a clean cat is enough to rebuild the file
           }
 
-          # 1. Sauvegarde Appdata vers B2
+          # 1. Appdata Backup to B2
           docker run --rm -v {{ rclone_config_dir }}:/config/rclone -v /volume1/appdata:/data:ro rclone/rclone sync /data b2_remote:{{ vault_b2_bucket }}/appdata --fast-list >> $LOG_FILE 2>&1
           RES_APP=$?
 
-          # 2. Sauvegarde Configs vers B2
+          # 2. Configs Backup to B2
           docker run --rm -v {{ rclone_config_dir }}:/config/rclone -v /volume1/backups-configs:/data:ro rclone/rclone sync /data b2_remote:{{ vault_b2_bucket }}/backups-configs --fast-list >> $LOG_FILE 2>&1
           RES_CONF=$?
 
-          # 3. Vérification des backups Proxmox (Vérifie si un fichier .vma a moins de 24h)
+          # 3. Proxmox backups verification (Checks if a .vma file is less than 24h old)
           LAST_PVE=$(find /volume1/proxmox-backups/dump -name "*.vma*" -mmin -1440 | wc -l)
           if [ $LAST_PVE -gt 0 ]; then RES_PVE=0; else RES_PVE=1; fi
 
-          # Génération du fichier JSON final
+          # Final JSON file generation
           cat <<EOF > $STATUS_FILE
           {
             "cloud_appdata": {"label": "Cloud Appdata", "status": $([ $RES_APP -eq 0 ] && echo "\"ok\"" || echo "\"error\""), "last_run": "$(date -u +"%Y-%m-%dT%H:%M:%S")"},
@@ -64,7 +64,7 @@
           }
           EOF
 
-          echo "$(date): Sauvegarde terminée" >> $LOG_FILE
+          echo "$(date): Backup finished" >> $LOG_FILE
 
     - name: Schedule daily backup at 03:00 AM
       ansible.builtin.cron:
