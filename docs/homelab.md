@@ -59,27 +59,81 @@ Chaque dossier racine est un **Dossier Partagé** UGOS avec des permissions NFS 
 
 ### 💻 Serveur A : GMKtec (Proxmox VE 9.1)
 
+- **OS Hôte :** Proxmox VE (Hyperviseur).
 - **IP de Management :** `192.168.10.10`
 - **Passerelle :** `192.168.10.1` (VM OPNsense)
+- **Hardware :** AMD Ryzen 5 7640HS (6C/12T @ 5.0 GHz), 32 GB DDR5, 1 TB NVMe
+- **Ressources :** Passthrough iGPU AMD Radeon 760M (Drivers `mesa-va-drivers`).
 
-| VM/CT      | Service          | Description                                                 |
-| :--------- | :--------------- | :---------------------------------------------------------- |
-| **VM 100** | **OPNsense**     | Routeur, Pare-feu, DHCP (Plage .100 - .200).                |
-| **VM 110** | **Docker Stack** | (🚧 Planifié) Jellyfin, Suite \*Arr, Immich, **Tailscale**. |
+#### Architecture Hybride VM/LXC
 
-### 🍓 Serveur B : Raspberry Pi 5 (Tour de Contrôle)
+| Instance    | Type | vCPU | RAM   | Stockage | Description                                  |
+| :---------- | :--- | :--- | :---- | :------- | :------------------------------------------- |
+| **VM 100**  | VM   | 2    | 2 GB  | 16 GB    | OPNsense (Routeur, Pare-feu, DHCP)           |
+| **VM 110**  | VM   | 6    | 14 GB | 100 GB   | Media Stack (Jellyfin, Immich, Overseerr)    |
+| **VM 120**  | VM   | 2    | 6 GB  | 50 GB    | Download Stack (Gluetun, \*Arr, qBittorrent) |
+| **LXC 200** | LXC  | 2    | 4 GB  | 20 GB    | Infrastructure (NPM, Authentik, Bitwarden)   |
+| **LXC 210** | LXC  | 2    | 3 GB  | 30 GB    | Productivité (Paperless-ngx, Stirling-PDF)   |
+| **Hôte**    | PVE  | -    | 3 GB  | -        | Réserve Proxmox & Cache                      |
 
-- **IP Statique :** `192.168.10.2` (Fixée via Ansible).
-- **Persistance :** Dossiers montés en NFS via `/mnt/appdata`.
-- **OS :** Raspberry Pi OS Lite 64-bit.
+#### Services par Instance
 
-| Statut | Service            | Description                        | Configuration                                               |
-| :----- | :----------------- | :--------------------------------- | :---------------------------------------------------------- |
-| ✅     | **AdGuard Home**   | DNS Primaire du réseau.            | Upstream DoT/DoH + Réécritures locales.                     |
-| ✅     | **Tailscale**      | Subnet Router (`192.168.10.0/24`). | AuthKey via Vault + MagicDNS activé.                        |
-| ✅     | **Home Assistant** | Conteneur Docker.                  | Volume persistant : `/opt/blackbox/homeassistant`.          |
-| ⚠️     | **Homepage**       | Dashboard.                         | Installé mais widgets non configurés (API Keys manquantes). |
-| ✅     | **Mode Kiosk**     | Écran Tactile 3.5".                | Dashboard persistant sur le Pi.                             |
+**VM 100 - OPNsense (Réseau)**
+
+- Routeur principal & Pare-feu
+- DHCP (Plage `192.168.10.100` - `192.168.10.200`)
+- DNS Forwarder vers AdGuard (`192.168.10.2`)
+
+**VM 110 - Media Stack (Streaming & Photos)**
+
+- **Jellyfin** : Streaming avec transcodage GPU (iGPU AMD passthrough)
+- **Immich** : Gestion photos/vidéos avec ML (reconnaissance faciale)
+- **Overseerr** : Interface de demande de médias
+
+**VM 120 - Download Stack (Téléchargements)**
+
+- **Gluetun** : VPN Gateway avec Killswitch (isolation réseau)
+- **qBittorrent** : Client Torrent
+- **Radarr, Sonarr, Prowlarr** : Automatisation médias
+- **Bazarr** : Gestion sous-titres
+
+**LXC 200 - Infrastructure (Accès & Sécurité)**
+
+- **Nginx Proxy Manager** : Reverse Proxy & SSL
+- **Authentik** : SSO (Single Sign-On)
+- **Bitwarden** : Gestionnaire de mots de passe
+
+**LXC 210 - Productivité (Documents)**
+
+- **Paperless-ngx** : GED (Gestion Électronique de Documents)
+- **Stirling-PDF** : Outils de manipulation PDF
+
+### 🍓 Serveur B : Raspberry Pi 5 (La "Tour de Contrôle")
+
+- **OS :** Docker sur Linux (Boot sur NVMe).
+- **IP Statique :** `192.168.10.2`.
+- **Rôle :** Services critiques (Infrastructure) et Dashboard.
+
+| Catégorie      | Services           | Description                                    |
+| :------------- | :----------------- | :--------------------------------------------- |
+| **Réseau**     | **AdGuard Home**   | DNS Master, Bloqueur de pubs.                  |
+|                | **Tailscale**      | VPN Mesh (Accès de secours).                   |
+| **Domotique**  | **Home Assistant** | Cerveau domotique (Z-Wave/Zigbee/WiFi).        |
+| **Monitoring** | **Homepage**       | Dashboard principal (Affichage Écran Tactile). |
+|                | **Uptime Kuma**    | Monitoring disponibilité.                      |
+|                | **Scrutiny (Web)** | Dashboard centralisé de santé des disques.     |
+|                | **Dozzle**         | Visualiseur logs Docker.                       |
+|                | **Diun**           | Notifications mises à jour Docker.             |
+
+### 💾 Stockage : Ugreen NAS
+
+- **Rôle :** Stockage brut & Backup.
+
+| Catégorie      | Service / Rôle              | Description                                                             |
+| :------------- | :-------------------------- | :---------------------------------------------------------------------- |
+| **Partage**    | **SMB / NFS**               | Partages pour Proxmox (ISOs/Backups) et PC.                             |
+| **Monitoring** | **Scrutiny (Collector)**    | Agent Docker local qui lit les données S.M.A.R.T et les envoie au Pi 5. |
+| **Sauvegarde** | **Tâche Rsync/Replication** | Backup local vers USB.                                                  |
 
 ---
 
@@ -111,18 +165,7 @@ Chaque dossier racine est un **Dossier Partagé** UGOS avec des permissions NFS 
 
 ---
 
-## 7. Procédure de Redémarrage (Ordre de priorité)
-
-Pour assurer la cohérence des services lors d'une reconstruction ou d'une coupure :
-
-1. **Démarrer le GMKtec :** Attendre le boot de Proxmox et le lancement auto de la VM OPNsense.
-2. **Vérifier le WAN :** S'assurer que le tunnel PPPoE est établi sur OPNsense.
-3. **Démarrer le Raspberry Pi :** Une fois le réseau actif, le Pi peut démarrer ses services DNS et monitoring.
-4. **Démarrer les services Docker :** Montage des partages NAS et lancement des conteneurs.
-
----
-
-## 6. Procédures de Maintenance
+## 7. Procédure de Redémarrage & Maintenance
 
 ### Ordre de démarrage (Cold Start)
 

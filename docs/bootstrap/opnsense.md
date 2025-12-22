@@ -5,9 +5,12 @@ Ce document détaille la restauration du routeur virtuel OPNsense.
 ## 1. Création de la VM (Proxmox)
 
 - **ID :** 100 | **Name :** OPNsense-router.
-- **CPU :** Type `Host`.
+- **CPU :** 2 vCPU, Type `Host`.
+- **RAM :** 2048 MB (2 GB).
+- **Stockage :** 16 GB.
 - **BIOS :** `OVMF (UEFI)`.
 - **Désactivation Secure Boot :** Appuyer sur `ESC` au boot de la VM > Device Manager > Secure Boot Configuration > Décocher `Attempt Secure Boot`.
+- **Autostart :** Activer avec ordre de démarrage prioritaire (voir section 6).
 
 ## 2. Interfaces Virtuelles
 
@@ -49,3 +52,20 @@ Via l'interface Web (`https://192.168.10.1`) :
 2. **Username :** `votre_id@PROXIMUS`.
 3. **Password :** `votre_mot_de_passe_connexion`.
 4. **Physique :** Le câble doit être sur le **Port 1** de la Box Proximus.
+
+## 6. Configuration Autostart (Proxmox)
+
+Pour garantir le démarrage automatique avec priorité maximale :
+
+```bash
+# Via CLI Proxmox
+qm set 100 --onboot 1 --startup order=100,up=60
+
+# Via Web UI Proxmox
+# VM 100 > Options > Start at boot > Edit
+# - Start at boot: Oui
+# - Startup order: 100
+# - Startup delay: 60 secondes
+```
+
+**Justification :** OPNsense doit démarrer en premier pour fournir DHCP/DNS aux autres VMs/LXC.
