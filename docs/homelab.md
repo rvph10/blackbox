@@ -1,5 +1,9 @@
 # 🏗️ Document de Design Technique : Homelab "Nuke & Pave"
 
+> **📊 État des Services** : Pour connaître précisément ce qui est déployé vs planifié, consultez [`docs/services-status.md`](services-status.md) (source de vérité).
+
+> **🔄 Plan de Migration** : Architecture future et redistribution des services détaillées dans [`docs/architecture/migration-plan.md`](architecture/migration-plan.md).
+
 ## 1. Philosophie d'Architecture
 
 - **Isolation Réseau :** Création d'un réseau Homelab dédié (Subnet `192.168.10.0/24`) isolé de la Box Proximus via une VM OPNsense en mode PPPoE Passthrough.
@@ -114,26 +118,34 @@ Chaque dossier racine est un **Dossier Partagé** UGOS avec des permissions NFS 
 - **IP Statique :** `192.168.10.2`.
 - **Rôle :** Services critiques (Infrastructure) et Dashboard.
 
-| Catégorie      | Services           | Description                                    |
-| :------------- | :----------------- | :--------------------------------------------- |
-| **Réseau**     | **AdGuard Home**   | DNS Master, Bloqueur de pubs.                  |
-|                | **Tailscale**      | VPN Mesh (Accès de secours).                   |
-| **Domotique**  | **Home Assistant** | Cerveau domotique (Z-Wave/Zigbee/WiFi).        |
-| **Monitoring** | **Homepage**       | Dashboard principal (Affichage Écran Tactile). |
-|                | **Uptime Kuma**    | Monitoring disponibilité.                      |
-|                | **Scrutiny (Web)** | Dashboard centralisé de santé des disques.     |
-|                | **Dozzle**         | Visualiseur logs Docker.                       |
-|                | **Diun**           | Notifications mises à jour Docker.             |
+| Catégorie      | Services           | Statut | Description                                    |
+| :------------- | :----------------- | :----: | :--------------------------------------------- |
+| **Réseau**     | **AdGuard Home**   | ✅ | DNS Master, Bloqueur de pubs.                  |
+|                | **Tailscale**      | ✅ | VPN Mesh (Accès de secours).                   |
+| **Domotique**  | **Home Assistant** | ✅ | Cerveau domotique (Z-Wave/Zigbee/WiFi).        |
+| **Monitoring** | **Homepage**       | ✅ | Dashboard principal (Affichage Écran Tactile). |
+|                | **Uptime Kuma**    | 📋 | Monitoring disponibilité (planifié).           |
+|                | **Scrutiny (Web)** | 📋 | Dashboard santé disques (planifié).            |
+|                | **Dozzle**         | 📋 | Visualiseur logs Docker (planifié).            |
+|                | **Diun**           | 📋 | Notifications updates Docker (planifié).       |
+|                | **Grafana**        | 📋 | Visualisation métriques (planifié).            |
+|                | **Prometheus**     | 📋 | Collecte métriques (planifié).                 |
+|                | **Loki**           | 📋 | Agrégation logs (planifié).                    |
+
+**Légende** : ✅ Déployé | 📋 Planifié | 🔄 En cours
 
 ### 💾 Stockage : Ugreen NAS
 
 - **Rôle :** Stockage brut & Backup.
 
-| Catégorie      | Service / Rôle              | Description                                                             |
-| :------------- | :-------------------------- | :---------------------------------------------------------------------- |
-| **Partage**    | **SMB / NFS**               | Partages pour Proxmox (ISOs/Backups) et PC.                             |
-| **Monitoring** | **Scrutiny (Collector)**    | Agent Docker local qui lit les données S.M.A.R.T et les envoie au Pi 5. |
-| **Sauvegarde** | **Tâche Rsync/Replication** | Backup local vers USB.                                                  |
+| Catégorie      | Service / Rôle              | Statut | Description                                                             |
+| :------------- | :-------------------------- | :----: | :---------------------------------------------------------------------- |
+| **Partage**    | **SMB / NFS**               | ✅ | Partages pour Proxmox (ISOs/Backups) et PC.                             |
+| **Sauvegarde** | **Rclone → Backblaze B2**   | ✅ | Backup off-site quotidien (03:00 AM).                                   |
+| **Automation** | **LED Control**             | ✅ | Extinction/allumage LEDs programmé.                                     |
+| **Monitoring** | **Scrutiny (Collector)**    | 📋 | Agent S.M.A.R.T (planifié).                                             |
+
+**Légende** : ✅ Déployé | 📋 Planifié
 
 ---
 
