@@ -39,6 +39,7 @@ Ce document détaille la restauration du routeur virtuel OPNsense.
    - **Enable :** ☑️ (Coché).
    - **Range :** `192.168.10.100` à `192.168.10.200`.
    - **DNS servers :** `192.168.10.2` (Force le trafic vers la Tour de Contrôle / AdGuard).
+   - **Secondary DNS servers :** `1.1.1.1`.
    - **Gateway :** `192.168.10.1` (Le routeur OPNsense).
 3. **Validation :**
    - Sauvegarder et appliquer.
