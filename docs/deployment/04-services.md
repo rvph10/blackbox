@@ -13,23 +13,23 @@ All service data lives on the NAS via NFS mounts, making services disposable and
 
 ## Service Architecture
 
-| Instance | Type | Purpose | Status |
-|----------|------|---------|--------|
-| VM 100 | VM | OPNsense router | ✅ Deployed |
-| VM 110 | VM | Media stack (Jellyfin, Immich) | 📋 Planned |
-| VM 120 | VM | Download stack (*arr, qBittorrent) | 📋 Planned |
-| LXC 200 | LXC | Infrastructure (NPM, Authentik) | 📋 Planned |
-| LXC 210 | LXC | Productivity (Paperless, Stirling-PDF) | 📋 Planned |
+| Instance | Type | Purpose                                | Status      |
+| -------- | ---- | -------------------------------------- | ----------- |
+| VM 100   | VM   | OPNsense router                        | ✅ Deployed |
+| VM 110   | VM   | Media stack (Jellyfin, Immich)         | 📋 Planned  |
+| VM 120   | VM   | Download stack (\*arr, qBittorrent)    | 📋 Planned  |
+| LXC 200  | LXC  | Infrastructure (NPM)                   | ✅ Deployed |
+| LXC 210  | LXC  | Productivity (Paperless, Stirling-PDF) | 📋 Planned  |
 
 ## Resource Allocation
 
 Current allocation across all VMs/LXCs:
 
-| Resource | Allocated | Total | Reserved for Host |
-|----------|-----------|-------|-------------------|
-| CPU | 14 vCPU | 12 cores (24 threads) | N/A (overcommit) |
-| RAM | 29 GB | 32 GB | 3 GB |
-| Storage | 216 GB | 1 TB NVMe | ~784 GB free |
+| Resource | Allocated | Total                 | Reserved for Host |
+| -------- | --------- | --------------------- | ----------------- |
+| CPU      | 14 vCPU   | 12 cores (24 threads) | N/A (overcommit)  |
+| RAM      | 29 GB     | 32 GB                 | 3 GB              |
+| Storage  | 216 GB    | 1 TB NVMe             | ~784 GB free      |
 
 ## General VM/LXC Creation Process
 
@@ -106,6 +106,7 @@ For both VMs and LXCs:
    apt install -y curl wget git vim htop
    ```
 4. **Configure NFS mount** (if needed):
+
    ```bash
    apt install -y nfs-common
    mkdir -p /mnt/appdata /mnt/media /mnt/photos
@@ -116,6 +117,7 @@ For both VMs and LXCs:
 
    mount -a
    ```
+
 5. **Install Docker** (for Docker-based stacks):
    ```bash
    curl -fsSL https://get.docker.com | sh
@@ -127,6 +129,7 @@ For both VMs and LXCs:
 **Purpose:** Streaming and photo management with GPU transcoding
 
 **Resources:**
+
 - vCPU: 6 cores
 - RAM: 14 GB
 - Storage: 100 GB
@@ -159,7 +162,7 @@ For both VMs and LXCs:
 Create `/opt/media-stack/docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   jellyfin:
@@ -173,7 +176,7 @@ services:
       - /mnt/appdata/jellyfin/cache:/cache
       - /mnt/media:/media:ro
     devices:
-      - /dev/dri:/dev/dri  # GPU for transcoding
+      - /dev/dri:/dev/dri # GPU for transcoding
     environment:
       - JELLYFIN_PublishedServerUrl=jellyfin.blackbox.homes
 
@@ -208,6 +211,7 @@ services:
 ```
 
 Deploy:
+
 ```bash
 cd /opt/media-stack
 docker compose up -d
@@ -224,6 +228,7 @@ docker compose up -d
 **Purpose:** Automated media downloads with VPN isolation
 
 **Resources:**
+
 - vCPU: 2 cores
 - RAM: 6 GB
 - Storage: 50 GB
@@ -251,7 +256,7 @@ docker compose up -d
 Create `/opt/download-stack/docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   gluetun:
@@ -263,10 +268,10 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     ports:
-      - "8080:8080"  # qBittorrent
-      - "7878:7878"  # Radarr
-      - "8989:8989"  # Sonarr
-      - "9696:9696"  # Prowlarr
+      - "8080:8080" # qBittorrent
+      - "7878:7878" # Radarr
+      - "8989:8989" # Sonarr
+      - "9696:9696" # Prowlarr
     environment:
       - VPN_SERVICE_PROVIDER=your_vpn
       - VPN_TYPE=openvpn
@@ -317,6 +322,7 @@ services:
 ```
 
 Deploy:
+
 ```bash
 cd /opt/download-stack
 docker compose up -d
@@ -343,68 +349,42 @@ docker stop gluetun
 **Purpose:** Reverse proxy, authentication, password management
 
 **Resources:**
+
 - vCPU: 2 cores
 - RAM: 4 GB
 - Storage: 20 GB
 
 ### Services
 
-- **Nginx Proxy Manager:** Reverse proxy with SSL
-- **Authentik:** SSO/authentication provider
-- **Vaultwarden:** Bitwarden-compatible password manager
+- **Nginx Proxy Manager:** Reverse proxy with SSL (Deployed)
+- **Authentik:** SSO/authentication provider (Planned)
+- **Vaultwarden:** Bitwarden-compatible password manager (Planned)
 
 ### Creation Steps
 
 1. Create LXC container (Ubuntu 22.04)
-2. Configure NFS mount for `/mnt/appdata`
-3. Install Docker
-4. Deploy services via Docker Compose
+2. Install Docker
+3. Deploy services via Docker Compose (see `ansible/playbooks/deploy_npm.yml`)
 
 ### Docker Compose Example
 
-```yaml
-version: '3.8'
+Current deployment uses local storage for simplicity.
 
+```yaml
 services:
-  nginx-proxy-manager:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: npm
+  app:
+    image: "jc21/nginx-proxy-manager:latest"
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
       - "81:81"
+      - "443:443"
     volumes:
-      - /mnt/appdata/npm/data:/data
-      - /mnt/appdata/npm/letsencrypt:/etc/letsencrypt
-
-  authentik-server:
-    image: ghcr.io/goauthentik/server:latest
-    container_name: authentik_server
-    restart: unless-stopped
-    command: server
-    ports:
-      - "9000:9000"
-      - "9443:9443"
-    volumes:
-      - /mnt/appdata/authentik/media:/media
-      - /mnt/appdata/authentik/templates:/templates
-    depends_on:
-      - authentik-postgres
-      - authentik-redis
-
-  vaultwarden:
-    image: vaultwarden/server:latest
-    container_name: vaultwarden
-    restart: unless-stopped
-    ports:
-      - "8001:80"
-    volumes:
-      - /mnt/appdata/vaultwarden:/data
-    environment:
-      - WEBSOCKET_ENABLED=true
-      - SIGNUPS_ALLOWED=false
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
 ```
+
+Note: Future services (Authentik, Vaultwarden) will be added to this stack.
 
 ### Configure Nginx Proxy Manager
 
@@ -419,6 +399,7 @@ services:
 **Purpose:** Document management and PDF tools
 
 **Resources:**
+
 - vCPU: 2 cores
 - RAM: 3 GB
 - Storage: 30 GB
@@ -431,7 +412,7 @@ services:
 ### Docker Compose Example
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   paperless-ngx:
@@ -497,13 +478,13 @@ Create `playbooks/deploy_docker_stack.yml`:
       file:
         path: "{{ stack_path }}"
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Copy docker-compose.yml
       template:
         src: "templates/{{ stack_name }}/docker-compose.yml.j2"
         dest: "{{ stack_path }}/docker-compose.yml"
-        mode: '0644'
+        mode: "0644"
 
     - name: Start stack
       community.docker.docker_compose_v2:
@@ -512,6 +493,7 @@ Create `playbooks/deploy_docker_stack.yml`:
 ```
 
 Usage:
+
 ```bash
 ansible-playbook playbooks/deploy_docker_stack.yml \
   -e "target_host=media_stack" \
@@ -542,20 +524,21 @@ Edit Prometheus config on Raspberry Pi:
 
 ```yaml
 scrape_configs:
-  - job_name: 'media-stack'
+  - job_name: "media-stack"
     static_configs:
-      - targets: ['192.168.10.100:9100']
+      - targets: ["192.168.10.100:9100"]
 
-  - job_name: 'download-stack'
+  - job_name: "download-stack"
     static_configs:
-      - targets: ['192.168.10.101:9100']
+      - targets: ["192.168.10.101:9100"]
 
-  - job_name: 'infrastructure'
+  - job_name: "infrastructure"
     static_configs:
-      - targets: ['192.168.10.200:9100']
+      - targets: ["192.168.10.200:9100"]
 ```
 
 Restart Prometheus:
+
 ```bash
 docker restart prometheus
 ```
@@ -570,6 +553,7 @@ All service data is on the NAS and backed up automatically:
 4. **Proxmox VZDump** backs up entire VMs to NAS
 
 To backup a VM manually:
+
 ```bash
 ssh root@192.168.10.10
 vzdump 110 --storage nas-backups --mode snapshot --compress zstd
@@ -580,11 +564,13 @@ vzdump 110 --storage nas-backups --mode snapshot --compress zstd
 After deploying services, configure DNS and access:
 
 1. **Add DNS entries in AdGuard:**
+
    - jellyfin.blackbox.homes → 192.168.10.100
    - radarr.blackbox.homes → 192.168.10.101
    - npm.blackbox.homes → 192.168.10.200
 
 2. **Configure Nginx Proxy Manager** for SSL:
+
    - Create proxy hosts for each service
    - Use Let's Encrypt DNS challenge for certs
    - Access via https://service.blackbox.homes

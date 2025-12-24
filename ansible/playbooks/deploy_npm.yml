@@ -1,0 +1,46 @@
+---
+- name: Deploy Nginx Proxy Manager on LXC 200
+  hosts: lxc200
+  become: yes
+  vars:
+    npm_dir: /opt/npm
+
+  tasks:
+    - name: Ensure Docker is installed
+      ansible.builtin.shell: |
+        curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Ensure Docker Compose Plugin is installed
+      ansible.builtin.apt:
+        name: docker-compose-plugin
+        state: present
+        update_cache: yes
+
+    - name: Create NPM directory
+      ansible.builtin.file:
+        path: "{{ npm_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create data directories
+      ansible.builtin.file:
+        path: "{{ npm_dir }}/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - data
+        - letsencrypt
+
+    - name: Deploy docker-compose.yml
+      ansible.builtin.template:
+        src: ../templates/npm/docker-compose.yml.j2
+        dest: "{{ npm_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Run NPM stack
+      community.docker.docker_compose_v2:
+        project_src: "{{ npm_dir }}"
+        state: present
+        pull: always
