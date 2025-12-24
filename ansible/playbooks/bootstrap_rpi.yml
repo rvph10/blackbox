@@ -103,3 +103,26 @@
         name: mount-nas-appdata.service
         enabled: yes
         daemon_reload: yes
+
+    # --- Section 6: Docker NFS Dependency ---
+    - name: Create systemd override dir for Docker
+      ansible.builtin.file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+        mode: "0755"
+
+    - name: Configure Docker to wait for NFS mount
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/docker.service.d/wait-for-nfs.conf
+        content: |
+          [Unit]
+          RequiresMountsFor=/mnt/appdata
+        mode: "0644"
+      register: docker_override
+
+    - name: Reload systemd and restart Docker if needed
+      ansible.builtin.systemd:
+        daemon_reload: yes
+        name: docker
+        state: restarted
+      when: docker_override.changed
