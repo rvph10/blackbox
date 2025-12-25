@@ -1,3 +1,11 @@
 ---
-# LXC 200 Configuration
+ansible_host: "{{ vault_lxc200_ip }}"
 ansible_user: "{{ vault_lxc200_user }}"
+
+# Authentik Email Configuration (Resend)
+authentik_email_host: "smtp.resend.com"
+authentik_email_port: 587
+authentik_email_username: "resend"
+authentik_email_use_tls: true
+authentik_email_use_ssl: false
+authentik_email_from: "hello@blackbox.homes"
