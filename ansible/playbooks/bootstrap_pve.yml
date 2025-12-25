@@ -1,7 +1,7 @@
 ---
 - name: Post-Install Proxmox Configuration (GMKtec M6)
   hosts: proxmox
-  become: yes
+  become: true
   vars:
     # Debian Trixie for Proxmox 9.x
     pve_distribution: "trixie"
@@ -17,7 +17,7 @@
         group: root
 
     - name: Configure authorized SSH key for root
-      ansible.builtin.authorized_key:
+      ansible.posix.authorized_key:
         user: root
         key: "{{ vault_ssh_public_key }}"
         state: present
@@ -29,22 +29,14 @@
         line: "{{ item.line }}"
         state: present
       loop:
-        - {
-            regexp: "^#?PasswordAuthentication",
-            line: "PasswordAuthentication no",
-          }
-        - {
-            regexp: "^#?PermitRootLogin",
-            line: "PermitRootLogin prohibit-password",
-          }
-        - {
-            regexp: "^#?ChallengeResponseAuthentication",
-            line: "ChallengeResponseAuthentication no",
-          }
-        - {
-            regexp: "^#?PubkeyAuthentication",
-            line: "PubkeyAuthentication yes",
-          }
+        - regexp: "^#?PasswordAuthentication"
+          line: "PasswordAuthentication no"
+        - regexp: "^#?PermitRootLogin"
+          line: "PermitRootLogin prohibit-password"
+        - regexp: "^#?ChallengeResponseAuthentication"
+          line: "ChallengeResponseAuthentication no"
+        - regexp: "^#?PubkeyAuthentication"
+          line: "PubkeyAuthentication yes"
       notify: Restart SSH
 
     # --- Section 2: Local DNS Configuration ---
@@ -67,7 +59,7 @@
         repo: "deb http://download.proxmox.com/debian/pve {{ pve_distribution }} pve-no-subscription"
         state: present
         filename: pve-no-subscription
-        update_cache: yes
+        update_cache: true
 
     # --- Section 3.B: IOMMU Activation ---
     - name: Configure GRUB for AMD IOMMU
@@ -80,18 +72,19 @@
     # --- Section 4: System Update ---
     - name: Update APT cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Update all packages
       ansible.builtin.apt:
         upgrade: dist
-        autoremove: yes
-        autoclean: yes
+        autoremove: true
+        autoclean: true
 
   handlers:
     - name: Update GRUB
       ansible.builtin.command: update-grub
+      changed_when: true
 
     - name: Restart SSH
       ansible.builtin.service:

@@ -1,7 +1,7 @@
 ---
 - name: Configure UGREEN NAS LED Control
   hosts: nas
-  become: yes
+  become: true
   vars:
     ugreen_repo_url: "https://github.com/miskcoo/ugreen_leds_controller.git"
     install_dir: "/volume1/appdata/ugreen-leds"
@@ -16,7 +16,7 @@
           - build-essential
           - i2c-tools
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Load i2c-dev module
       community.general.modprobe:
@@ -27,7 +27,8 @@
       ansible.builtin.lineinfile:
         path: /etc/modules-load.d/i2c.conf
         line: "i2c-dev"
-        create: yes
+        create: true
+        mode: "0644"
 
     # --- 2. Clone and build ugreen_leds_controller ---
     - name: Create installation directory
@@ -41,7 +42,7 @@
         repo: "{{ ugreen_repo_url }}"
         dest: "{{ install_dir }}/source"
         version: master
-        force: yes
+        force: true
 
     - name: Build ugreen_leds_cli
       ansible.builtin.command:
@@ -54,7 +55,7 @@
         src: "{{ install_dir }}/source/cli/ugreen_leds_cli"
         dest: "{{ install_dir }}/ugreen_leds_cli"
         mode: "0755"
-        remote_src: yes
+        remote_src: true
 
     # --- 3. Deploy control scripts ---
     - name: Create scripts directory
@@ -65,13 +66,13 @@
 
     - name: Deploy LED-OFF script
       ansible.builtin.template:
-        src: ../templates/nas/leds-off.sh.j2
+        src: "{{ playbook_dir }}/../templates/nas/leds-off.sh.j2"  # noqa: no-relative-paths
         dest: "{{ scripts_dir }}/leds-off.sh"
         mode: "0755"
 
     - name: Deploy LED-ON script
       ansible.builtin.template:
-        src: ../templates/nas/leds-on.sh.j2
+        src: "{{ playbook_dir }}/../templates/nas/leds-on.sh.j2"  # noqa: no-relative-paths
         dest: "{{ scripts_dir }}/leds-on.sh"
         mode: "0755"
 
@@ -97,7 +98,8 @@
       ansible.builtin.lineinfile:
         path: /etc/modules-load.d/ugreen-leds.conf
         line: "leds_mcu_28a48"
-        create: yes
+        create: true
+        mode: "0644"
 
     # --- 6. Create systemd service for boot-time LED restoration ---
     - name: Create LED restore service
@@ -120,8 +122,8 @@
     - name: Enable LED restore service
       ansible.builtin.systemd:
         name: ugreen-leds-restore
-        enabled: yes
-        daemon_reload: yes
+        enabled: true
+        daemon_reload: true
 
     # --- 7. Apply initial state based on current time ---
     - name: Determine if LEDs should be on based on current hour
@@ -132,11 +134,13 @@
       ansible.builtin.command:
         cmd: "{{ scripts_dir }}/leds-off.sh"
       when: not leds_should_be_on
+      changed_when: true
 
     - name: Turn on LEDs if within daytime hours (09:00-23:00)
       ansible.builtin.command:
         cmd: "{{ scripts_dir }}/leds-on.sh"
       when: leds_should_be_on
+      changed_when: true
 
     - name: Show final LED state
       ansible.builtin.debug:

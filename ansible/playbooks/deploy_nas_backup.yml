@@ -1,7 +1,7 @@
 ---
 - name: Deploy Rclone Backup to Backblaze B2
   hosts: nas
-  become: yes
+  become: true
   vars:
     rclone_config_dir: "/volume1/appdata/rclone/config"
     backup_script_path: "/volume1/appdata/rclone/backup_to_b2.sh"
@@ -16,7 +16,7 @@
 
     - name: Deploy rclone.conf template
       ansible.builtin.template:
-        src: ../templates/nas/rclone.conf.j2
+        src: "{{ playbook_dir }}/../templates/nas/rclone.conf.j2"  # noqa: no-relative-paths
         dest: "{{ rclone_config_dir }}/rclone.conf"
         mode: "0600"
 
@@ -38,17 +38,25 @@
             local label=$2
             local status=$3
             local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S")
-            
+
             # Simple JSON creation/update (requires file to exist)
             # For a homelab, a clean cat is enough to rebuild the file
           }
 
           # 1. Appdata Backup to B2
-          docker run --rm -v {{ rclone_config_dir }}:/config/rclone -v /volume1/appdata:/data:ro rclone/rclone sync /data b2_remote:{{ vault_b2_bucket }}/appdata --fast-list >> $LOG_FILE 2>&1
+          docker run --rm \
+            -v {{ rclone_config_dir }}:/config/rclone \
+            -v /volume1/appdata:/data:ro \
+            rclone/rclone sync /data b2_remote:{{ vault_b2_bucket }}/appdata --fast-list \
+            >> $LOG_FILE 2>&1
           RES_APP=$?
 
           # 2. Configs Backup to B2
-          docker run --rm -v {{ rclone_config_dir }}:/config/rclone -v /volume1/backups-configs:/data:ro rclone/rclone sync /data b2_remote:{{ vault_b2_bucket }}/backups-configs --fast-list >> $LOG_FILE 2>&1
+          docker run --rm \
+            -v {{ rclone_config_dir }}:/config/rclone \
+            -v /volume1/backups-configs:/data:ro \
+            rclone/rclone sync /data b2_remote:{{ vault_b2_bucket }}/backups-configs --fast-list \
+            >> $LOG_FILE 2>&1
           RES_CONF=$?
 
           # 3. Proxmox backups verification (Checks if a .vma file is less than 24h old)
@@ -58,9 +66,23 @@
           # Final JSON file generation
           cat <<EOF > $STATUS_FILE
           {
-            "cloud_appdata": {"label": "Cloud Appdata", "status": $([ $RES_APP -eq 0 ] && echo "\"ok\"" || echo "\"error\""), "last_run": "$(date -u +"%Y-%m-%dT%H:%M:%S")"},
-            "cloud_configs": {"label": "Cloud Configs", "status": $([ $RES_CONF -eq 0 ] && echo "\"ok\"" || echo "\"error\""), "last_run": "$(date -u +"%Y-%m-%dT%H:%M:%S")"},
-            "pve_backups": {"label": "PVE Backups", "status": $([ $RES_PVE -eq 0 ] && echo "\"ok\"" || echo "\"error\""), "last_run": "$(date -u -r $(ls -t /volume1/proxmox-backups/dump/*.vma* | head -1) +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || echo "N/A")"}
+            "cloud_appdata": {
+              "label": "Cloud Appdata",
+              "status": $([ $RES_APP -eq 0 ] && echo "\"ok\"" || echo "\"error\""),
+              "last_run": "$(date -u +"%Y-%m-%dT%H:%M:%S")"
+            },
+            "cloud_configs": {
+              "label": "Cloud Configs",
+              "status": $([ $RES_CONF -eq 0 ] && echo "\"ok\"" || echo "\"error\""),
+              "last_run": "$(date -u +"%Y-%m-%dT%H:%M:%S")"
+            },
+            "pve_backups": {
+              "label": "PVE Backups",
+              "status": $([ $RES_PVE -eq 0 ] && echo "\"ok\"" || echo "\"error\""),
+              "last_run": "$(date -u -r \
+                $(ls -t /volume1/proxmox-backups/dump/*.vma* | head -1) \
+                +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || echo "N/A")"
+            }
           }
           EOF
 

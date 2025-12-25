@@ -3,7 +3,7 @@
   hosts:
     - raspberry
     - proxmox
-  become: yes
+  become: true
   vars:
     # The subnet that the Pi will expose to the Tailscale network
     lan_subnet: "192.168.10.0/24"
@@ -26,32 +26,32 @@
       ansible.builtin.apt:
         name: tailscale
         state: present
-        update_cache: yes
+        update_cache: true
 
     # --- 2. System configuration (For Subnet Router) ---
     - name: Enable IP forwarding (IPv4)
       ansible.posix.sysctl:
         name: net.ipv4.ip_forward
         value: "1"
-        sysctl_set: yes
+        sysctl_set: true
         state: present
-        reload: yes
+        reload: true
 
     - name: Enable IP forwarding (IPv6)
       ansible.posix.sysctl:
         name: net.ipv6.conf.all.forwarding
         value: "1"
-        sysctl_set: yes
+        sysctl_set: true
         state: present
-        reload: yes
+        reload: true
 
     # --- 3. Start and Register ---
     - name: Connect Tailscale (Advertise Routes)
       ansible.builtin.command:
         cmd: >
-          tailscale up 
-          --authkey={{ vault_tailscale_auth_key }} 
-          --advertise-routes={{ lan_subnet }} 
+          tailscale up
+          --authkey={{ vault_tailscale_auth_key }}
+          --advertise-routes={{ lan_subnet }}
           --accept-routes
           --reset
       # We only run the command if we're not already connected (or to force the update of the routes)

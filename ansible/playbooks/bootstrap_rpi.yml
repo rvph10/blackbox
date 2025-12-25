@@ -1,7 +1,7 @@
 ---
 - name: Bootstrap Raspberry Pi (Control Tower)
   hosts: raspberry
-  become: yes
+  become: true
   vars:
     # Target configuration
     target_ip: "{{ vault_rpi_ip }}/24"
@@ -23,19 +23,20 @@
           - network-manager
           - nfs-common
         state: present
-        update_cache: yes
+        update_cache: true
 
     # --- Section 2: Install Docker ---
-    - name: Install Docker (via official script)
+    - name: Install Docker (via official script)  # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell:
         cmd: "curl -fsSL https://get.docker.com | sh"
         creates: /usr/bin/docker
+      changed_when: false
 
     - name: Add user to Docker group
       ansible.builtin.user:
         name: "{{ vault_rpi_user }}"
         groups: docker
-        append: yes
+        append: true
 
     # --- Section 3: Data Tree ---
     - name: Create root folder
@@ -54,7 +55,8 @@
         nmcli con up "Wired connection 1"
       async: 10
       poll: 0
-      ignore_errors: true
+      ignore_errors: true  # noqa: ignore-errors
+      changed_when: true
 
     # --- Section 5: NAS Persistence ---
     - name: Check if /mnt/appdata exists
@@ -101,8 +103,8 @@
     - name: Enable NFS mount service
       ansible.builtin.systemd:
         name: mount-nas-appdata.service
-        enabled: yes
-        daemon_reload: yes
+        enabled: true
+        daemon_reload: true
 
     # --- Section 6: Docker NFS Dependency ---
     - name: Create systemd override dir for Docker
@@ -120,9 +122,9 @@
         mode: "0644"
       register: docker_override
 
-    - name: Reload systemd and restart Docker if needed
+    - name: Reload systemd and restart Docker if needed  # noqa: no-handler
       ansible.builtin.systemd:
-        daemon_reload: yes
+        daemon_reload: true
         name: docker
         state: restarted
       when: docker_override.changed

@@ -1,7 +1,7 @@
 ---
 - name: Configure Physical Dashboard
   hosts: raspberry
-  become: yes
+  become: true
   tasks:
     - name: Install Python dependencies for the image
       ansible.builtin.apt:
@@ -23,7 +23,7 @@
 
     - name: Deploy dashboard configuration
       ansible.builtin.template:
-        src: ../templates/rpi/dashboard/config.py.j2
+        src: "{{ playbook_dir }}/../templates/rpi/dashboard/config.py.j2"  # noqa: no-relative-paths
         dest: /opt/blackbox/dashboard/config.py
         mode: "0644"
 
@@ -46,18 +46,21 @@
       ansible.builtin.lineinfile:
         path: /etc/modules
         line: "fb_ili9486"
-        create: yes
+        create: true
+        mode: "0644"
 
     - name: Ensure ads7846 module loads at boot
       ansible.builtin.lineinfile:
         path: /etc/modules
         line: "ads7846"
-        create: yes
+        create: true
+        mode: "0644"
 
     # Create udev rule to ensure proper device permissions
     - name: Create udev rule for touch input
       ansible.builtin.copy:
         dest: /etc/udev/rules.d/99-touch-input.rules
+        mode: "0644"
         content: |
           # ADS7846 Touch Controller
           SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="*ads7846*", MODE="0666"
@@ -67,6 +70,7 @@
     - name: Create the systemd service for the dashboard
       ansible.builtin.copy:
         dest: /etc/systemd/system/dashboard.service
+        mode: "0644"
         content: |
           [Unit]
           Description=Blackbox LCD Dashboard
@@ -92,13 +96,14 @@
     - name: Enable and start the dashboard
       ansible.builtin.systemd:
         name: dashboard
-        enabled: yes
+        enabled: true
         state: restarted
 
   handlers:
     - name: Reload udev
       ansible.builtin.command: udevadm control --reload-rules
+      changed_when: true
 
     - name: Reload systemd
       ansible.builtin.systemd:
-        daemon_reload: yes
+        daemon_reload: true

@@ -1,24 +1,25 @@
 ---
 - name: Install Screen Driver (3.5")
   hosts: raspberry
-  become: yes
+  become: true
   tasks:
     - name: Install dependencies for the driver
       ansible.builtin.apt:
         name: git
         state: present
 
-    - name: Clone LCD-show repository
+    - name: Clone LCD-show repository  # noqa: latest[git]
       ansible.builtin.git:
         repo: "https://github.com/goodtft/LCD-show.git"
         dest: /opt/LCD-show
+        version: HEAD
         depth: 1
 
     - name: Apply execution permissions recursively
       ansible.builtin.file:
         path: /opt/LCD-show
         mode: "0755"
-        recurse: yes
+        recurse: true
 
     - name: Run installation script
       ansible.builtin.command:
@@ -26,4 +27,4 @@
         chdir: /opt/LCD-show
       register: screen_install
       changed_when: true
-      ignore_unreachable: yes
+      ignore_unreachable: true
