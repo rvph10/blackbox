@@ -7,6 +7,7 @@ This guide covers installing and configuring Proxmox VE 9.1 on the GMKtec NucBox
 **Device:** GMKtec NucBox M6
 
 **Specs:**
+
 - AMD Ryzen 5 7640HS (6C/12T @ 5.0 GHz)
 - 32 GB DDR5 RAM
 - 1 TB NVMe SSD
@@ -14,6 +15,7 @@ This guide covers installing and configuring Proxmox VE 9.1 on the GMKtec NucBox
 - AMD Radeon 760M iGPU
 
 **Network connections:**
+
 - `nic0` (enp1s0): LAN - connects to switch
 - `nic1` (enp...): WAN - connects directly to ISP modem
 
@@ -22,10 +24,12 @@ This guide covers installing and configuring Proxmox VE 9.1 on the GMKtec NucBox
 Boot into BIOS/UEFI and configure these settings before OS installation:
 
 **Virtualization:**
+
 - SVM Mode (AMD-V): **Enabled**
 - IOMMU: **Enabled**
 
 **Security:**
+
 - Secure Boot: **Disabled** (Proxmox won't boot with this enabled)
 
 Save and reboot with your Ventoy USB drive inserted.
@@ -33,23 +37,28 @@ Save and reboot with your Ventoy USB drive inserted.
 ## OS Installation
 
 1. **Boot from USB**
+
    - Select Proxmox VE 9.1 ISO from Ventoy menu
    - Choose the graphical installer
 
 2. **Disk Selection**
+
    - Select the 1TB NVMe drive
    - Filesystem: ext4 (default) or ZFS if you want snapshots
    - Use entire disk
 
 3. **Location and Time Zone**
+
    - Set your country and timezone
    - This affects update mirrors and system time
 
 4. **Root Password**
+
    - Set a temporary password (you'll disable password auth later)
    - Note: you'll be using SSH keys after bootstrap
 
 5. **Management Network**
+
    - Interface: Select `nic0` (enp1s0)
    - Hostname: `pve.blackbox.homes`
    - IP Address: `192.168.10.10/24`
@@ -150,6 +159,7 @@ ssh root@192.168.10.10 reboot
 ```
 
 **What the playbook does:**
+
 - Configures SSH hardening (key-only access, no passwords)
 - Installs your SSH public key from vault
 - Configures repositories (disables enterprise, enables no-subscription)
@@ -249,6 +259,7 @@ pvesm add nfs nas-backups \
 ```
 
 Verify:
+
 ```bash
 pvesm status
 # Should show nas-backups as available
@@ -261,6 +272,7 @@ pvesm status
 **Symptom:** `apt update` shows "401 Unauthorized" for pve-enterprise
 
 **Fix:**
+
 ```bash
 # Ensure enterprise repo is disabled
 cat /etc/apt/sources.list.d/pve-enterprise.list
@@ -276,9 +288,11 @@ apt update
 **Symptom:** `dmesg | grep -i iommu` shows nothing
 
 **Fix:**
+
 1. Check BIOS - ensure SVM and IOMMU are enabled
 2. Verify GRUB config has `amd_iommu=on`
 3. Rebuild GRUB and reboot:
+
 ```bash
 update-grub
 reboot
@@ -289,6 +303,7 @@ reboot
 **Symptom:** Can't reach https://192.168.10.10:8006
 
 **Fix:**
+
 - Check network cable is connected to `nic0`
 - Verify IP with `ip addr show`
 - Check firewall: `iptables -L` (Proxmox allows 8006 by default)
@@ -299,6 +314,7 @@ reboot
 **Symptom:** SSH key auth fails after bootstrap
 
 **Fix:**
+
 ```bash
 # Check authorized_keys file
 ssh root@192.168.10.10  # using password temporarily

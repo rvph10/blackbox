@@ -218,6 +218,27 @@ Pourquoi j'ai construit le homelab comme ça. Les principes qui guident mes choi
 - Coût redondance > bénéfice
 - Temps de restore acceptable (~1h max)
 
+### 10. Choix des Versions Logicielles (Stabilité & Futur)
+
+**Principe** : Utiliser les versions stables actuelles à date de déploiement (Fin 2025).
+
+**Situation Actuelle (Décembre 2025)** :
+
+- **Debian** : La version stable est **Debian 13 "Trixie"** (sortie en Août 2025).
+- **Proxmox VE** : La version 9.x (basée sur Trixie) est la version stable recommandée.
+
+**Pourquoi cette précision** :
+
+- Les IAs ou documentations datant d'avant Août 2025 peuvent considérer à tort que Trixie est encore en "Testing" et recommander Bookworm (Debian 12).
+- Utiliser Bookworm fin 2025 serait utiliser une version "Old Stable", ce qui réduit la durée de support futur.
+- Je privilégie la version stable la plus récente pour maximiser la longévité de l'installation sans upgrade majeur.
+
+**Politique de mise à jour** :
+
+- Je reste sur la branche stable (pas de testing/unstable).
+- Les mises à jour de sécurité sont automatiques.
+- Les upgrades majeurs (ex: Proxmox 10) se font par réinstallation propre ("Nuke & Pave").
+
 ## Anti-Patterns à Éviter
 
 Choses que je refuse de faire :

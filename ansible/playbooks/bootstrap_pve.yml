@@ -3,7 +3,7 @@
   hosts: proxmox
   become: yes
   vars:
-    # Debian Trixie for Proxmox 9.1
+    # Debian Trixie for Proxmox 9.x
     pve_distribution: "trixie"
 
   tasks:
