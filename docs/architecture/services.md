@@ -16,12 +16,12 @@ Les services sont répartis sur 3 machines selon leur criticité et leurs besoin
 
 ### Infrastructure & Réseau
 
-| Service                 | Déployé sur     | Rôle                 | RAM    | Pourquoi là                              |
-| ----------------------- | --------------- | -------------------- | ------ | ---------------------------------------- |
-| **OPNsense**            | Proxmox VM 100  | Router/Firewall/DHCP | 2 GB   | Isolation réseau, contrôle total WAN/LAN |
-| **AdGuard Home**        | Raspberry Pi    | DNS + Ad Blocking    | 200 MB | Doit rester UP même si Proxmox down      |
-| **Tailscale**           | Raspberry Pi    | VPN Mesh             | 50 MB  | Accès distant zero-config                |
-| **Nginx Proxy Manager** | Proxmox LXC 200 | Reverse Proxy + SSL  | 500 MB | Certificats SSL Let's Encrypt            |
+| Service                 | Déployé sur           | Rôle                 | RAM    | Pourquoi là                              |
+| ----------------------- | --------------------- | -------------------- | ------ | ---------------------------------------- |
+| **OPNsense**            | Proxmox VM 100        | Router/Firewall/DHCP | 2 GB   | Isolation réseau, contrôle total WAN/LAN |
+| **AdGuard Home**        | Raspberry Pi          | DNS + Ad Blocking    | 200 MB | Doit rester UP même si Proxmox down      |
+| **Tailscale**           | Raspberry Pi, Proxmox | VPN Mesh             | 50 MB  | Accès distant zero-config                |
+| **Nginx Proxy Manager** | Proxmox LXC 200       | Reverse Proxy + SSL  | 500 MB | Certificats SSL Let's Encrypt            |
 
 **Architecture DNS** :
 
@@ -53,6 +53,7 @@ Client → AdGuard Home (192.168.10.2)
 | **Prometheus**    | Raspberry Pi | Time-series DB (métriques) | 1.5 GB     | 15 jours  |
 | **Loki**          | Raspberry Pi | Agrégation logs            | 500 MB     | 30 jours  |
 | **Promtail**      | Raspberry Pi | Agent collecte logs        | 50 MB      | -         |
+| **Alertmanager**  | Raspberry Pi | Gestion alertes            | 50 MB      | Discord   |
 | **Node Exporter** | Partout      | Export métriques système   | 50 MB/hôte | -         |
 
 **Services planifiés** :
@@ -149,28 +150,18 @@ Prowlarr (indexeurs)
 
 | Service           | Déployé sur             | Rôle             | RAM    | Features                       |
 | ----------------- | ----------------------- | ---------------- | ------ | ------------------------------ |
-| **Nextcloud**     | Proxmox LXC 210         | Cloud personnel  | 2 GB   | Files, Calendar, Contacts      |
 | **Paperless-ngx** | Raspberry Pi (planifié) | GED avec OCR     | 2.5 GB | Scan docs, recherche full-text |
 | **Stirling-PDF**  | Raspberry Pi (planifié) | Manipulation PDF | 500 MB | Merge, split, compress         |
 
-**Nextcloud Apps** :
-
-- Files (stockage)
-- Calendar (sync CalDAV)
-- Contacts (sync CardDAV)
-- Tasks
-- Notes
-
 ### Sécurité & Authentification
 
-| Service         | Déployé sur     | Rôle             | RAM    | Notes                             |
-| --------------- | --------------- | ---------------- | ------ | --------------------------------- |
-| **Vaultwarden** | Proxmox LXC 200 | Password manager | 512 MB | Compatible Bitwarden              |
-| **Authentik**   | Proxmox LXC 200 | SSO              | 1 GB   | Single Sign-On pour tous services |
+| Service       | Déployé sur     | Rôle | RAM  | Notes                             |
+| ------------- | --------------- | ---- | ---- | --------------------------------- |
+| **Authentik** | Proxmox LXC 200 | SSO  | 1 GB | Single Sign-On pour tous services |
 
 **SSO avec Authentik** :
 
-- Login unique pour Jellyfin, Nextcloud, etc.
+- Login unique pour Jellyfin, etc.
 - OIDC/SAML support
 - 2FA (TOTP, WebAuthn)
 
@@ -225,16 +216,16 @@ Prowlarr (indexeurs)
 
 ### Proxmox GMKtec (32 GB)
 
-| Machine   | Services                    | RAM       |
-| --------- | --------------------------- | --------- |
-| Host      | Proxmox VE                  | 2 GB      |
-| VM 100    | OPNsense                    | 2 GB      |
-| VM 110    | Jellyfin, Immich, Overseerr | 14 GB     |
-| VM 120    | Gluetun, qBit, \*arr stack  | 6 GB      |
-| LXC 200   | NPM, Authentik, Vaultwarden | 4 GB      |
-| LXC 210   | Nextcloud                   | 2 GB      |
-| Buffer    | Marge                       | 2 GB      |
-| **TOTAL** |                             | **32 GB** |
+| Machine   | Services                     | RAM       |
+| --------- | ---------------------------- | --------- |
+| Host      | Proxmox VE                   | 2 GB      |
+| VM 100    | OPNsense                     | 2 GB      |
+| VM 110    | Jellyfin, Immich, Overseerr  | 14 GB     |
+| VM 120    | Gluetun, qBit, \*arr stack   | 6 GB      |
+| LXC 200   | NPM, Authentik               | 4 GB      |
+| LXC 210   | Paperless-ngx + Stirling-PDF | 2 GB      |
+| Buffer    | Marge                        | 2 GB      |
+| **TOTAL** |                              | **32 GB** |
 
 ---
 
@@ -256,12 +247,10 @@ Prowlarr (indexeurs)
 
 Tous les services accessibles via Nginx Proxy Manager avec certificats SSL :
 
-| Service     | URL                     | IP Interne  | Accès     |
-| ----------- | ----------------------- | ----------- | --------- |
-| Jellyfin    | jellyfin.blackbox.homes | VM 110:8096 | Tailscale |
-| Overseerr   | overseer.blackbox.homes | VM 110:5055 | Tailscale |
-| Nextcloud   | cloud.blackbox.homes    | LXC 210:80  | Tailscale |
-| Vaultwarden | vault.blackbox.homes    | LXC 200:80  | Tailscale |
+| Service   | URL                     | IP Interne  | Accès     |
+| --------- | ----------------------- | ----------- | --------- |
+| Jellyfin  | jellyfin.blackbox.homes | VM 110:8096 | Tailscale |
+| Overseerr | overseer.blackbox.homes | VM 110:5055 | Tailscale |
 
 **Principe** :
 
@@ -304,7 +293,6 @@ Services dépendant de montages NFS :
 | Jellyfin            | /mnt/media, /mnt/appdata  | OUI                    |
 | Immich              | /mnt/photos, /mnt/appdata | OUI                    |
 | Downloads           | /mnt/media, /mnt/appdata  | OUI                    |
-| Nextcloud           | /mnt/appdata              | OUI                    |
 
 **Bootstrap** :
 
@@ -320,7 +308,7 @@ Services dépendant de montages NFS :
 
 - VM 110 (Media Stack) : Jellyfin + Overseerr
 - VM 120 (Downloads) : Gluetun + \*arr stack
-- LXC 200 (Infra) : NPM + Vaultwarden
+- LXC 200 (Infra) : NPM + Authentik
 - Uptime Kuma, Scrutiny (sur Raspberry Pi)
 
 ### Moyen Terme (next 6 mois)
@@ -331,7 +319,7 @@ Services dépendant de montages NFS :
 
 ### Long Terme (nice to have)
 
-- LXC 210 Nextcloud
+- LXC 210 Paperless-ngx + Stirling-PDF
 - Automation backups avec tests restore
 - Dashboards Grafana custom
 

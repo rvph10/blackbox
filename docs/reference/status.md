@@ -38,6 +38,7 @@
 | Prometheus    | ✅ DEPLOYED | 9090  | http://192.168.10.2:9090 | Metrics collection (CPU, RAM, I/O) |
 | Loki          | ✅ DEPLOYED | 3100  | http://192.168.10.2:3100 | Log aggregation                    |
 | Promtail      | ✅ DEPLOYED | -     | -                        | Log collector agent for Loki       |
+| Alertmanager  | ✅ DEPLOYED | 9093  | http://192.168.10.2:9093 | Alerting system (Discord)          |
 | Node Exporter | ✅ DEPLOYED | 9100  | -                        | System metrics exporter            |
 
 ### Planned Services

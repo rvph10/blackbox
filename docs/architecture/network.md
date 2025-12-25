@@ -244,7 +244,6 @@ Tous les services disposent d'un nom de domaine HTTPS valide mais ne sont access
 
 - jellyfin.blackbox.homes → Jellyfin (VM 110)
 - home.blackbox.homes → Home Assistant (Raspberry Pi)
-- vault.blackbox.homes → Vaultwarden (LXC 200)
 - etc.
 
 **Accès** :

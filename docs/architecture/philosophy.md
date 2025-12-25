@@ -27,7 +27,7 @@ Pourquoi j'ai construit le homelab comme ça. Les principes qui guident mes choi
 **Pourquoi** :
 
 - VMs = Isolation forte pour services lourds (Jellyfin, Downloads)
-- LXCs = Léger pour services simples (Vaultwarden, etc.)
+- LXCs = Léger pour services simples (Nginx Proxy Manager, etc.)
 - Snapshots = Restore rapide si je casse quelque chose
 - Hardware moderne = Transcode GPU + basses consos
 
@@ -57,7 +57,7 @@ Pourquoi j'ai construit le homelab comme ça. Les principes qui guident mes choi
 
 **Services non-critiques** (peuvent tolérer downtime) :
 
-- Jellyfin, Immich, Nextcloud, etc. → Sur Proxmox
+- Jellyfin, Immich, etc. → Sur Proxmox
 
 ### 4. Accès Distant "Zero Trust" (Tailscale)
 

@@ -33,7 +33,7 @@ cat .gitignore | grep .vault_pass
 
 **CRITIQUE** :
 
-- Sauvegarder le mot de passe vault dans Bitwarden/Vaultwarden
+- Sauvegarder le mot de passe vault dans Bitwarden
 - Sans ce mot de passe, les playbooks Ansible sont inutilisables
 - Titre suggestion Bitwarden : "Homelab Ansible Vault Password"
 
@@ -99,9 +99,6 @@ vault_cloudflare_email: "email@domain.com"
 # Credentials Authentik (futur)
 vault_authentik_secret_key: "secret_key_authentik"
 vault_authentik_postgres_password: "password_postgres"
-
-# Credentials Vaultwarden (futur)
-vault_vaultwarden_admin_token: "token_admin_vaultwarden"
 ```
 
 ### Générer des Secrets Aléatoires
@@ -214,7 +211,7 @@ curl -u admin:$NEW_PASSWORD http://192.168.10.10/api/status
 
 5. **Update password manager**
 
-- Mettre à jour Bitwarden/Vaultwarden avec nouveau secret
+- Mettre à jour Bitwarden avec nouveau secret
 
 ## Backup du Vault
 
@@ -228,7 +225,7 @@ Le `vault.yml` est versionné dans Git (chiffré), donc backup automatique.
 
 **CRITICAL** : Sauvegarder dans plusieurs endroits :
 
-1. **Bitwarden/Vaultwarden** : Entrée dédiée "Homelab Ansible Vault"
+1. **Bitwarden** : Entrée dédiée "Homelab Ansible Vault"
 2. **Papier physique** : Coffre/Safe
 3. **Backup encrypted** : Export Bitwarden chiffré sur autre support
 

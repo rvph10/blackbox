@@ -52,6 +52,18 @@ services:
     ports:
       - "9090:9090"
 
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    volumes:
+      - /mnt/appdata/prometheus/config/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - "9093:9093"
+
   loki:
     image: grafana/loki:latest
     container_name: loki

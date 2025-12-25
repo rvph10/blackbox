@@ -165,8 +165,7 @@ Via l'interface Proxmox ou avec Terraform (si j'ai le courage).
 
 **LXCs** :
 
-- LXC 200 : Nextcloud (Debian 12, 4GB RAM)
-- LXC 210 : Vaultwarden (Debian 12, 512MB RAM)
+- LXC 200 : Infrastructure (Debian 12, 4GB RAM)
 - LXC 220 : Misc services (Debian 12, 2GB RAM)
 
 **Déployer les services** :

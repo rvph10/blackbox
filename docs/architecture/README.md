@@ -98,7 +98,7 @@ Catalogue complet de tous les services. Qui tourne où, pourquoi, combien de RAM
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      INTERNET (Box FAI)                      │
+│                      INTERNET (Box FAI)                     │
 └─────────────────────┬───────────────────────────────────────┘
                       │ WAN (PPPoE)
                       v
@@ -124,37 +124,36 @@ Catalogue complet de tous les services. Qui tourne où, pourquoi, combien de RAM
 ### Distribution des Services
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                     RASPBERRY PI 5 (8 GB)                         │
-├──────────────────────────────────────────────────────────────────┤
-│ CRITIQUES          │ OBSERVABILITÉ     │ MONITORING              │
+┌─────────────────────────────────────────────────────────────────┐
+│                     RASPBERRY PI 5 (8 GB)                       │
+├─────────────────────────────────────────────────────────────────┤
+│ CRITIQUES          │ OBSERVABILITÉ     │ MONITORING             │
 │ - AdGuard Home     │ - Grafana         │ - Uptime Kuma          │
 │ - Home Assistant   │ - Prometheus      │ - Scrutiny             │
 │ - Homepage         │ - Loki            │ - Dozzle               │
 │ - Tailscale        │ - Promtail        │ - Diun                 │
-└──────────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────┐
-│                   PROXMOX GMKtec M6 (32 GB)                       │
+│                   PROXMOX GMKtec M6 (32 GB)                      │
 ├──────────────────────────────────────────────────────────────────┤
-│ VM 100           │ VM 110 (planifié)  │ VM 120 (planifié)       │
-│ - OPNsense (2GB) │ - Jellyfin (14GB)  │ - Gluetun (6GB)        │
-│                  │ - Immich           │ - qBittorrent          │
-│                  │ - Overseerr        │ - *arr stack           │
+│ VM 100           │ VM 110 (planifié)  │ VM 120 (planifié)        │
+│ - OPNsense (2GB) │ - Jellyfin (14GB)  │ - Gluetun (6GB)          │
+│                  │ - Immich           │ - qBittorrent            │
+│                  │ - Overseerr        │ - *arr stack             │
 ├──────────────────────────────────────────────────────────────────┤
 │ LXC 200 (planifié)        │ LXC 210 (planifié)                   │
-│ - NPM (4GB)               │ - Nextcloud (2GB)                    │
-│ - Authentik               │                                       │
-│ - Vaultwarden             │                                       │
+│ - NPM (4GB)               │ Paperless + Stirling-PDF             │
+│ - Authentik               │                                      │
 └──────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────┐
-│                    NAS CARGO Intel N100 (8 GB)                    │
+│                    NAS CARGO Intel N100 (8 GB)                   │
 ├──────────────────────────────────────────────────────────────────┤
-│ STOCKAGE (4TB)   │ BACKUP            │ SERVICES (planifié)      │
-│ - NFS exports    │ - Rclone → B2     │ - Immich (6GB)          │
-│ - Btrfs RAID 1   │ - Snapshots       │ - Scrutiny Collector    │
-│ - NVMe cache     │ - LED Control     │                          │
+│ STOCKAGE (4TB)   │ BACKUP            │ SERVICES (planifié)       │
+│ - NFS exports    │ - Rclone → B2     │ - Immich (6GB)            │
+│ - Btrfs RAID 1   │ - Snapshots       │ - Scrutiny Collector      │
+│ - NVMe cache     │ - LED Control     │                           │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -290,7 +289,7 @@ NAS /appdata (NFS)
 
 **Long terme** (nice to have) :
 
-- Nextcloud complet
+- Paperless-ngx + Stirling-PDF
 - Dashboards Grafana custom
 - Tests automatisés restore backup
 

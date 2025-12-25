@@ -357,8 +357,7 @@ docker stop gluetun
 ### Services
 
 - **Nginx Proxy Manager:** Reverse proxy with SSL (Deployed)
-- **Authentik:** SSO/authentication provider (Planned)
-- **Vaultwarden:** Bitwarden-compatible password manager (Planned)
+- **Authentik:** SSO/authentication provider (Deployed)
 
 ### Creation Steps
 
@@ -383,8 +382,6 @@ services:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
 ```
-
-Note: Future services (Authentik, Vaultwarden) will be added to this stack.
 
 ### Configure Nginx Proxy Manager
 

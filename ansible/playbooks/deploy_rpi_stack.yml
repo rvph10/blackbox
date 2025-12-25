@@ -5,11 +5,15 @@
 
   tasks:
     # --- 1. System preparation (Port 53) ---
+    - name: Populate service facts
+      ansible.builtin.service_facts:
+
     - name: Disable systemd-resolved (Release port 53 for AdGuard)
       ansible.builtin.service:
         name: systemd-resolved
         state: stopped
         enabled: no
+      when: "'systemd-resolved.service' in services"
       ignore_errors: yes
 
     - name: Remove symbolic link resolv.conf managed by systemd
@@ -37,8 +41,44 @@
         - adguard/conf
         - homeassistant/config
         - homepage/config
+        - grafana
+        - prometheus/config
+        - prometheus/data
+        - loki/config
+        - loki/data
 
-    # --- 3. Deploy Docker ---
+    # --- 3. Deploy Configurations ---
+    - name: Configure Prometheus
+      ansible.builtin.template:
+        src: ../templates/rpi/prometheus.yml.j2
+        dest: /mnt/appdata/prometheus/config/prometheus.yml
+        mode: "0644"
+
+    - name: Configure Alert Rules
+      ansible.builtin.template:
+        src: ../templates/rpi/alert_rules.yml.j2
+        dest: /mnt/appdata/prometheus/config/alert_rules.yml
+        mode: "0644"
+
+    - name: Configure Alertmanager
+      ansible.builtin.template:
+        src: ../templates/rpi/alertmanager.yml.j2
+        dest: /mnt/appdata/prometheus/config/alertmanager.yml
+        mode: "0644"
+
+    - name: Configure Loki
+      ansible.builtin.template:
+        src: ../templates/rpi/loki.yml.j2
+        dest: /mnt/appdata/loki/config/loki.yml
+        mode: "0644"
+
+    - name: Configure Promtail
+      ansible.builtin.template:
+        src: ../templates/rpi/promtail-config.yml.j2
+        dest: /mnt/appdata/loki/config/promtail-config.yml
+        mode: "0644"
+
+    # --- 4. Deploy Docker ---
     - name: Copy docker-compose file
       ansible.builtin.template:
         src: ../templates/rpi/docker-compose.yml.j2

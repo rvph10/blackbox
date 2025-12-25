@@ -49,29 +49,14 @@ Docs: `/docs/playbooks/bootstrap_rpi.md`
 - Deploy AdGuard Home (DNS)
 - Deploy Home Assistant (home automation)
 - Deploy Homepage (dashboard)
-- Stop systemd-resolved (port 53 conflict)
+- Deploy Observability Stack (Grafana, Prometheus, Alertmanager, Loki, Promtail)
+- Handle systemd-resolved conflict (port 53)
 
 ```bash
 ansible-playbook playbooks/deploy_rpi_stack.yml
 ```
 
 Docs: `/docs/playbooks/deploy_rpi_stack.md`
-
----
-
-### deploy_observability_stack.yml
-**What**: Deploy Grafana/Prometheus/Loki monitoring stack
-**When**: After deploy_rpi_stack.yml
-**Does**:
-- Add Grafana, Prometheus, Loki, Promtail to docker-compose
-- Configure data retention and storage
-- Set up log aggregation
-
-```bash
-ansible-playbook playbooks/deploy_observability_stack.yml
-```
-
-Status: Deployed (see services-status.md)
 
 ---
 

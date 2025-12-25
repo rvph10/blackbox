@@ -139,8 +139,6 @@ blackbox/
 - Jellyfin (media server)
 - Immich (photos)
 - \*arr stack (automation)
-- Nextcloud (cloud)
-- Vaultwarden (passwords)
 
 Voir [docs/reference/status.md](docs/reference/status.md) pour l'état complet.
 
