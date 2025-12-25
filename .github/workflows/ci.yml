@@ -1,0 +1,35 @@
+name: Homelab CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Security Check
+        run: ./ansible/scripts/check-security.sh
+
+  ansible-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install Ansible and Lint
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Run Ansible Lint
+        # We allow failure for now as we might have legacy issues,
+        # but it's good to see the output.
+        run: ansible-lint ansible/playbooks/*.yml || true

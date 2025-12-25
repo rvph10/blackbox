@@ -161,7 +161,7 @@
 
 | Parameter | Value                  | Notes               |
 | --------- | ---------------------- | ------------------- |
-| Status    | 📋 PLANNED             | Not deployed        |
+| Status    | ✅ PARTIALLY DEPLOYED  | NPM & Authentik UP  |
 | Type      | Debian 12 unprivileged |                     |
 | vCPU      | 2                      |                     |
 | RAM       | 4 GB                   |                     |
@@ -169,10 +169,13 @@
 | Features  | nesting=1              | For Docker in LXC   |
 | Autostart | Yes                    | Order 80, delay 15s |
 
-**Planned services**:
+**Active services**:
 
 - Nginx Proxy Manager (reverse proxy + SSL)
 - Authentik (SSO)
+
+**Planned services**:
+
 - Bitwarden (password manager)
 
 ---
@@ -230,7 +233,7 @@
 | VM 100 (OPNsense)      | 2 GB          | ~1.6 GB       | ✅ Optimized           | ✅ Deployed |
 | VM 110 (Media)         | 14 GB         | ~12-13 GB     | ⚠️ Tight               | 📋 Planned  |
 | VM 120 (Downloads)     | 6 GB          | ~4-5 GB       | ✅ Good                | 📋 Planned  |
-| LXC 200 (Infra)        | 4 GB          | ~3-3.5 GB     | ✅ Good                | 📋 Planned  |
+| LXC 200 (Infra)        | 4 GB          | ~3-3.5 GB     | ✅ Good                | ✅ Deployed |
 | LXC 210 (Productivity) | 3 GB          | ~2.5 GB       | ✅ Good                | 📋 Planned  |
 | Host Proxmox           | 3 GB          | -             | ✅ Current             | ✅ Active   |
 | **TOTAL**              | **32 GB**     |               | **84% FREE currently** |             |
@@ -244,12 +247,12 @@
 - Complete observability stack (Grafana + Prometheus + Loki + Promtail)
 - Node Exporter on all hosts
 - Grafana dashboard 1860 (Node Exporter Full)
+- LXC 200 (Infrastructure - NPM + Authentik)
 
 ### High Priority
 
 - Uptime Kuma (service monitoring)
 - VM 110 (Media Stack - Jellyfin + Immich + Overseerr)
-- LXC 200 (Infrastructure - NPM + Authentik + Bitwarden)
 
 ### Medium Priority
 
