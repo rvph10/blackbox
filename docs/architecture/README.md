@@ -165,7 +165,7 @@ Catalogue complet de tous les services. Qui tourne où, pourquoi, combien de RAM
 ```
 Client Device
   ↓ (DNS query)
-AdGuard Home (192.168.10.10)
+AdGuard Home (192.168.10.2)
   ├─ *.blackbox.homes → IP locale
   ├─ Ads/Trackers → Bloqué
   └─ Autres → Upstream (1.1.1.1)

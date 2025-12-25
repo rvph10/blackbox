@@ -171,7 +171,7 @@ Voir [docs/reference/status.md](docs/reference/status.md) pour l'état complet.
 
 - Subnet : 192.168.10.0/24
 - Gateway : 192.168.10.1 (OPNsense)
-- DNS : 192.168.10.10 (AdGuard)
+- DNS : 192.168.10.2 (AdGuard)
 
 **Consommation** : ~33W idle, ~71W charge moyenne
 

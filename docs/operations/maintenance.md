@@ -40,7 +40,7 @@ sudo /volume1/appdata/ugreen-leds/scripts/leds-on.sh   # Allumer
 
 Une fois déployé, checker le dashboard tous les matins :
 
-- http://192.168.10.10:3002
+- http://192.168.10.2:3002
 - Tous les services doivent être verts
 - Si rouge : voir [troubleshooting.md](./troubleshooting.md)
 
@@ -48,7 +48,7 @@ Une fois déployé, checker le dashboard tous les matins :
 
 ### Dimanche : Check Grafana
 
-**Vérifier les métriques** (http://192.168.10.10:3001) :
+**Vérifier les métriques** (http://192.168.10.2:3001) :
 
 - CPU usage : doit rester < 60% en moyenne
 - RAM usage : vérifier pas de leak mémoire
@@ -72,8 +72,8 @@ Une fois déployé, checker le dashboard tous les matins :
 #### Proxmox
 
 ```bash
-# SSH vers 192.168.10.2
-ssh root@192.168.10.2
+# SSH vers 192.168.10.10
+ssh root@192.168.10.10
 
 # Check updates disponibles
 apt update
@@ -156,7 +156,7 @@ Via Web UI NAS (http://192.168.10.5) :
 
 **Si Scrutiny déployé** :
 
-- http://192.168.10.10:8080
+- http://192.168.10.2:8080
 - Dashboard santé disques
 - Alerts automatiques si dégradation
 

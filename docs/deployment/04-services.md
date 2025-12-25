@@ -388,7 +388,7 @@ Note: Future services (Authentik, Vaultwarden) will be added to this stack.
 
 ### Configure Nginx Proxy Manager
 
-1. Access: http://192.168.10.200:81
+1. Access: http://192.168.10.121:81
 2. Default credentials: admin@example.com / changeme
 3. Change password immediately
 4. Add proxy hosts for each service
@@ -534,7 +534,7 @@ scrape_configs:
 
   - job_name: "infrastructure"
     static_configs:
-      - targets: ["192.168.10.200:9100"]
+      - targets: ["192.168.10.121:9100"]
 ```
 
 Restart Prometheus:
@@ -567,7 +567,7 @@ After deploying services, configure DNS and access:
 
    - jellyfin.blackbox.homes → 192.168.10.100
    - radarr.blackbox.homes → 192.168.10.101
-   - npm.blackbox.homes → 192.168.10.200
+   - npm.blackbox.homes → 192.168.10.121
 
 2. **Configure Nginx Proxy Manager** for SSL:
 

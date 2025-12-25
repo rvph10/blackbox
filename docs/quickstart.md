@@ -54,7 +54,7 @@ LAN: 192.168.10.1/24
 
 # DHCP Server
 Range: 192.168.10.100-192.168.10.250
-DNS: 192.168.10.10 (AdGuard Home sur Raspberry Pi)
+DNS: 192.168.10.2 (AdGuard Home sur Raspberry Pi)
 ```
 
 **Validation** :
@@ -71,12 +71,12 @@ DNS: 192.168.10.10 (AdGuard Home sur Raspberry Pi)
 
 1. Flasher ISO Proxmox sur clé USB
 2. Installer sur le GMKtec
-3. IP statique : 192.168.10.2
+3. IP statique : 192.168.10.10
 
 **Config de base** :
 
 ```bash
-# Via SSH sur 192.168.10.2
+# Via SSH sur 192.168.10.10
 # Désactiver enterprise repo
 # Activer no-subscription repo
 # Configurer stockage
@@ -91,7 +91,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/bootstrap_pve.yml --ask-vault-
 
 **Validation** :
 
-- Web UI accessible : https://192.168.10.2:8006
+- Web UI accessible : https://192.168.10.10:8006
 - Storage configuré
 - Updates installés
 
@@ -104,7 +104,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/bootstrap_pve.yml --ask-vault-
 1. Flasher Raspberry Pi OS Lite 64-bit
 2. Activer SSH (fichier `ssh` vide dans `/boot`)
 3. Configurer WiFi si besoin
-4. IP statique : 192.168.10.10
+4. IP statique : 192.168.10.2
 
 **Bootstrap avec Ansible** :
 
@@ -127,7 +127,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/deploy_rpi_stack.yml --ask-vau
 
 Services déployés :
 
-- AdGuard Home (DNS : 192.168.10.10)
+- AdGuard Home (DNS : 192.168.10.2)
 - Home Assistant (domotique)
 - Homepage (dashboard)
 - Tailscale (VPN)
@@ -138,16 +138,16 @@ Services déployés :
 
 ```bash
 # Vérifier que tous les conteneurs tournent
-ssh rvph@192.168.10.10
+ssh rvph@192.168.10.2
 docker ps
 
 # Tester DNS
-nslookup google.com 192.168.10.10
+nslookup google.com 192.168.10.2
 
 # Accéder aux UIs
-# Homepage : http://192.168.10.10:3000
-# Grafana : http://192.168.10.10:3001
-# AdGuard : http://192.168.10.10:3002
+# Homepage : http://192.168.10.2:3000
+# Grafana : http://192.168.10.2:3001
+# AdGuard : http://192.168.10.2:3002
 ```
 
 → Détails : [deployment/03-raspberry-pi.md](./deployment/03-raspberry-pi.md)

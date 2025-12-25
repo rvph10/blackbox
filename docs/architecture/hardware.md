@@ -6,8 +6,8 @@ Toutes les specs hardware du homelab dans un seul endroit. Mise à jour quand j'
 
 | Device               | Rôle                  | CPU                | RAM          | Stockage          | IP            |
 | -------------------- | --------------------- | ------------------ | ------------ | ----------------- | ------------- |
-| **GMKtec NucBox M6** | Proxmox (hyperviseur) | AMD Ryzen 5 7640HS | 32 GB DDR5   | 1 TB NVMe         | 192.168.10.2  |
-| **Raspberry Pi 5**   | Control Tower         | ARM Cortex-A76     | 8 GB LPDDR4X | 128 GB SD         | 192.168.10.10 |
+| **GMKtec NucBox M6** | Proxmox (hyperviseur) | AMD Ryzen 5 7640HS | 32 GB DDR5   | 1 TB NVMe         | 192.168.10.10 |
+| **Raspberry Pi 5**   | Control Tower         | ARM Cortex-A76     | 8 GB LPDDR4X | 128 GB SD         | 192.168.10.2  |
 | **UGREEN DXP2800**   | NAS Cargo             | Intel N100         | 8 GB DDR5    | 2x 4TB + 1TB NVMe | 192.168.10.5  |
 | **Switch PoE+**      | Réseau LAN            | -                  | -            | -                 | 192.168.10.3  |
 
@@ -16,7 +16,7 @@ Toutes les specs hardware du homelab dans un seul endroit. Mise à jour quand j'
 ## GMKtec NucBox M6 (Proxmox)
 
 **Rôle** : Hyperviseur principal, héberge les VMs et LXCs
-**IP Management** : 192.168.10.2
+**IP Management** : 192.168.10.10
 **Hostname** : pve.blackbox.homes
 
 ### Processeur
@@ -99,10 +99,10 @@ Toutes les specs hardware du homelab dans un seul endroit. Mise à jour quand j'
 
 ### Réseau
 
-| Interface      | Vitesse | Usage                     | IP           |
-| -------------- | ------- | ------------------------- | ------------ |
-| **nic0 (LAN)** | 2.5 GbE | Vers Switch (vmbr0)       | 192.168.10.2 |
-| **nic1 (WAN)** | 2.5 GbE | Passthrough vers OPNsense | -            |
+| Interface      | Vitesse | Usage                     | IP            |
+| -------------- | ------- | ------------------------- | ------------- |
+| **nic0 (LAN)** | 2.5 GbE | Vers Switch (vmbr0)       | 192.168.10.10 |
+| **nic1 (WAN)** | 2.5 GbE | Passthrough vers OPNsense | -             |
 
 **Chipset** : Realtek RTL8125B (2.5 Gigabit)
 **Jumbo Frames** : Supportés (MTU 9000)
@@ -122,7 +122,7 @@ Toutes les specs hardware du homelab dans un seul endroit. Mise à jour quand j'
 ## Raspberry Pi 5 (Control Tower)
 
 **Rôle** : Services critiques + Observabilité
-**IP Statique** : 192.168.10.10
+**IP Statique** : 192.168.10.2
 **Hostname** : tower.blackbox.homes
 
 ### Processeur
@@ -171,10 +171,10 @@ Toutes les specs hardware du homelab dans un seul endroit. Mise à jour quand j'
 
 ### Réseau
 
-| Interface    | Vitesse              | Usage                  | IP            |
-| ------------ | -------------------- | ---------------------- | ------------- |
-| **Ethernet** | 1 GbE                | Connexion principale   | 192.168.10.10 |
-| **WiFi**     | 802.11ac (2.4/5 GHz) | Backup/config initiale | -             |
+| Interface    | Vitesse              | Usage                  | IP           |
+| ------------ | -------------------- | ---------------------- | ------------ |
+| **Ethernet** | 1 GbE                | Connexion principale   | 192.168.10.2 |
+| **WiFi**     | 802.11ac (2.4/5 GHz) | Backup/config initiale | -            |
 
 **Chipset Ethernet** : Broadcom BCM54213PE (Gigabit)
 
@@ -366,8 +366,8 @@ Toutes les specs hardware du homelab dans un seul endroit. Mise à jour quand j'
 **Ports** :
 
 1. Port 1 : Uplink Box FAI (non utilisé actuellement)
-2. Port 2 : Proxmox (192.168.10.2)
-3. Port 3 : Raspberry Pi (192.168.10.10)
+2. Port 2 : Proxmox (192.168.10.10)
+3. Port 3 : Raspberry Pi (192.168.10.2)
 4. Port 4 : NAS Cargo (192.168.10.5)
 5. Port 5 : Libre
 
