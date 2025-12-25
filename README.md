@@ -12,7 +12,7 @@ Homelab basé sur 3 machines :
 
 **Architecture** :
 
-- Réseau isolé (192.168.1.0/24) via OPNsense
+- Réseau isolé (192.168.10.0/24) via OPNsense
 - Services critiques sur Raspberry Pi (DNS, domotique)
 - Media/Downloads sur VMs Proxmox
 - Backup 3-2-1 (RAID 1 + Snapshots + Backblaze B2)
@@ -169,9 +169,9 @@ Voir [docs/reference/status.md](docs/reference/status.md) pour l'état complet.
 
 **Réseau** :
 
-- Subnet : 192.168.1.0/24
-- Gateway : 192.168.1.1 (OPNsense)
-- DNS : 192.168.1.10 (AdGuard)
+- Subnet : 192.168.10.0/24
+- Gateway : 192.168.10.1 (OPNsense)
+- DNS : 192.168.10.10 (AdGuard)
 
 **Consommation** : ~33W idle, ~71W charge moyenne
 

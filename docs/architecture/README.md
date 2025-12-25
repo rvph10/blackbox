@@ -66,7 +66,7 @@ Configuration réseau complète. IPs, VLANs, DNS, firewall, NFS.
 
 **Contenu** :
 
-- Subnet 192.168.1.0/24
+- Subnet 192.168.10.0/24
 - IPs statiques (OPNsense, Proxmox, NAS, Raspberry Pi)
 - Configuration OPNsense (WAN PPPoE, LAN, DHCP, firewall)
 - Stratégie DNS (AdGuard Home)
@@ -103,13 +103,13 @@ Catalogue complet de tous les services. Qui tourne où, pourquoi, combien de RAM
                       │ WAN (PPPoE)
                       v
           ┌───────────────────────┐
-          │  OPNsense (VM 100)    │ 192.168.1.1
+          │  OPNsense (VM 100)    │ 192.168.10.1
           │  Router/Firewall/DHCP │
           └───────────┬───────────┘
                       │ LAN (vmbr0)
                       v
               ┌───────────────┐
-              │ Switch PoE+   │ 192.168.1.3
+              │ Switch PoE+   │ 192.168.10.3
               └───┬───────────┘
                   │
     ┌─────────────┼─────────────┬──────────────┐
@@ -165,7 +165,7 @@ Catalogue complet de tous les services. Qui tourne où, pourquoi, combien de RAM
 ```
 Client Device
   ↓ (DNS query)
-AdGuard Home (192.168.1.10)
+AdGuard Home (192.168.10.10)
   ├─ *.blackbox.homes → IP locale
   ├─ Ads/Trackers → Bloqué
   └─ Autres → Upstream (1.1.1.1)

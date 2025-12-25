@@ -26,7 +26,7 @@ Les services sont répartis sur 3 machines selon leur criticité et leurs besoin
 **Architecture DNS** :
 
 ```
-Client → AdGuard Home (192.168.1.10)
+Client → AdGuard Home (192.168.10.10)
          ├─ Blocage ads/trackers
          ├─ Résolution locale (*.blackbox.homes)
          └─ Upstream → 1.1.1.1 (Cloudflare)

@@ -209,7 +209,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/deploy_rpi_stack.yml
 
 ```bash
 # Tester login avec nouveau password
-curl -u admin:$NEW_PASSWORD http://192.168.1.10/api/status
+curl -u admin:$NEW_PASSWORD http://192.168.10.10/api/status
 ```
 
 5. **Update password manager**

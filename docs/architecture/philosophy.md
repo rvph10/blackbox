@@ -6,7 +6,7 @@ Pourquoi j'ai construit le homelab comme ça. Les principes qui guident mes choi
 
 ### 1. Isolation Réseau
 
-**Principe** : Création d'un réseau homelab dédié (192.168.1.0/24) isolé de la Box FAI via OPNsense en mode PPPoE.
+**Principe** : Création d'un réseau homelab dédié (192.168.10.0/24) isolé de la Box FAI via OPNsense en mode PPPoE.
 
 **Pourquoi** :
 
@@ -67,7 +67,7 @@ Pourquoi j'ai construit le homelab comme ça. Les principes qui guident mes choi
 
 1. Les services ont des noms de domaine publics (`jellyfin.blackbox.homes`)
 2. Certificats SSL valides (Let's Encrypt via DNS Challenge)
-3. Mais les IPs pointent vers Tailscale (100.x.y.z) ou LAN (192.168.1.x)
+3. Mais les IPs pointent vers Tailscale (100.x.y.z) ou LAN (192.168.10.x)
 4. Aucun port ouvert sur WAN
 
 **Pourquoi** :

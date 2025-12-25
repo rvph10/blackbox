@@ -40,7 +40,7 @@ sudo /volume1/appdata/ugreen-leds/scripts/leds-on.sh   # Allumer
 
 Une fois déployé, checker le dashboard tous les matins :
 
-- http://192.168.1.10:3002
+- http://192.168.10.10:3002
 - Tous les services doivent être verts
 - Si rouge : voir [troubleshooting.md](./troubleshooting.md)
 
@@ -48,7 +48,7 @@ Une fois déployé, checker le dashboard tous les matins :
 
 ### Dimanche : Check Grafana
 
-**Vérifier les métriques** (http://192.168.1.10:3001) :
+**Vérifier les métriques** (http://192.168.10.10:3001) :
 
 - CPU usage : doit rester < 60% en moyenne
 - RAM usage : vérifier pas de leak mémoire
@@ -72,8 +72,8 @@ Une fois déployé, checker le dashboard tous les matins :
 #### Proxmox
 
 ```bash
-# SSH vers 192.168.1.2
-ssh root@192.168.1.2
+# SSH vers 192.168.10.2
+ssh root@192.168.10.2
 
 # Check updates disponibles
 apt update
@@ -90,8 +90,8 @@ reboot
 #### Raspberry Pi
 
 ```bash
-# SSH vers 192.168.1.10
-ssh rvph@192.168.1.10
+# SSH vers 192.168.10.10
+ssh rvph@192.168.10.10
 
 # Updates OS
 sudo apt update && sudo apt upgrade -y
@@ -108,7 +108,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/deploy_rpi_stack.yml --extra-v
 
 #### OPNsense
 
-Via Web UI (https://192.168.1.1) :
+Via Web UI (https://192.168.10.1) :
 
 1. System > Firmware > Check for updates
 2. Installer si disponible
@@ -139,7 +139,7 @@ rm /tmp/test-restore.yaml
 
 ### Premier du mois : Snapshot Btrfs (NAS)
 
-Via Web UI NAS (http://192.168.1.5) :
+Via Web UI NAS (http://192.168.10.5) :
 
 1. Storage > Snapshots
 2. Vérifier qu'il y a des snapshots récents
@@ -156,7 +156,7 @@ Via Web UI NAS (http://192.168.1.5) :
 
 **Si Scrutiny déployé** :
 
-- http://192.168.1.10:8080
+- http://192.168.10.10:8080
 - Dashboard santé disques
 - Alerts automatiques si dégradation
 
@@ -276,7 +276,7 @@ Si quelque chose ne va pas :
 1. Vérifier [troubleshooting.md](./troubleshooting.md)
 2. Vérifier logs Grafana/Loki
 3. Vérifier status services : `docker ps -a`
-4. Vérifier réseau : `ping 192.168.1.1` (gateway)
+4. Vérifier réseau : `ping 192.168.10.1` (gateway)
 
 **Principe de debug** :
 

@@ -10,51 +10,51 @@ Internet (Box FAI)
        | WAN (PPPoE)
        v
 ┌──────────────────┐
-│ OPNsense Router  │ 192.168.1.1 (Gateway)
+│ OPNsense Router  │ 192.168.10.1 (Gateway)
 │   VM 100         │
 └────────┬─────────┘
          | LAN (vmbr0)
          v
     ┌────────┐
-    │ Switch │ 192.168.1.3
+    │ Switch │ 192.168.10.3
     └───┬────┘
         |
-        ├─── Proxmox Host (192.168.1.2)
-        ├─── Raspberry Pi (192.168.1.10) ← DNS AdGuard
-        ├─── NAS Cargo (192.168.1.5)
-        └─── VMs/LXCs (DHCP 192.168.1.100-250)
+        ├─── Proxmox Host (192.168.10.2)
+        ├─── Raspberry Pi (192.168.10.10) ← DNS AdGuard
+        ├─── NAS Cargo (192.168.10.5)
+        └─── VMs/LXCs (DHCP 192.168.10.100-250)
 ```
 
 ## Paramètres Réseau
 
 ### Subnet Principal
 
-| Paramètre          | Valeur                                       |
-| ------------------ | -------------------------------------------- |
-| **Réseau**         | 192.168.1.0/24                               |
-| **Gateway**        | 192.168.1.1 (OPNsense)                       |
-| **DNS Primaire**   | 192.168.1.10 (AdGuard Home sur Raspberry Pi) |
-| **DNS Secondaire** | 1.1.1.1 (Cloudflare - fallback)              |
-| **DHCP Range**     | 192.168.1.100 - 192.168.1.250                |
-| **DHCP Server**    | OPNsense (ISC DHCPv4)                        |
+| Paramètre          | Valeur                                        |
+| ------------------ | --------------------------------------------- |
+| **Réseau**         | 192.168.10.0/24                               |
+| **Gateway**        | 192.168.10.1 (OPNsense)                       |
+| **DNS Primaire**   | 192.168.10.10 (AdGuard Home sur Raspberry Pi) |
+| **DNS Secondaire** | 1.1.1.1 (Cloudflare - fallback)               |
+| **DHCP Range**     | 192.168.10.100 - 192.168.10.250               |
+| **DHCP Server**    | OPNsense (ISC DHCPv4)                         |
 
 ### IPs Statiques
 
-| Device                | IP           | Hostname              | Rôle                |
-| --------------------- | ------------ | --------------------- | ------------------- |
-| **OPNsense (VM 100)** | 192.168.1.1  | router.blackbox.homes | Gateway/Firewall    |
-| **Proxmox Host**      | 192.168.1.2  | pve.blackbox.homes    | Hyperviseur         |
-| **Switch**            | 192.168.1.3  | switch.blackbox.homes | Switch manageable   |
-| **NAS Cargo**         | 192.168.1.5  | cargo.blackbox.homes  | Stockage NFS        |
-| **Raspberry Pi**      | 192.168.1.10 | tower.blackbox.homes  | Control Tower + DNS |
+| Device                | IP            | Hostname              | Rôle                |
+| --------------------- | ------------- | --------------------- | ------------------- |
+| **OPNsense (VM 100)** | 192.168.10.1  | router.blackbox.homes | Gateway/Firewall    |
+| **Proxmox Host**      | 192.168.10.2  | pve.blackbox.homes    | Hyperviseur         |
+| **Switch**            | 192.168.10.3  | switch.blackbox.homes | Switch manageable   |
+| **NAS Cargo**         | 192.168.10.5  | cargo.blackbox.homes  | Stockage NFS        |
+| **Raspberry Pi**      | 192.168.10.10 | tower.blackbox.homes  | Control Tower + DNS |
 
 ### DHCP Range (VMs/LXCs)
 
-| Range                         | Usage                         |
-| ----------------------------- | ----------------------------- |
-| 192.168.1.100 - 192.168.1.150 | VMs Proxmox                   |
-| 192.168.1.151 - 192.168.1.200 | LXCs Proxmox                  |
-| 192.168.1.201 - 192.168.1.250 | Devices temporaires / invités |
+| Range                           | Usage                         |
+| ------------------------------- | ----------------------------- |
+| 192.168.10.100 - 192.168.10.150 | VMs Proxmox                   |
+| 192.168.10.151 - 192.168.10.200 | LXCs Proxmox                  |
+| 192.168.10.201 - 192.168.10.250 | Devices temporaires / invités |
 
 ## Configuration Proxmox
 
@@ -72,9 +72,9 @@ Internet (Box FAI)
 ```
 vmbr0
 ├─ Attached to: enp1s0 (NIC 0)
-├─ IP Proxmox Host: 192.168.1.2/24
-├─ Gateway: 192.168.1.1
-├─ DNS: 192.168.1.10
+├─ IP Proxmox Host: 192.168.10.2/24
+├─ Gateway: 192.168.10.1
+├─ DNS: 192.168.10.10
 └─ Connecté à:
    ├─ VM 100 (OPNsense) - net0 (LAN)
    ├─ VM 110 (Media Stack) - net0
@@ -109,10 +109,10 @@ vmbr1
 
 ### Interfaces OPNsense
 
-| Interface | Device | Bridge Proxmox | Usage              | Config                  |
-| --------- | ------ | -------------- | ------------------ | ----------------------- |
-| **WAN**   | vtnet1 | vmbr1          | Connexion Internet | PPPoE                   |
-| **LAN**   | vtnet0 | vmbr0          | Réseau Homelab     | Statique 192.168.1.1/24 |
+| Interface | Device | Bridge Proxmox | Usage              | Config                   |
+| --------- | ------ | -------------- | ------------------ | ------------------------ |
+| **WAN**   | vtnet1 | vmbr1          | Connexion Internet | PPPoE                    |
+| **LAN**   | vtnet0 | vmbr0          | Réseau Homelab     | Statique 192.168.10.1/24 |
 
 ### Configuration WAN (PPPoE Proximus)
 
@@ -137,7 +137,7 @@ ping -c 3 1.1.1.1   # Test connectivité Internet
 ### Configuration LAN
 
 ```
-IP Address: 192.168.1.1/24
+IP Address: 192.168.10.1/24
 Gateway: (aucune - c'est le gateway)
 ```
 
@@ -153,10 +153,10 @@ Gateway: (aucune - c'est le gateway)
 
 ```
 Enable: Oui
-Range: 192.168.1.100 - 192.168.1.250
-DNS Servers: 192.168.1.10 (AdGuard Home)
+Range: 192.168.10.100 - 192.168.10.250
+DNS Servers: 192.168.10.10 (AdGuard Home)
 Secondary DNS: 1.1.1.1 (fallback)
-Gateway: 192.168.1.1 (OPNsense)
+Gateway: 192.168.10.1 (OPNsense)
 Domain: blackbox.homes
 Lease time: 86400 (24h)
 ```
@@ -182,8 +182,8 @@ Enable DHCP: Non (désactivé, on utilise ISC)
 
 ```
 1. Allow All (trafic LAN vers WAN)
-2. Allow DNS to AdGuard (192.168.1.10:53)
-3. Allow Web UI OPNsense (192.168.1.1:443)
+2. Allow DNS to AdGuard (192.168.10.10:53)
+3. Allow Web UI OPNsense (192.168.10.1:443)
 ```
 
 **NAT Outbound** : Automatic (masquerade vers WAN)
@@ -208,7 +208,7 @@ qm set 100 --onboot 1 --startup order=100,up=60
 Client
   |
   v
-192.168.1.10 (AdGuard Home sur Raspberry Pi)
+192.168.10.10 (AdGuard Home sur Raspberry Pi)
   ├─ Requêtes internes (*.blackbox.homes) → Réponses locales
   ├─ Blocage Ads/Trackers
   └─ Upstream DNS → 1.1.1.1 (Cloudflare)
@@ -216,14 +216,14 @@ Client
 
 ### Records DNS Locaux (AdGuard)
 
-| Hostname              | IP           | Service             |
-| --------------------- | ------------ | ------------------- |
-| router.blackbox.homes | 192.168.1.1  | OPNsense            |
-| pve.blackbox.homes    | 192.168.1.2  | Proxmox             |
-| switch.blackbox.homes | 192.168.1.3  | Switch              |
-| cargo.blackbox.homes  | 192.168.1.5  | NAS                 |
-| tower.blackbox.homes  | 192.168.1.10 | Raspberry Pi        |
-| \*.blackbox.homes     | (DHCP)       | Services dynamiques |
+| Hostname              | IP            | Service             |
+| --------------------- | ------------- | ------------------- |
+| router.blackbox.homes | 192.168.10.1  | OPNsense            |
+| pve.blackbox.homes    | 192.168.10.2  | Proxmox             |
+| switch.blackbox.homes | 192.168.10.3  | Switch              |
+| cargo.blackbox.homes  | 192.168.10.5  | NAS                 |
+| tower.blackbox.homes  | 192.168.10.10 | Raspberry Pi        |
+| \*.blackbox.homes     | (DHCP)        | Services dynamiques |
 
 **Upstream DNS (AdGuard)** :
 
@@ -241,7 +241,7 @@ Tous les services disposent d'un nom de domaine HTTPS valide mais ne sont access
 
 1. Domaine : `*.blackbox.homes` (DNS public)
 2. Certificat SSL : Let's Encrypt via DNS Challenge (Cloudflare)
-3. IP : Pointe vers IP Tailscale (100.x.y.z) ou IP LAN (192.168.1.x)
+3. IP : Pointe vers IP Tailscale (100.x.y.z) ou IP LAN (192.168.10.x)
 4. Firewall : Aucun port ouvert sur WAN
 
 **Services exposés** :
@@ -260,14 +260,14 @@ Tous les services disposent d'un nom de domaine HTTPS valide mais ne sont access
 
 **Devices dans Tailnet** :
 
-- Raspberry Pi (192.168.1.10) → Subnet Router
+- Raspberry Pi (192.168.10.10) → Subnet Router
 - Laptop/Phone → Exit nodes
 
 **Subnet Routing** :
 
 ```bash
 # Sur Raspberry Pi
-sudo tailscale up --advertise-routes=192.168.1.0/24 --accept-routes
+sudo tailscale up --advertise-routes=192.168.10.0/24 --accept-routes
 ```
 
 **Exit Node** : Non utilisé (on veut juste accès au LAN)
@@ -276,30 +276,30 @@ sudo tailscale up --advertise-routes=192.168.1.0/24 --accept-routes
 
 ### Exports NAS Cargo
 
-| Share           | Path                     | Clients        | Permissions              |
-| --------------- | ------------------------ | -------------- | ------------------------ |
-| appdata         | /volume1/appdata         | 192.168.1.0/24 | rw,sync,no_subtree_check |
-| media           | /volume1/media           | 192.168.1.0/24 | rw,sync,no_subtree_check |
-| photos          | /volume1/photos          | 192.168.1.0/24 | rw,sync,no_subtree_check |
-| proxmox-backups | /volume1/proxmox-backups | 192.168.1.2    | rw,sync,no_subtree_check |
-| backups-configs | /volume1/backups-configs | 192.168.1.0/24 | ro,sync,no_subtree_check |
+| Share           | Path                     | Clients         | Permissions              |
+| --------------- | ------------------------ | --------------- | ------------------------ |
+| appdata         | /volume1/appdata         | 192.168.10.0/24 | rw,sync,no_subtree_check |
+| media           | /volume1/media           | 192.168.10.0/24 | rw,sync,no_subtree_check |
+| photos          | /volume1/photos          | 192.168.10.0/24 | rw,sync,no_subtree_check |
+| proxmox-backups | /volume1/proxmox-backups | 192.168.10.2    | rw,sync,no_subtree_check |
+| backups-configs | /volume1/backups-configs | 192.168.10.0/24 | ro,sync,no_subtree_check |
 
 ### Montages
 
-#### Raspberry Pi (192.168.1.10)
+#### Raspberry Pi (192.168.10.10)
 
 ```bash
 # /etc/fstab
-192.168.1.5:/volume1/appdata /mnt/appdata nfs defaults,_netdev 0 0
+192.168.10.5:/volume1/appdata /mnt/appdata nfs defaults,_netdev 0 0
 ```
 
 #### VM 110 (Media Stack)
 
 ```bash
 # /etc/fstab
-192.168.1.5:/volume1/media /mnt/media nfs defaults,_netdev 0 0
-192.168.1.5:/volume1/photos /mnt/photos nfs defaults,_netdev 0 0
-192.168.1.5:/volume1/appdata /mnt/appdata nfs defaults,_netdev 0 0
+192.168.10.5:/volume1/media /mnt/media nfs defaults,_netdev 0 0
+192.168.10.5:/volume1/photos /mnt/photos nfs defaults,_netdev 0 0
+192.168.10.5:/volume1/appdata /mnt/appdata nfs defaults,_netdev 0 0
 ```
 
 #### Proxmox Host
@@ -307,7 +307,7 @@ sudo tailscale up --advertise-routes=192.168.1.0/24 --accept-routes
 ```bash
 # Via Web UI: Datacenter > Storage > Add > NFS
 # ID: nas-backups
-# Server: 192.168.1.5
+# Server: 192.168.10.5
 # Export: /volume1/proxmox-backups
 # Content: VZDump backup file
 ```
@@ -337,11 +337,11 @@ dd if=/mnt/appdata/test of=/dev/null bs=1M
 
 ```bash
 # Raspberry Pi → NAS
-ping -c 100 192.168.1.5
+ping -c 100 192.168.10.5
 # ~0.3-0.8 ms (excellent)
 
 # Proxmox → Raspberry Pi
-ping -c 100 192.168.1.10
+ping -c 100 192.168.10.10
 # ~0.2-0.5 ms
 ```
 
@@ -365,18 +365,18 @@ ping -c 100 192.168.1.10
 Ordre critique pour que tout boot correctement :
 
 ```
-1. NAS Cargo (192.168.1.5)
+1. NAS Cargo (192.168.10.5)
    └─ Exports NFS disponibles
       ↓
-2. Proxmox Host (192.168.1.2)
+2. Proxmox Host (192.168.10.2)
    └─ OPNsense VM 100 démarre automatiquement
       ├─ Priority: 100 (first)
       └─ Delay: 60s
       ↓
-3. OPNsense (192.168.1.1)
+3. OPNsense (192.168.10.1)
    └─ DHCP/Gateway opérationnel
       ↓
-4. Raspberry Pi (192.168.1.10)
+4. Raspberry Pi (192.168.10.10)
    └─ Monte /mnt/appdata via NFS
    └─ Démarre Docker stack (AdGuard, etc.)
       ↓
@@ -399,23 +399,23 @@ ping 1.1.1.1  # Test connectivité WAN
 ping google.com  # Test DNS
 
 # Sur client LAN
-ping 192.168.1.1  # Test gateway
-ping 192.168.1.10  # Test DNS server
+ping 192.168.10.1  # Test gateway
+ping 192.168.10.10  # Test DNS server
 ping 1.1.1.1  # Test Internet
-nslookup google.com 192.168.1.10  # Test résolution DNS
+nslookup google.com 192.168.10.10  # Test résolution DNS
 ```
 
 ### NFS Mount Failed
 
 ```bash
 # Vérifier NFS server accessible
-ping 192.168.1.5
+ping 192.168.10.5
 
 # Vérifier exports
-showmount -e 192.168.1.5
+showmount -e 192.168.10.5
 
 # Tester montage manuel
-sudo mount -t nfs 192.168.1.5:/volume1/appdata /mnt/test
+sudo mount -t nfs 192.168.10.5:/volume1/appdata /mnt/test
 
 # Vérifier logs
 sudo journalctl -u nfs-client.target
@@ -425,7 +425,7 @@ sudo journalctl -u nfs-client.target
 
 ```bash
 # Tester AdGuard directement
-nslookup google.com 192.168.1.10
+nslookup google.com 192.168.10.10
 
 # Vérifier DNS reçu en DHCP
 cat /etc/resolv.conf
