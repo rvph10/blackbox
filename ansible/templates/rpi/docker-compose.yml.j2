@@ -29,8 +29,8 @@ services:
     image: ghcr.io/gethomepage/homepage:latest
     restart: unless-stopped
     ports:
-      # Move Homepage to 8082 to avoid conflict with AdGuard (port 3000)
-      - "8082:3000"
+      # Move Homepage to {{ port_homepage }} to avoid conflict with AdGuard (port 3000)
+      - "{{ port_homepage }}:3000"
     environment:
       HOMEPAGE_ALLOWED_HOSTS: "*"
     volumes:
@@ -50,7 +50,7 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=15d'
     ports:
-      - "9090:9090"
+      - "{{ port_prometheus }}:9090"
 
   alertmanager:
     image: prom/alertmanager:latest
@@ -62,7 +62,7 @@ services:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
     ports:
-      - "9093:9093"
+      - "{{ port_alertmanager }}:9093"
 
   loki:
     image: grafana/loki:latest
@@ -73,7 +73,7 @@ services:
       - /mnt/appdata/loki/data:/loki
     command: -config.file=/etc/loki/local-config.yaml
     ports:
-      - "3100:3100"
+      - "{{ port_loki }}:3100"
 
   grafana:
     image: grafana/grafana:latest
@@ -84,7 +84,7 @@ services:
     volumes:
       - /mnt/appdata/grafana:/var/lib/grafana
     ports:
-      - "3001:3000"
+      - "{{ port_grafana }}:3000"
 
   promtail:
     image: grafana/promtail:latest

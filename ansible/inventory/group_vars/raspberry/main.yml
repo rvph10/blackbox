@@ -1,3 +1,15 @@
 ---
 ansible_host: "{{ vault_rpi_ip }}"
 ansible_user: "{{ vault_rpi_user }}"
+
+# Service Ports
+port_adguard_dns: 53
+port_adguard_web: 80
+port_adguard_setup: 3000
+port_homeassistant: 8123
+port_homepage: 8082
+port_grafana: 3001
+port_prometheus: 9090
+port_loki: 3100
+port_alertmanager: 9093
+port_node_exporter: 9100
