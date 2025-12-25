@@ -1,6 +1,8 @@
 ---
 - name: Install & Configure Tailscale (Subnet Router)
-  hosts: raspberry
+  hosts:
+    - raspberry
+    - proxmox
   become: yes
   vars:
     # The subnet that the Pi will expose to the Tailscale network
