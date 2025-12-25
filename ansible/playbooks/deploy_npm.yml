@@ -1,6 +1,6 @@
 ---
 - name: Deploy Nginx Proxy Manager on LXC 200
-  hosts: lxc200
+  hosts: infrastructure
   become: yes
   vars:
     npm_dir: /opt/npm
