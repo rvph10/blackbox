@@ -216,14 +216,10 @@ Client
 
 ### Records DNS Locaux (AdGuard)
 
-| Hostname              | IP            | Service             |
-| --------------------- | ------------- | ------------------- |
-| router.blackbox.homes | 192.168.10.1  | OPNsense            |
-| pve.blackbox.homes    | 192.168.10.10 | Proxmox             |
-| switch.blackbox.homes | 192.168.10.3  | Switch              |
-| cargo.blackbox.homes  | 192.168.10.5  | NAS                 |
-| tower.blackbox.homes  | 192.168.10.2  | Raspberry Pi        |
-| \*.blackbox.homes     | (DHCP)        | Services dynamiques |
+| Hostname          | IP             |
+| ----------------- | -------------- |
+| \*.blackbox.homes | 192.168.10.121 |
+| blackbox.homes    | 192.168.10.121 |
 
 **Upstream DNS (AdGuard)** :
 
