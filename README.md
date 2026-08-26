@@ -15,7 +15,7 @@ Phase 0 : valider les inconnues bloquantes avant de commencer à déployer quoi
 que ce soit (voir §12 du brief et §17 de l'audit).
 
 - [x] Squelette du repo
-- [ ] OS du NucBox tranché
+- [x] OS du NucBox tranché — Ubuntu Server LTS + HWE ([ADR-002](docs/adr/002-os-nucbox.md))
 - [ ] OS installé sur le NucBox
 - [ ] Test Wake-on-LAN
 - [ ] Test transcodage matériel VAAPI (Radeon 760M)
@@ -77,6 +77,7 @@ blackbox/
 | # | Titre |
 |---|---|
 | [001](docs/adr/001-monorepo-structure.md) | Structure monorepo |
+| [002](docs/adr/002-os-nucbox.md) | OS du NucBox M6 — Ubuntu Server LTS + HWE |
 
 ## Runbooks
 
@@ -84,7 +85,6 @@ Rien pour l'instant.
 
 ## Points ouverts
 
-- OS du NucBox
 - Rétention Maintainerr (durée avant suppression auto)
 - Politique d'approbation Jellyseerr par type de contenu
 - Durée par défaut des comptes invités
