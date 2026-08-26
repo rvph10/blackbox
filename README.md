@@ -17,8 +17,8 @@ que ce soit (voir §12 du brief et §17 de l'audit).
 
 - [x] Squelette du repo
 - [x] OS du NucBox tranché — Ubuntu Server LTS + HWE ([ADR-002](docs/adr/002-os-nucbox.md))
-- [ ] OS installé sur le NucBox
-- [ ] Test Wake-on-LAN
+- [x] OS installé sur le NucBox
+- [x] Test Wake-on-LAN — fonctionne depuis S3 uniquement, pas S5 ([ADR-004](docs/adr/004-wol-s3-not-s5.md))
 - [ ] Test transcodage matériel VAAPI (Radeon 760M)
 - [ ] Débit montant fibre réel — bloqué jusqu'au 15/09
 - [x] RAID tranché — RAID1 ([ADR-003](docs/adr/003-raid-nas.md))
@@ -80,12 +80,14 @@ blackbox/
 | [001](docs/adr/001-monorepo-structure.md) | Structure monorepo |
 | [002](docs/adr/002-os-nucbox.md) | OS du NucBox M6 — Ubuntu Server LTS + HWE |
 | [003](docs/adr/003-raid-nas.md) | RAID1 sur le NAS |
+| [004](docs/adr/004-wol-s3-not-s5.md) | Réveil réseau : veille S3 plutôt qu'extinction S5 |
 
 ## Runbooks
 
 | Runbook | Description |
 |---|---|
 | [install-os-nucbox.md](docs/runbooks/install-os-nucbox.md) | Install/réinstall Ubuntu Server LTS sur le NucBox |
+| [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md) | Configurer le Wake-on-LAN (driver r8125, netplan, S3) |
 
 ## Points ouverts
 
