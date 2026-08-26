@@ -8,6 +8,7 @@ réel pour la communauté, et vitrine technique pour mon portfolio.
 - Audit externe (risques, priorités, scoring) : [docs/audit_projet.md](docs/audit_projet.md)
 
 Woluwe-Saint-Lambert, Bruxelles. Fibre prévue le 15 septembre 2026.
+Domaine : `blackbox.homes` (Porkbun) — réservé pour le Cloudflare Tunnel (Phase 2).
 
 ## Où on en est
 
