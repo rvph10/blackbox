@@ -1,0 +1,21 @@
+.env
+*.env
+!*.env.example
+
+# Ansible
+*.retry
+
+# Secrets
+*.key
+*.pem
+secrets/
+
+# OS / editors
+.DS_Store
+*.swp
+
+# Python (bot)
+__pycache__/
+*.pyc
+.venv/
+venv/
