@@ -20,7 +20,7 @@ que ce soit (voir §12 du brief et §17 de l'audit).
 - [ ] Test Wake-on-LAN
 - [ ] Test transcodage matériel VAAPI (Radeon 760M)
 - [ ] Débit montant fibre réel — bloqué jusqu'au 15/09
-- [ ] RAID tranché
+- [x] RAID tranché — RAID1 ([ADR-003](docs/adr/003-raid-nas.md))
 - [ ] RAID1 configuré sur le NAS
 - [ ] Routeur/firewall dédié + VLAN — bloqué jusqu'à la fibre
 - [ ] Stack applicative (Jellyfin, *arr*, Jellyseerr...)
@@ -78,6 +78,7 @@ blackbox/
 |---|---|
 | [001](docs/adr/001-monorepo-structure.md) | Structure monorepo |
 | [002](docs/adr/002-os-nucbox.md) | OS du NucBox M6 — Ubuntu Server LTS + HWE |
+| [003](docs/adr/003-raid-nas.md) | RAID1 sur le NAS |
 
 ## Runbooks
 
@@ -88,6 +89,5 @@ Rien pour l'instant.
 - Rétention Maintainerr (durée avant suppression auto)
 - Politique d'approbation Jellyseerr par type de contenu
 - Durée par défaut des comptes invités
-- Arbitrage RAID1/RAID0 sur le NAS
 - Choix du routeur/firewall dédié (voir audit §15)
 - Modèle d'UPS (compatibilité NUT à vérifier)
