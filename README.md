@@ -82,7 +82,9 @@ blackbox/
 
 ## Runbooks
 
-Rien pour l'instant.
+| Runbook | Description |
+|---|---|
+| [install-os-nucbox.md](docs/runbooks/install-os-nucbox.md) | Install/réinstall Ubuntu Server LTS sur le NucBox |
 
 ## Points ouverts
 
