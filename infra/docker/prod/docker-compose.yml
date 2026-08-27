@@ -9,6 +9,11 @@ services:
       - ./data/jellyfin/config:/config
       - ./data/jellyfin/cache:/cache
       - ${MEDIA_PATH}:/media
+    tmpfs:
+      # Dossier temporaire de transcodage en RAM plutôt que sur le SSD :
+      # moins de latence, moins d'usure disque. À pointer depuis Dashboard
+      # -> Playback -> Transcoding -> Transcoding temporary path.
+      - /transcodes:size=4g
     devices:
       - /dev/dri:/dev/dri
     # GID hôte des groupes video/render, pour l'accès à /dev/dri sans
