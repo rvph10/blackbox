@@ -37,3 +37,8 @@
 - Brief (`docs/homelab_projet.md`) et audit (`docs/audit_projet.md`)
   réécrits pour un ton documentaire neutre (suppression des emojis de
   sévérité, des tournures trop orales/IA), contenu et conclusions inchangés
+- ADR-006 : transcodage matériel VAAPI validé sur le Radeon 760M
+  (`mesa-va-drivers` + `vainfo`, utilisateur ajouté aux groupes
+  `video`/`render` pour accéder à `/dev/dri/renderD128`). Test réel via
+  `ffmpeg` (decode H264 → encode HEVC en VAAPI, ~23x temps réel), pas
+  seulement l'énumération de capacités `vainfo`. Risque n°2 du projet levé

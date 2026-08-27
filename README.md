@@ -19,7 +19,7 @@ que ce soit (voir §12 du brief et §17 de l'audit).
 - [x] OS du NucBox tranché — Ubuntu Server LTS + HWE ([ADR-002](docs/adr/002-os-nucbox.md))
 - [x] OS installé sur le NucBox
 - [x] Décision extinction programmée — abandonnée, NucBox allumé 24/7, WoL abandonné ([ADR-005](docs/adr/005-nucbox-always-on.md))
-- [ ] Test transcodage matériel VAAPI (Radeon 760M)
+- [x] Test transcodage matériel VAAPI — validé sur Radeon 760M ([ADR-006](docs/adr/006-vaapi-validated.md))
 - [ ] Débit montant fibre réel — bloqué jusqu'au 15/09
 - [x] RAID tranché — RAID1 ([ADR-003](docs/adr/003-raid-nas.md))
 - [ ] RAID1 configuré sur le NAS
@@ -87,6 +87,7 @@ blackbox/
 | [003](docs/adr/003-raid-nas.md) | RAID1 sur le NAS |
 | [004](docs/adr/004-wol-s3-not-s5.md) | Réveil réseau : veille S3 plutôt qu'extinction S5 (superseded) |
 | [005](docs/adr/005-nucbox-always-on.md) | NucBox allumé en permanence, watchdog externe par microcontrôleur |
+| [006](docs/adr/006-vaapi-validated.md) | Transcodage matériel VAAPI validé sur le NucBox M6 |
 
 ## Runbooks
 
