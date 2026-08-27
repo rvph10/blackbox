@@ -18,7 +18,7 @@ que ce soit (voir §12 du brief et §17 de l'audit).
 - [x] Squelette du repo
 - [x] OS du NucBox tranché — Ubuntu Server LTS + HWE ([ADR-002](docs/adr/002-os-nucbox.md))
 - [x] OS installé sur le NucBox
-- [x] Test Wake-on-LAN — fonctionne depuis S3 uniquement, pas S5 ([ADR-004](docs/adr/004-wol-s3-not-s5.md))
+- [x] Décision extinction programmée — abandonnée, NucBox allumé 24/7, WoL abandonné ([ADR-005](docs/adr/005-nucbox-always-on.md))
 - [ ] Test transcodage matériel VAAPI (Radeon 760M)
 - [ ] Débit montant fibre réel — bloqué jusqu'au 15/09
 - [x] RAID tranché — RAID1 ([ADR-003](docs/adr/003-raid-nas.md))
@@ -36,10 +36,9 @@ flowchart TD
     ONT[ONT fibre Proximus]
     RTR[Routeur/Firewall dédié\nVLAN mgmt/services/users]
     SW[Switch managé 24/7]
-    NUC[NucBox M6 — Ryzen 5 7640HS\nDocker: Jellyfin, arr-suite,\nJellyseerr, Jellystat, Maintainerr,\nPostgres, CrowdSec]
+    NUC[NucBox M6 — Ryzen 5 7640HS — allumé 24/7\nDocker: Jellyfin, arr-suite,\nJellyseerr, Jellystat, Maintainerr,\nPostgres, CrowdSec, Bot Discord]
     NAS[Ugreen DXP2800\nRAID1 — SMB/NFS]
-    RPI5[RPi5 — sentinelle 24/7\nBot Discord, WoL, watcher seuil]
-    RPI0[RPi Zero/2W — watchdog]
+    ESP8266[ESP8266 NodeMCU — watchdog externe\nESPHome, ping + alerte, Wi-Fi]
 
     Internet --> ONT --> RTR
     RTR -- Cloudflare Tunnel --> NUC
@@ -47,13 +46,19 @@ flowchart TD
     RTR --> SW
     SW --> NUC
     SW --> NAS
-    SW --> RPI5
+    ESP8266 -. Wi-Fi .-> NUC
     NUC <-- 2.5GbE SMB/NFS --> NAS
-    RPI5 -- API Jellyfin/Jellystat, WoL --> NUC
-    RPI0 -- ping + alerte Discord --> RPI5
+    ESP8266 -- ping + alerte Discord --> NUC
 ```
 
 Rien de tout ça n'est encore physiquement en place, c'est la cible.
+
+Le NucBox reste allumé en permanence (pas d'extinction/veille programmée,
+uniquement des redémarrages ponctuels nécessaires, WoL abandonné) — voir
+[ADR-005](docs/adr/005-nucbox-always-on.md). Le bot Discord tourne dessus.
+Pas de RPi dans l'archi cible : le seul rôle externe restant (watchdog) est
+couvert par un microcontrôleur ESP8266 (AZ-Delivery NodeMCU, déjà en stock)
+en Wi-Fi.
 
 ## Structure du repo
 
@@ -65,7 +70,7 @@ blackbox/
 │   ├── adr/                # décisions d'architecture
 │   └── runbooks/           # procédures opérationnelles
 ├── infra/
-│   ├── ansible/             # provisioning NucBox + RPi5
+│   ├── ansible/             # provisioning NucBox
 │   └── docker/
 │       ├── prod/
 │       ├── staging/
@@ -80,14 +85,16 @@ blackbox/
 | [001](docs/adr/001-monorepo-structure.md) | Structure monorepo |
 | [002](docs/adr/002-os-nucbox.md) | OS du NucBox M6 — Ubuntu Server LTS + HWE |
 | [003](docs/adr/003-raid-nas.md) | RAID1 sur le NAS |
-| [004](docs/adr/004-wol-s3-not-s5.md) | Réveil réseau : veille S3 plutôt qu'extinction S5 |
+| [004](docs/adr/004-wol-s3-not-s5.md) | Réveil réseau : veille S3 plutôt qu'extinction S5 (superseded) |
+| [005](docs/adr/005-nucbox-always-on.md) | NucBox allumé en permanence, watchdog externe par microcontrôleur |
 
 ## Runbooks
 
 | Runbook | Description |
 |---|---|
 | [install-os-nucbox.md](docs/runbooks/install-os-nucbox.md) | Install/réinstall Ubuntu Server LTS sur le NucBox |
-| [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md) | Configurer le Wake-on-LAN (driver r8125, netplan, S3) |
+
+Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
 
 ## Points ouverts
 
@@ -96,3 +103,5 @@ blackbox/
 - Durée par défaut des comptes invités
 - Choix du routeur/firewall dédié (voir audit §15)
 - Modèle d'UPS (compatibilité NUT à vérifier)
+- Choix d'une prise connectée pour un power-cycle physique du NucBox à
+  distance (voir [ADR-005](docs/adr/005-nucbox-always-on.md))

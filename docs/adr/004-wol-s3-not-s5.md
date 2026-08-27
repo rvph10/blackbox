@@ -1,6 +1,6 @@
 # ADR 004 — Réveil réseau : veille S3 plutôt qu'extinction S5
 
-**Statut :** Accepté
+**Statut :** Superseded par [ADR-005](005-nucbox-always-on.md)
 **Date :** 2026-08-27
 
 ## Contexte

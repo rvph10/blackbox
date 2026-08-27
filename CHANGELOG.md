@@ -22,3 +22,18 @@
 - Runbook WoL complet (BIOS, driver, netplan par MAC, paramètres module)
 - Netplan corrigé : `eno1` marqué optionnel (supprime un délai de boot de 2min
   dû à `systemd-networkd-wait-online`), `dhcp4` activé sur l'interface filaire
+- ADR-005 (supersède ADR-004) : abandon de l'extinction/veille programmée —
+  le NucBox reste allumé 24/7 (redémarrages ponctuels uniquement). WoL
+  abandonné entièrement (plus nécessaire), runbook associé archivé. Bot
+  Discord hébergé sur le NucBox plutôt que sur un RPi séparé. Plus de RPi
+  dans l'archi cible : le seul rôle externe restant (watchdog ping + alerte,
+  domaine de panne indépendant du NucBox) sera couvert par un microcontrôleur
+  ESP8266 (AZ-Delivery NodeMCU, déjà en stock) en Wi-Fi via ESPHome ; archi
+  cible du README mise à jour
+- Choix microcontrôleur watchdog ajusté : ESP8266 (AZ-Delivery NodeMCU/D1
+  mini déjà possédés) plutôt qu'un ESP32+Ethernet à acheter — compromis
+  Wi-Fi documenté dans l'ADR-005. RPi Zero 2 W disponible mais gardé en
+  réserve, pas utilisé pour ce rôle
+- Brief (`docs/homelab_projet.md`) et audit (`docs/audit_projet.md`)
+  réécrits pour un ton documentaire neutre (suppression des emojis de
+  sévérité, des tournures trop orales/IA), contenu et conclusions inchangés

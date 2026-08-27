@@ -1,4 +1,10 @@
-# Runbook — configurer le Wake-on-LAN sur le NucBox M6
+# Runbook — configurer le Wake-on-LAN sur le NucBox M6 (archivé)
+
+> **Obsolète** : le WoL n'est plus utilisé sur ce projet — le NucBox reste
+> allumé 24/7 ([ADR-005](adr/005-nucbox-always-on.md)). Ce runbook est gardé
+> uniquement comme référence technique (driver `r8125`, pièges de nommage
+> d'interface, paramétrage module) au cas où on reviendrait un jour sur
+> cette décision.
 
 Procédure complète pour remettre le WoL en état après une réinstallation.
 Contexte et limitation connue : [ADR-004](adr/004-wol-s3-not-s5.md) — **le
