@@ -28,6 +28,31 @@ Sur Ubuntu Server 26.04 LTS (kernel 7.0.0-30-generic, Mesa 26.0.8) :
    échoue) : decode H264 → encode HEVC via VAAPI sur une vidéo synthétique
    1280x720. Résultat : succès, ~23x la vitesse temps réel, fichier de
    sortie valide (vérifié via `ffprobe`).
+5. Confirmation en conditions réelles via Jellyfin (conteneur Docker,
+   `/dev/dri` passé avec les GID `video`/`render` de l'hôte via
+   `group_add`) : lecture d'un fichier 1080p avec qualité forcée à la
+   baisse dans le lecteur web — session marquée `Transcoding`, process
+   `ffmpeg` du conteneur confirmé via `docker top` (`-hwaccel vaapi
+   -codec:v:0 h264_vaapi -vf scale_vaapi=...`).
+6. Test de charge (capacité concurrente) : plusieurs transcodages VAAPI
+   identiques (1080p → 540p, downscale) lancés en parallèle en CLI, pour
+   mesurer où le débit total passe sous le temps réel (1x — seuil où le
+   streaming commencerait à ramer).
+
+   | Flux simultanés | H264 (par flux) | HEVC (par flux) |
+   |---|---|---|
+   | 1 | 22.5x | 25.8x |
+   | 8 | 2.89x | 3.33x |
+   | 16 | 1.45x | 1.66x |
+   | 20 | 1.16x | 1.33x |
+   | 24 | 0.96x (sous le temps réel) | — |
+
+   Le débit total plafonne à ~22.5x temps réel en H264, ~26x en HEVC,
+   réparti équitablement entre les flux (pas d'effet de falaise, juste une
+   dégradation linéaire). Le seuil de 1x tombe entre 20 et 24 flux
+   simultanés selon le codec. Résultat pessimiste par construction (tous
+   les flux transcodent en même temps sur le même fichier, alors que la
+   stratégie retenue — §4 du brief — privilégie le direct play).
 
 ## Décision
 
@@ -38,7 +63,9 @@ combinaison kernel/Mesa. Jellyfin sera configuré pour l'utiliser
 ## Conséquences
 
 - Le risque n°2 du projet (après le WoL) est levé : la capacité visée de
-  10 flux simultanés avec transcodage à la volée reste réaliste.
+  10 flux simultanés avec transcodage à la volée reste réaliste, avec une
+  marge confortable (seuil mesuré à 20+ flux transcodés simultanément avant
+  de repasser sous le temps réel).
 - Pour le déploiement Docker de Jellyfin : monter `/dev/dri/renderD128`
   dans le conteneur, et faire correspondre le GID du groupe `render` de
   l'hôte à l'intérieur du conteneur (ou lancer le conteneur avec ce groupe)
