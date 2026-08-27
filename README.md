@@ -22,7 +22,8 @@ que ce soit (voir §12 du brief et §17 de l'audit).
 - [x] Test transcodage matériel VAAPI — validé sur Radeon 760M ([ADR-006](docs/adr/006-vaapi-validated.md))
 - [ ] Débit montant fibre réel — bloqué jusqu'au 15/09
 - [x] RAID tranché — RAID1 ([ADR-003](docs/adr/003-raid-nas.md))
-- [ ] RAID1 configuré sur le NAS
+- [x] RAID1 configuré sur le NAS — NAS branché (`dxp`), RAID1 sain,
+  partage NFS `media` monté sur le NucBox et utilisé par Jellyfin
 - [ ] Routeur/firewall dédié + VLAN — bloqué jusqu'à la fibre
 - [ ] Stack applicative (Jellyfin déployé sur le NucBox, VAAPI passthrough
   fonctionnel ; *arr*/Jellyseerr/Postgres pas encore, stockage média encore
@@ -39,7 +40,7 @@ flowchart TD
     RTR[Routeur/Firewall dédié\nVLAN mgmt/services/users]
     SW[Switch managé 24/7]
     NUC[NucBox M6 — Ryzen 5 7640HS — allumé 24/7\nDocker: Jellyfin, arr-suite,\nJellyseerr, Jellystat, Maintainerr,\nPostgres, CrowdSec, Bot Discord]
-    NAS[Ugreen DXP2800\nRAID1 — SMB/NFS]
+    NAS[Ugreen DXP2800 — dxp\nRAID1 — NFS]
     ESP8266[ESP8266 NodeMCU — watchdog externe\nESPHome, ping + alerte, Wi-Fi]
 
     Internet --> ONT --> RTR
@@ -97,6 +98,7 @@ blackbox/
 |---|---|
 | [install-os-nucbox.md](docs/runbooks/install-os-nucbox.md) | Install/réinstall Ubuntu Server LTS sur le NucBox |
 | [setup-jellyfin.md](docs/runbooks/setup-jellyfin.md) | Config Jellyfin post-install : VAAPI, plugins/repos, réglages |
+| [setup-nas.md](docs/runbooks/setup-nas.md) | Config NAS (`dxp`) : RAID1, nettoyage, partage NFS, montage NucBox |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
 
@@ -109,3 +111,5 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
 - Modèle d'UPS (compatibilité NUT à vérifier)
 - Choix d'une prise connectée pour un power-cycle physique du NucBox à
   distance (voir [ADR-005](docs/adr/005-nucbox-always-on.md))
+- IP codées en dur (NAS, NucBox, montage NFS, alias SSH) — à reconfigurer
+  à l'installation du routeur dédié pour la fibre (voir [setup-nas.md](docs/runbooks/setup-nas.md#5-limite-connue--ip-en-dur))

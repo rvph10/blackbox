@@ -66,3 +66,13 @@
   suppression des segments HLS activée (nécessaire avec le tmpfs
   plafonné), accélération matérielle activée pour la génération
   trickplay. Détail complet dans le runbook `setup-jellyfin.md`
+- NAS branché et configuré : nommé `dxp`, RAID1 déjà en place d'une
+  installation précédente (sain, `[UU]`) + cache SSD NVMe en bonus.
+  Nettoyage des restes d'un autre projet homelab (Grafana, Loki,
+  Prometheus, Home Assistant, Proxmox...), rien de ce projet-ci n'était
+  encore dessus. Partage NFS `media` exposé au NucBox, monté en
+  `_netdev,noauto,x-systemd.automount,nofail` (ne bloque pas le boot si
+  le NAS est injoignable). Bibliothèque Jellyfin basculée du stockage
+  local vers le NAS (`MEDIA_PATH` dans `.env`, chemins internes au
+  conteneur inchangés). Runbook `setup-nas.md` ; limite connue : IP
+  codées en dur, à reconfigurer à la migration fibre (15/09)
