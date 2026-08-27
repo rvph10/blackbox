@@ -1,0 +1,91 @@
+# Runbook — configuration Jellyfin (post-installation)
+
+Réglages et plugins appliqués sur le premier déploiement Jellyfin
+(`infra/docker/prod/`), au-delà du wizard d'installation standard. À
+rejouer après une réinstallation ou pour vérifier l'état attendu.
+
+## Identité du serveur
+
+- **Nom du serveur** : `BlackBox`
+- **Langue des métadonnées** : français (`fr`)
+- **Pays des métadonnées** : Belgique (`BE`)
+- **Thème** : JellyFlix (via Skin Manager, voir plugins ci-dessous)
+- **Logo** : personnalisable via LogoSwap (voir plugins ci-dessous), pas
+  encore appliqué — logo Blackbox à uploader quand disponible
+
+## Transcodage / VAAPI
+
+Voir [ADR-006](../adr/006-vaapi-validated.md) pour la validation complète.
+Réglages appliqués dans **Dashboard → Playback → Transcoding** :
+
+| Réglage | Valeur | Pourquoi |
+|---|---|---|
+| Hardware acceleration | Video Acceleration API (VAAPI) | GPU Radeon 760M |
+| VA-API Device | `/dev/dri/renderD128` | device passé au conteneur |
+| Enable hardware decoding | H264, HEVC, VP9, AV1 | tout ce que le driver supporte |
+| Enable hardware encoding | activé | |
+| Allow encoding in HEVC format | **activé** | par défaut désactivé dans Jellyfin — sans ça, sortie toujours en H264 même avec VAAPI actif, alors que le brief (§4) vise HEVC comme cible |
+| Transcoding temporary path | `/transcodes` | tmpfs (RAM), voir `infra/docker/prod/docker-compose.yml` |
+| Delete previous transcoded segments | **activé** (`SegmentKeepSeconds=720`) | nécessaire avec le tmpfs plafonné à 4 Go — sans ça, les segments HLS d'un film long peuvent saturer la RAM allouée |
+| Low-Power mode | désactivé | parfois instable sur AMD, pas testé nécessaire ici |
+
+**Dashboard → Playback → Trickplay** :
+
+| Réglage | Valeur | Pourquoi |
+|---|---|---|
+| Hardware acceleration / encoding | **activé** | décharge la génération de miniatures de scrubbing sur le GPU plutôt que le CPU pendant les scans |
+| Extract during library scan | désactivé | tâche lourde, préférée en planifié plutôt que pendant le scan |
+
+**Dashboard → Libraries → [bibliothèque]** :
+
+- Extract chapter images : désactivé (tâche coûteuse, gain visuel mineur)
+
+## Repositories de plugins
+
+**Dashboard → Plugins → Repositories → Add**
+
+| Nom | URL |
+|---|---|
+| Skin Manager | `https://raw.githubusercontent.com/danieladov/JellyfinPluginManifest/master/manifest.json` |
+| File Transformation | `https://www.iamparadox.dev/jellyfin/plugins/manifest.json` |
+| Jellyfin Enhanced | `https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/10.11/manifest.json` (URL spécifique à la version 10.11.x du serveur) |
+| Intro Skipper | `https://intro-skipper.org/manifest.json` |
+| Logo Swap | `https://raw.githubusercontent.com/NewsGuyTor/LogoSwap/main/manifest.json` |
+
+(Webhook et Playback Reporting sont officiels, déjà dans le repository
+`Jellyfin Stable` par défaut — pas de repo à ajouter.)
+
+## Plugins installés
+
+| Plugin | Version | Rôle | Action après install |
+|---|---|---|---|
+| File Transformation | 2.5.11.0 | Dépendance technique — permet aux autres plugins d'injecter du JS/CSS dans jellyfin-web sans patcher les fichiers | Aucune, doit juste rester actif |
+| Skin Manager | 2.0.2.0 | Gestionnaire de thèmes | Thème **JellyFlix** sélectionné — ne pas changer sans consulter |
+| Intro Skipper | 1.10.11.23 | Détecte et skip les intros/génériques de séries | Nécessite une analyse (`Analyze episodes`) une fois du contenu série présent — rien à faire tant que la bibliothèque est vide |
+| Jellyfin Enhanced | 12.4.1.0 | Raccourcis clavier, styles sous-titres, intégration Jellyseerr (auto-request), etc. | Voir réglages détaillés ci-dessous |
+| Playback Reporting | 17.0.0.0 | Statistiques de lecture | Passif, rien à configurer. Piste : remplacer/compléter Jellystat pour le watcher de seuil (§4 du brief) une fois assez de données |
+| LogoSwap | 1.5.0.0 | Remplacement du logo Jellyfin par un logo perso | Pas encore utilisé (pas de logo Blackbox prêt) |
+| Webhook | 21.0.0.0 | Envoie des notifications (nouveau contenu, lecture démarrée...) vers une URL externe | Pas encore configuré — cible prévue : le futur bot Discord (§8 du brief) |
+
+### Réglages Jellyfin Enhanced appliqués
+
+Activés : `AutoPause`, `AutoResume`, `RandomButton`, `PauseScreen`,
+`QualityTags` (avec tous les sous-tags : résolution, source, HDR, format
+spécial, codec vidéo, info audio), `AutoSkipIntro`/`AutoSkipOutro`.
+
+Désactivés : `AutoPip` (optionnel selon usage), intégration Seerr (pas
+encore de Jellyseerr déployé).
+
+Police de sous-titres : Noto Sans (meilleure couverture des caractères
+accentués/non-latins que la police par défaut).
+
+## Bibliothèques
+
+- **Films** → `/media/movies`
+- **Séries** → `/media/tvshows`
+- Chemins locaux temporaires (`infra/docker/prod/data/media/`) en
+  attendant le NAS — à rebasculer sur le point de montage NFS/SMB une fois
+  disponible (voir [ADR-003](../adr/003-raid-nas.md)).
+- Live TV / IPTV : pas configuré. Prévu nativement dans Jellyfin (module
+  Live TV, flux M3U + guide XMLTV), à faire une fois l'URL M3U du
+  fournisseur IPTV disponible — ce n'est pas un outil séparé.

@@ -51,3 +51,18 @@
   embarqué détecte les encodeurs/décodeurs VAAPI. Postgres et la suite
   *arr* pas encore ajoutés (périmètre volontairement réduit pour ce
   premier déploiement)
+- Charge de travail VAAPI mesurée : ~22.5x temps réel en H264, ~26x en
+  HEVC au total, réparti équitablement entre flux concurrents. Seuil de
+  1x (temps réel) entre 20 et 24 flux transcodés simultanément — marge
+  confortable au-dessus de la cible de 10 flux (détail dans ADR-006)
+- Transcodage en RAM : `/transcodes` monté en tmpfs (4 Go) dans le
+  conteneur Jellyfin plutôt que sur le SSD
+- Configuration Jellyfin post-install : nom du serveur `BlackBox`,
+  thème JellyFlix, bibliothèques Films/Séries (stockage local temporaire),
+  7 plugins installés (File Transformation, Skin Manager, Intro Skipper,
+  Jellyfin Enhanced, Playback Reporting, LogoSwap, Webhook) et leurs
+  repositories. Corrections de config par rapport aux défauts Jellyfin :
+  `AllowHevcEncoding` activé (sinon toujours H264 malgré VAAPI actif),
+  suppression des segments HLS activée (nécessaire avec le tmpfs
+  plafonné), accélération matérielle activée pour la génération
+  trickplay. Détail complet dans le runbook `setup-jellyfin.md`
