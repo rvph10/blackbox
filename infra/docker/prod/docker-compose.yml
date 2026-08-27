@@ -1,0 +1,20 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    ports:
+      - "8096:8096"
+    volumes:
+      - ./data/jellyfin/config:/config
+      - ./data/jellyfin/cache:/cache
+      - ${MEDIA_PATH}:/media
+    devices:
+      - /dev/dri:/dev/dri
+    # GID hôte des groupes video/render, pour l'accès à /dev/dri sans
+    # dépendre du mapping utilisateur/groupe interne à l'image.
+    group_add:
+      - "${VIDEO_GID}"
+      - "${RENDER_GID}"
+    environment:
+      - TZ=${TZ}

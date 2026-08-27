@@ -19,3 +19,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Données des conteneurs (bind mounts) — configs, cache, médiathèque locale
+# temporaire tant que le NAS n'est pas branché
+infra/docker/*/data/

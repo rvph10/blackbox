@@ -42,3 +42,12 @@
   `video`/`render` pour accéder à `/dev/dri/renderD128`). Test réel via
   `ffmpeg` (decode H264 → encode HEVC en VAAPI, ~23x temps réel), pas
   seulement l'énumération de capacités `vainfo`. Risque n°2 du projet levé
+- Docker Engine installé sur le NucBox (dépôt officiel apt, pas le snap ;
+  utilisateur ajouté au groupe `docker`)
+- Premier déploiement applicatif : Jellyfin seul (`infra/docker/prod/`),
+  stockage média temporaire en local (SSD) en attendant le NAS,
+  `/dev/dri` passé au conteneur avec les GID `video`/`render` de l'hôte via
+  `group_add` — accès GPU confirmé à l'intérieur du conteneur, `ffmpeg`
+  embarqué détecte les encodeurs/décodeurs VAAPI. Postgres et la suite
+  *arr* pas encore ajoutés (périmètre volontairement réduit pour ce
+  premier déploiement)

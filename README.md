@@ -24,7 +24,9 @@ que ce soit (voir §12 du brief et §17 de l'audit).
 - [x] RAID tranché — RAID1 ([ADR-003](docs/adr/003-raid-nas.md))
 - [ ] RAID1 configuré sur le NAS
 - [ ] Routeur/firewall dédié + VLAN — bloqué jusqu'à la fibre
-- [ ] Stack applicative (Jellyfin, *arr*, Jellyseerr...)
+- [ ] Stack applicative (Jellyfin déployé sur le NucBox, VAAPI passthrough
+  fonctionnel ; *arr*/Jellyseerr/Postgres pas encore, stockage média encore
+  local en attendant le NAS)
 - [ ] Backup restic + rclone
 - [ ] Bot Discord
 
