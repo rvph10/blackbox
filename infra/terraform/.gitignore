@@ -1,0 +1,14 @@
+# État local — contient le token du tunnel et les IDs de zone/compte
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Variables renseignées
+terraform.tfvars
+*.auto.tfvars
+
+# Cache provider / plans (.terraform.lock.hcl est versionné, lui, pour la repro)
+.terraform/
+*.tfplan
+crash.log
+crash.*.log

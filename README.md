@@ -48,6 +48,11 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   runner self-hosted sur le NucBox à chaque push `main`, voir
   [ADR-013](docs/adr/013-cicd-github-actions.md). Runner self-hosted à
   installer sur le NucBox ([setup-cicd.md](docs/runbooks/setup-cicd.md))
+- [ ] Exposition publique — Cloudflare Tunnel + Terraform (tunnel, config
+  d'ingress, DNS) écrits, service `cloudflared` dans le compose, voir
+  [ADR-014](docs/adr/014-cloudflare-tunnel.md). Reste : basculer la zone
+  `blackbox.homes` sur Cloudflare, `terraform apply`, déployer le token
+  ([setup-cloudflare-tunnel.md](docs/runbooks/setup-cloudflare-tunnel.md))
 
 ## Architecture cible
 
@@ -93,6 +98,7 @@ blackbox/
 │   └── runbooks/           # procédures opérationnelles
 ├── infra/
 │   ├── ansible/             # provisioning NucBox
+│   ├── terraform/           # ressources Cloudflare (tunnel, DNS)
 │   └── docker/
 │       ├── prod/
 │       ├── staging/
@@ -117,6 +123,7 @@ blackbox/
 | [011](docs/adr/011-backup-restic-rclone.md) | Backup restic : NAS local + Google Drive |
 | [012](docs/adr/012-ansible-retrofit.md) | Rattrapage Ansible : provisioning + déploiement du NucBox |
 | [013](docs/adr/013-cicd-github-actions.md) | CI/CD GitHub Actions pour le bot : lint/tests → image GHCR → runner self-hosted |
+| [014](docs/adr/014-cloudflare-tunnel.md) | Exposition publique : Cloudflare Tunnel (config distante) + Terraform scopé Cloudflare |
 
 ## Runbooks
 
@@ -130,6 +137,7 @@ blackbox/
 | [setup-notifications.md](docs/runbooks/setup-notifications.md) | Notifications Layer 1 : webhook Jellyfin, script santé Gluetun |
 | [setup-bot.md](docs/runbooks/setup-bot.md) | Bot Discord Layer 2 : application Discord, clé API Jellyfin, déploiement |
 | [setup-cicd.md](docs/runbooks/setup-cicd.md) | CI/CD : runner self-hosted NucBox, package GHCR, rollback |
+| [setup-cloudflare-tunnel.md](docs/runbooks/setup-cloudflare-tunnel.md) | Cloudflare Tunnel : onboarding zone, jeton API, `terraform apply`, token, config proxy |
 | [setup-backup.md](docs/runbooks/setup-backup.md) | Backup restic : rclone/Google Drive, NAS local, planification, restauration |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
@@ -160,3 +168,8 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
 - Idempotence du playbook Ansible pas encore confirmée sur un deuxième run
   (`changed=0` attendu partout) — un seul run réel effectué pour l'instant
   (voir [ADR-012](docs/adr/012-ansible-retrofit.md))
+- État Terraform (`infra/terraform/terraform.tfstate`) : backend local
+  gitignoré, sauvegarde hors machine à mettre en place (voir
+  [ADR-014](docs/adr/014-cloudflare-tunnel.md))
+- Conformité CGU Cloudflare sur le streaming proxifié : risque assumé,
+  repli documenté (voir [ADR-014](docs/adr/014-cloudflare-tunnel.md))

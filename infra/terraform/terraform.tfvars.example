@@ -1,0 +1,10 @@
+# Copier en terraform.tfvars (gitignoré) et renseigner.
+# Le jeton d'API ne va PAS ici — le passer par l'environnement :
+#   export TF_VAR_cloudflare_api_token='...'
+
+cloudflare_account_id = ""
+cloudflare_zone_id    = ""
+
+# Décommenter pour changer les sous-domaines (défauts : screening / boxoffice)
+# jellyfin_hostname = "screening"
+# seerr_hostname    = "boxoffice"

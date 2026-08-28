@@ -4,6 +4,27 @@
 
 ### 2026-08-29
 
+- ADR-014 : exposition publique de Jellyfin et Seerr via **Cloudflare
+  Tunnel**, préparé avant la fibre (le tunnel est sortant, il n'attend pas
+  le routeur/VLAN). Tunnel à configuration distante (`config_src =
+  "cloudflare"`) : règles d'ingress dans Terraform, le conteneur
+  `cloudflared` ne reçoit qu'un token
+- `infra/terraform/` : premier code Terraform du projet, scopé strictement
+  Cloudflare (tunnel, config d'ingress, 2 CNAME). Backend `local` gitignoré
+  (l'état contient le token), lock file versionné. Sous-domaines
+  thématiques : `screening.blackbox.homes` (Jellyfin),
+  `boxoffice.blackbox.homes` (Seerr)
+- `infra/docker/prod/docker-compose.yml` : service `cloudflared` (connexion
+  sortante, aucun port publié), `.env.example` : `TUNNEL_TOKEN`
+- Pas de Cloudflare Access devant les services : casserait les clients
+  natifs (appli mobile Jellyfin, Infuse). Jellyfin a sa propre auth, Seerr
+  le SSO Jellyfin. Exposition = tunnel + DNS uniquement
+- Runbook `setup-cloudflare-tunnel.md` : bascule de la zone `blackbox.homes`
+  sur Cloudflare (NS chez Porkbun), jeton d'API scopé, `terraform apply`,
+  déploiement du token, config Jellyfin/Seerr derrière le proxy, rollback
+- Écrit mais pas encore appliqué : la zone doit d'abord être active sur
+  Cloudflare
+
 - ADR-013 : chaîne CI/CD GitHub Actions pour le bot Discord (seul code
   applicatif maison du projet). `ci.yml` : `ruff check`, `ruff format
   --check`, `pytest` sur PR et push `main` touchant `bot/`. `release.yml` :
