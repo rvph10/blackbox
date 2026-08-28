@@ -4,8 +4,8 @@ Contexte et choix : [ADR-014](../adr/014-cloudflare-tunnel.md).
 Code : [`infra/terraform/`](../../infra/terraform/).
 
 Résultat visé :
-- `https://screening.blackbox.homes` → Jellyfin
-- `https://boxoffice.blackbox.homes` → Seerr
+- `https://stream.blackbox.homes` → Jellyfin
+- `https://requests.blackbox.homes` → Seerr
 
 Aucun port ouvert sur la box, connexion sortante uniquement.
 
@@ -63,7 +63,7 @@ terraform apply
 Vérifs post-apply :
 - Cloudflare → **Zero Trust → Networks → Tunnels** : `blackbox-nucbox`
   présent, statut **Down** (normal, le conteneur n'existe pas encore)
-- Zone DNS : 2 CNAME `screening` / `boxoffice` → `<id>.cfargotunnel.com`,
+- Zone DNS : 2 CNAME `stream` / `requests` → `<id>.cfargotunnel.com`,
   proxifiés (nuage orange)
 
 ## 4. Déployer le token sur le NucBox
@@ -97,14 +97,14 @@ Jellyfin Dashboard → **Networking** :
   conteneur.
 - Ne **pas** définir de base URL (les sous-domaines dédiés servent la racine).
 
-Seerr : **Settings → General → Application URL** = `https://boxoffice.blackbox.homes`.
+Seerr : **Settings → General → Application URL** = `https://requests.blackbox.homes`.
 
 ## 6. Vérification finale
 
 - Depuis un réseau **hors LAN** (4G, partage de connexion) :
-  `https://screening.blackbox.homes` → page de login Jellyfin, lecture d'un
+  `https://stream.blackbox.homes` → page de login Jellyfin, lecture d'un
   média OK (le transcodage éventuel se fait sur le NucBox comme d'habitude)
-- `https://boxoffice.blackbox.homes` → Seerr, connexion via compte Jellyfin
+- `https://requests.blackbox.homes` → Seerr, connexion via compte Jellyfin
 - Jellyfin Dashboard → une session active affiche bien l'IP publique du
   client, pas `172.x`
 

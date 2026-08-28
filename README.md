@@ -165,9 +165,6 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
 - Restauration restic (NAS local + Google Drive) jamais testée en
   conditions réelles, seule la sauvegarde l'a été (voir
   [ADR-011](docs/adr/011-backup-restic-rclone.md))
-- Idempotence du playbook Ansible pas encore confirmée sur un deuxième run
-  (`changed=0` attendu partout) — un seul run réel effectué pour l'instant
-  (voir [ADR-012](docs/adr/012-ansible-retrofit.md))
 - État Terraform (`infra/terraform/terraform.tfstate`) : backend local
   gitignoré, sauvegarde hors machine à mettre en place (voir
   [ADR-014](docs/adr/014-cloudflare-tunnel.md))

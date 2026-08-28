@@ -80,8 +80,8 @@ fonctionne normalement avec `--ask-become-pass`.
 - Run réel exécuté : `changed=1` (uniquement la correction de permissions
   `0775` → `0755` sur deux dossiers créés à la main lors du déploiement
   manuel initial, écart mineur sans conséquence)
-- Un deuxième run pour confirmer l'idempotence complète (`changed=0`
-  partout) reste à faire — point ouvert, noté plutôt que supposé
+- Deuxième run (2026-08-29) : `ok=12 changed=0 failed=0` — idempotence
+  complète confirmée
 
 ## Conséquences
 

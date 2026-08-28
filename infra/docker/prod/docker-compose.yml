@@ -142,8 +142,8 @@ services:
     depends_on:
       - jellyfin
 
-  # Tunnel Cloudflare — expose Jellyfin (screening.blackbox.homes) et Seerr
-  # (boxoffice.blackbox.homes) sans port forwarding. Connexion sortante
+  # Tunnel Cloudflare — expose Jellyfin (stream.blackbox.homes) et Seerr
+  # (requests.blackbox.homes) sans port forwarding. Connexion sortante
   # uniquement, aucun port publié. Les règles d'ingress sont gérées côté
   # Cloudflare par Terraform (infra/terraform) ; ce conteneur ne reçoit que
   # le token. Voir docs/adr/014-cloudflare-tunnel.md.

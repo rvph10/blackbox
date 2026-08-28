@@ -10,7 +10,9 @@ terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 5"
+      # >= 5.8.2 : sérialisation de zero_trust_tunnel_cloudflared_config
+      # corrigée (bugs #5508 / #6308 des premières 5.x).
+      version = "~> 5.8"
     }
   }
 }

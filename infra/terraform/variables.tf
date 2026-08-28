@@ -34,16 +34,16 @@ variable "tunnel_name" {
   default     = "blackbox-nucbox"
 }
 
-# Sous-domaines — thème « salle de cinéma ». Changer ici suffit : le tunnel
-# config et les enregistrements DNS suivent.
+# Sous-domaines. Changer ici suffit : le tunnel config et les enregistrements
+# DNS suivent.
 variable "jellyfin_hostname" {
   description = "Sous-domaine pour Jellyfin (sans le domaine)."
   type        = string
-  default     = "screening"
+  default     = "stream"
 }
 
 variable "seerr_hostname" {
   description = "Sous-domaine pour Seerr (demandes de contenu)."
   type        = string
-  default     = "boxoffice"
+  default     = "requests"
 }

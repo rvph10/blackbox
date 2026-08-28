@@ -5,6 +5,6 @@
 cloudflare_account_id = ""
 cloudflare_zone_id    = ""
 
-# Décommenter pour changer les sous-domaines (défauts : screening / boxoffice)
-# jellyfin_hostname = "screening"
-# seerr_hostname    = "boxoffice"
+# Décommenter pour changer les sous-domaines (défauts : stream / requests)
+# jellyfin_hostname = "stream"
+# seerr_hostname    = "requests"

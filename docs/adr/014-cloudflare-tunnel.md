@@ -54,12 +54,12 @@ limite donc au tunnel + DNS. CrowdSec (prévu) reste la couche de protection
 additionnelle côté NucBox. Access pourra servir plus tard pour d'éventuels
 dashboards, mais ceux-ci restent sur Tailscale (cf. [audit §6](../audit_projet.md)).
 
-### Sous-domaines thématiques
+### Sous-domaines
 
-`screening.blackbox.homes` → Jellyfin (la salle de projection),
-`boxoffice.blackbox.homes` → Seerr (le guichet où on demande une place).
-Variables Terraform (`jellyfin_hostname`, `seerr_hostname`) — un seul endroit
-à changer, DNS et ingress suivent.
+`stream.blackbox.homes` → Jellyfin, `requests.blackbox.homes` → Seerr.
+Explicites plutôt que thématiques : un utilisateur non technique comprend
+immédiatement. Variables Terraform (`jellyfin_hostname`, `seerr_hostname`) —
+un seul endroit à changer, DNS et ingress suivent.
 
 ### Zone DNS déplacée chez Cloudflare
 
