@@ -1,0 +1,60 @@
+---
+# Déploie le code (compose, bot, scripts) — jamais les secrets (.env), qui
+# n'existent que sur le serveur et ne transitent jamais par le repo Git ni
+# par ce playbook. Voir chaque runbook (setup-*.md) pour la création
+# manuelle des .env, étape volontairement hors Ansible pour l'instant.
+
+- name: Créer la structure de dossiers sur le NucBox
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /home/kong/blackbox/prod
+    - /home/kong/blackbox/bot
+    - /home/kong/blackbox/scripts/gluetun-healthcheck
+    - /home/kong/blackbox/scripts/backup
+
+- name: Déployer docker-compose.yml
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../docker/prod/docker-compose.yml"
+    dest: /home/kong/blackbox/prod/docker-compose.yml
+    mode: "0644"
+  notify: docker compose up
+
+- name: Déployer le code du bot (hors .env)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../../bot/"
+    dest: /home/kong/blackbox/bot/
+    mode: "0644"
+  notify: docker compose up
+
+- name: Déployer le script gluetun-healthcheck (hors .env)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../scripts/gluetun-healthcheck/check-gluetun.sh"
+    dest: /home/kong/blackbox/scripts/gluetun-healthcheck/check-gluetun.sh
+    mode: "0755"
+
+- name: Déployer le script de backup (hors .env)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../scripts/backup/backup.sh"
+    dest: /home/kong/blackbox/scripts/backup/backup.sh
+    mode: "0755"
+
+- name: Vérifier la présence des secrets requis
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /home/kong/blackbox/prod/.env
+    - /home/kong/blackbox/bot/.env
+    - /home/kong/blackbox/scripts/gluetun-healthcheck/.env
+    - /home/kong/blackbox/scripts/backup/.env
+  register: env_files
+
+- name: Avertir si des secrets manquent (création manuelle requise, voir runbooks)
+  ansible.builtin.debug:
+    msg: >-
+      {{ item.item }} est absent — le créer manuellement avant de relancer
+      (voir le runbook correspondant), ce playbook ne gère jamais les secrets.
+  loop: "{{ env_files.results }}"
+  when: not item.stat.exists

@@ -1,0 +1,19 @@
+---
+# Playbook principal — provisioning + déploiement du NucBox.
+# Idempotent : relançable sans risque, ne fait que rattraper l'écart entre
+# l'état déclaré ici et l'état réel de la machine.
+#
+# Ne gère jamais les secrets (.env, rclone.conf) — voir chaque runbook
+# (docs/runbooks/setup-*.md) pour leur création manuelle, et
+# docs/adr/012-ansible-retrofit.md pour le raisonnement.
+#
+# Usage : ansible-playbook playbooks/site.yml (depuis infra/ansible/)
+
+- name: Provisioning et déploiement NucBox
+  hosts: nucbox
+  gather_facts: true
+  roles:
+    - base
+    - docker
+    - deploy
+    - systemd_timers

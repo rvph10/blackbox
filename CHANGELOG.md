@@ -91,6 +91,22 @@
 - Runbook `setup-backup.md` : configuration rclone/Google Drive, restic,
   déploiement, vérification, procédure de restauration (non testée en
   conditions réelles, point ouvert noté)
+- ADR-012 : rattrapage du choix Ansible du brief initial, resté non
+  appliqué (dossier `infra/ansible/` vide) tout au long du déploiement
+  manuel documenté dans les runbooks précédents. Playbook `site.yml` + 4
+  rôles (base, docker, deploy, systemd_timers) couvrant tout ce qui avait
+  été construit à la main jusqu'ici — secrets toujours volontairement hors
+  scope (vérifiés, jamais générés/modifiés par Ansible)
+- Bug bloquant trouvé et corrigé : le NucBox utilise `sudo-rs` (réécriture
+  Rust de sudo, devenue le défaut sur Ubuntu récent) au lieu du `sudo` GNU
+  historique — incompatibilité connue et non résolue avec le plugin
+  `become` d'Ansible (`[sudo: authenticate]` au lieu du prompt standard,
+  timeout systématique). Corrigé en réinstallant `sudo` classique et en
+  basculant l'alternative système (`update-alternatives --set sudo`)
+- Playbook testé en mode simulation (`--check --diff`, aucune surprise)
+  puis en conditions réelles (`changed=1`, uniquement une correction de
+  permissions mineure sur deux dossiers) — deuxième run de confirmation
+  d'idempotence pas encore fait, noté en point ouvert
 
 ### 2026-08-26
 

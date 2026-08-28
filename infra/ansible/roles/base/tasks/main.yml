@@ -1,0 +1,27 @@
+---
+# Paquets et groupes système — voir docs/runbooks/install-os-nucbox.md et
+# docs/runbooks/setup-jellyfin.md (VAAPI) pour le contexte de chaque choix.
+
+- name: Installer les paquets système de base
+  become: true
+  ansible.builtin.apt:
+    name:
+      - curl
+      - git
+      - mesa-va-drivers # VAAPI, voir ADR-006
+      - vainfo
+      - restic # voir ADR-011
+      - rclone # voir ADR-011
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Vérifier l'appartenance de kong aux groupes video/render (VAAPI)
+  become: true
+  ansible.builtin.user:
+    name: kong
+    groups:
+      - video
+      - render
+      - docker
+    append: true

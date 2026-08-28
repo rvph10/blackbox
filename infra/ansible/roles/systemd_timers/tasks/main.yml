@@ -1,0 +1,32 @@
+---
+# Déploie et active les timers systemd — gluetun-healthcheck (ADR-009) et
+# blackbox-backup (ADR-011). Nécessite sudo (become), donc une exécution
+# interactive du playbook (mot de passe demandé, voir ansible.cfg).
+
+- name: Déployer les unités systemd
+  become: true
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../scripts/{{ item.src }}"
+    dest: "/etc/systemd/system/{{ item.dest }}"
+    mode: "0644"
+  loop:
+    - src: gluetun-healthcheck/gluetun-healthcheck.service
+      dest: gluetun-healthcheck.service
+    - src: gluetun-healthcheck/gluetun-healthcheck.timer
+      dest: gluetun-healthcheck.timer
+    - src: backup/blackbox-backup.service
+      dest: blackbox-backup.service
+    - src: backup/blackbox-backup.timer
+      dest: blackbox-backup.timer
+  notify: reload systemd
+
+- name: Activer les timers
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - gluetun-healthcheck.timer
+    - blackbox-backup.timer

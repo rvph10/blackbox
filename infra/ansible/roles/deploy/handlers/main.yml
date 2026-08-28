@@ -1,0 +1,9 @@
+---
+- name: docker compose up
+  ansible.builtin.command: docker compose up -d --build
+  args:
+    chdir: /home/kong/blackbox/prod
+  # Ne se déclenche que si tous les .env requis existent déjà (créés
+  # manuellement au préalable) — sinon `docker compose up` échouerait sur
+  # les services dont l'env_file est manquant.
+  when: env_files.results | selectattr('stat.exists', 'equalto', false) | list | length == 0

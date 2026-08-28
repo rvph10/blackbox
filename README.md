@@ -109,6 +109,7 @@ blackbox/
 | [009](docs/adr/009-notifications-layer1.md) | Notifications passives (Layer 1) : contenu ajouté + santé VPN, sans code de bot |
 | [010](docs/adr/010-bot-layer2.md) | Bot Discord Layer 2 : commandes de statut en lecture seule (`/status`, `/streams`) |
 | [011](docs/adr/011-backup-restic-rclone.md) | Backup restic : NAS local + Google Drive |
+| [012](docs/adr/012-ansible-retrofit.md) | Rattrapage Ansible : provisioning + déploiement du NucBox |
 
 ## Runbooks
 
@@ -148,3 +149,6 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
 - Restauration restic (NAS local + Google Drive) jamais testée en
   conditions réelles, seule la sauvegarde l'a été (voir
   [ADR-011](docs/adr/011-backup-restic-rclone.md))
+- Idempotence du playbook Ansible pas encore confirmée sur un deuxième run
+  (`changed=0` attendu partout) — un seul run réel effectué pour l'instant
+  (voir [ADR-012](docs/adr/012-ansible-retrofit.md))
