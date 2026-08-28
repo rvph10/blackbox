@@ -70,6 +70,27 @@
   éviter de reproduire l'erreur
 - Runbook `setup-bot.md` : création de l'application Discord, clé API
   Jellyfin dédiée, déploiement, invitation du bot, vérification
+- ADR-011 : premier backup du projet — restic vers deux dépôts
+  indépendants, NAS local (`dxp`, partage NFS déjà monté) et Google Drive
+  (via `rclone`, compte déjà possédé par l'utilisateur). Périmètre : configs
+  applicatives uniquement (bases Sonarr/Radarr/Prowlarr/Bazarr/Seerr, config
+  Jellyfin, `.env`), pas la médiathèque (déjà protégée par le RAID1 du NAS,
+  re-téléchargeable via la suite *arr*)
+- Passphrase restic générée (`openssl rand -base64 32`), remise à
+  l'utilisateur avec consigne explicite de la conserver hors du NucBox
+  (gestionnaire de mots de passe) — sans quoi les deux dépôts deviennent
+  irrécupérables si le NucBox meurt
+- Bug trouvé et corrigé au premier test réel : `restic backup` échouait
+  (code 3) sur des fichiers temporaires root-only créés par Jellyfin
+  (`config/temp/mm-exhelper.so.*`, extraction de bibliothèques natives),
+  malgré un snapshot valide créé — corrigé en excluant ce dossier
+  (sans intérêt à restaurer, recréé au démarrage)
+- Backup quotidien planifié à 4h via `blackbox-backup.timer` (systemd),
+  rétention `--keep-daily 7 --keep-weekly 4 --keep-monthly 6`, alerte
+  Discord sur le webhook admin uniquement en cas d'échec (silence sinon)
+- Runbook `setup-backup.md` : configuration rclone/Google Drive, restic,
+  déploiement, vérification, procédure de restauration (non testée en
+  conditions réelles, point ouvert noté)
 
 ### 2026-08-26
 

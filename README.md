@@ -33,7 +33,10 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   Screening, Welcome Screen, accueil, intégration Seerr/Jellyfin), voir
   [ADR-008](docs/adr/008-discord-community.md). Le bot Discord lui-même
   reste à construire
-- [ ] Backup restic + rclone
+- [x] Backup restic + rclone — configs applicatives (pas la médiathèque),
+  deux dépôts indépendants : NAS local + Google Drive, quotidien via
+  systemd timer, voir [ADR-011](docs/adr/011-backup-restic-rclone.md).
+  Restauration à blanc pas encore testée en conditions réelles
 - [ ] Bot Discord — notifications passives (Layer 1) en place sans code de
   bot : contenu ajouté (Jellyfin → webhook Discord natif) et santé VPN
   (Gluetun → script + timer systemd), voir [ADR-009](docs/adr/009-notifications-layer1.md).
@@ -105,6 +108,7 @@ blackbox/
 | [008](docs/adr/008-discord-community.md) | Discord communautaire : structure native, pas de bot pour l'instant |
 | [009](docs/adr/009-notifications-layer1.md) | Notifications passives (Layer 1) : contenu ajouté + santé VPN, sans code de bot |
 | [010](docs/adr/010-bot-layer2.md) | Bot Discord Layer 2 : commandes de statut en lecture seule (`/status`, `/streams`) |
+| [011](docs/adr/011-backup-restic-rclone.md) | Backup restic : NAS local + Google Drive |
 
 ## Runbooks
 
@@ -117,6 +121,7 @@ blackbox/
 | [setup-discord.md](docs/runbooks/setup-discord.md) | Serveur Discord : rôles, salons, Rules Screening, accueil, intégration Seerr |
 | [setup-notifications.md](docs/runbooks/setup-notifications.md) | Notifications Layer 1 : webhook Jellyfin, script santé Gluetun |
 | [setup-bot.md](docs/runbooks/setup-bot.md) | Bot Discord Layer 2 : application Discord, clé API Jellyfin, déploiement |
+| [setup-backup.md](docs/runbooks/setup-backup.md) | Backup restic : rclone/Google Drive, NAS local, planification, restauration |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
 
@@ -140,3 +145,6 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
   bot Discord (voir [ADR-008](docs/adr/008-discord-community.md))
 - Watchdog ESP8266 pas encore branché sur les notifications Discord
   (voir [ADR-009](docs/adr/009-notifications-layer1.md))
+- Restauration restic (NAS local + Google Drive) jamais testée en
+  conditions réelles, seule la sauvegarde l'a été (voir
+  [ADR-011](docs/adr/011-backup-restic-rclone.md))

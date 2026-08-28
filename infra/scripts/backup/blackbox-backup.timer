@@ -1,0 +1,10 @@
+[Unit]
+Description=Lance la sauvegarde restic Blackbox une fois par jour
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+Unit=blackbox-backup.service
+
+[Install]
+WantedBy=timers.target

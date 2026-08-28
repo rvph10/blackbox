@@ -1,0 +1,9 @@
+[Unit]
+Description=Sauvegarde restic des configs Blackbox (NAS local + Google Drive)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=kong
+ExecStart=/home/kong/blackbox/scripts/backup/backup.sh
