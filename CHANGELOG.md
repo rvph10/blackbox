@@ -2,6 +2,32 @@
 
 ## [Non publié]
 
+### 2026-08-28
+
+- ADR-008 : serveur Discord communautaire construit sur les fonctionnalités
+  natives uniquement, aucun bot pour l'instant. Mode Communauté activé
+  (Découverte désactivée, invitation uniquement), rôles Admin/Membre, salons
+  `#règles` (lecture seule), `#accueil` (lecture seule, message épinglé),
+  `#annonces` (System Messages Channel + futures notifs), `#discussion`,
+  `#demandes`, `#bugs-et-problèmes`
+- Rules Screening configuré via Safety Setup (l'interface Discord a changé,
+  ce n'est plus un onglet séparé) — règles rédigées, `#règles` verrouillé en
+  écriture
+- Welcome Screen et description du serveur rédigés
+- Décisions actées et documentées : comptes invités (Wizarr) abandonnés
+  (communauté fixe, pas de flux de visiteurs), rôle "Nouveau" et onboarding
+  natif à rôle par défaut écartés (exigences disproportionnées pour 10
+  personnes), création de compte et gamification par temps de visionnage
+  jugées faisables mais reportées au futur bot Discord
+- Intégration Seerr du plugin Jellyfin-Enhanced vérifiée directement dans sa
+  config (déjà active : recherche/demande depuis Jellyfin, 4K désactivé de
+  façon cohérente avec le profil qualité Radarr, import auto des comptes
+  Seerr via Sign-in with Jellyfin) — `DownloadsPageEnabled` et
+  `CalendarPageEnabled` activés en plus (suivi des téléchargements et
+  calendrier des sorties directement dans Jellyfin)
+- Runbook `setup-discord.md` : procédure complète (rôles, salons, Rules
+  Screening, Welcome Screen, message d'accueil, config Jellyfin-Enhanced)
+
 ### 2026-08-26
 
 - Squelette du repo (docs/infra/bot), import du brief et de l'audit dans `docs/`

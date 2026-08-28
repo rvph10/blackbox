@@ -29,6 +29,10 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   (Prowlarr, Sonarr, Radarr, Bazarr, Seerr, qBittorrent derrière un VPN
   Mullvad/Gluetun), voir [ADR-007](docs/adr/007-arr-stack.md). Postgres pas
   encore nécessaire (pas de service qui le requiert pour l'instant)
+- [x] Serveur Discord communautaire — structure native (rôles, Rules
+  Screening, Welcome Screen, accueil, intégration Seerr/Jellyfin), voir
+  [ADR-008](docs/adr/008-discord-community.md). Le bot Discord lui-même
+  reste à construire
 - [ ] Backup restic + rclone
 - [ ] Bot Discord
 
@@ -93,6 +97,7 @@ blackbox/
 | [005](docs/adr/005-nucbox-always-on.md) | NucBox allumé en permanence, watchdog externe par microcontrôleur |
 | [006](docs/adr/006-vaapi-validated.md) | Transcodage matériel VAAPI validé sur le NucBox M6 |
 | [007](docs/adr/007-arr-stack.md) | Suite *arr* : Prowlarr, Sonarr, Radarr, Bazarr, Seerr, VPN Mullvad/Gluetun |
+| [008](docs/adr/008-discord-community.md) | Discord communautaire : structure native, pas de bot pour l'instant |
 
 ## Runbooks
 
@@ -102,6 +107,7 @@ blackbox/
 | [setup-jellyfin.md](docs/runbooks/setup-jellyfin.md) | Config Jellyfin post-install : VAAPI, plugins/repos, réglages |
 | [setup-nas.md](docs/runbooks/setup-nas.md) | Config NAS (`dxp`) : RAID1, nettoyage, partage NFS, montage NucBox |
 | [setup-arr-stack.md](docs/runbooks/setup-arr-stack.md) | Suite *arr* : VPN, indexeurs, clés API, config par service |
+| [setup-discord.md](docs/runbooks/setup-discord.md) | Serveur Discord : rôles, salons, Rules Screening, accueil, intégration Seerr |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
 
@@ -109,7 +115,6 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
 
 - Rétention Maintainerr (durée avant suppression auto)
 - Politique d'approbation Jellyseerr par type de contenu
-- Durée par défaut des comptes invités
 - Choix du routeur/firewall dédié (voir audit §15)
 - Modèle d'UPS (compatibilité NUT à vérifier)
 - Choix d'une prise connectée pour un power-cycle physique du NucBox à
@@ -121,3 +126,6 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
   bloquant pour l'usage prévu (voir [ADR-007](docs/adr/007-arr-stack.md))
 - Indexeurs limités à YTS + The Pirate Bay (EZTV/1337x écartés, bloqués par
   Cloudflare) — à revisiter si le catalogue s'avère insuffisant
+- Création de compte Jellyfin/Seerr automatisée à l'arrivée sur le Discord,
+  et gamification par temps de visionnage — jugées faisables, reportées au
+  bot Discord (voir [ADR-008](docs/adr/008-discord-community.md))
