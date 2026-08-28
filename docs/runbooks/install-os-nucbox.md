@@ -11,12 +11,12 @@ en avril). Vérifier le SHA256 avant de flasher sur clé USB.
 
 ## BIOS, avant de lancer l'installeur
 
-| Réglage | Valeur | Pourquoi |
-|---|---|---|
-| Wake-on-LAN / Power On by PCIE-LAN | Activé | Nécessaire pour le test WoL, souvent off par défaut |
-| ErP / EuP Ready (deep sleep) | Désactivé | Sinon coupe le WoL en extinction complète (S5), même WoL activé |
-| Power On after AC Loss | Power On / Last State | Redémarre seul après coupure de courant |
-| Secure Boot | Activé, ne pas toucher | amdgpu (driver open-source) fonctionne très bien avec |
+| Réglage                            | Valeur                 | Pourquoi                                                        |
+| ---------------------------------- | ---------------------- | --------------------------------------------------------------- |
+| Wake-on-LAN / Power On by PCIE-LAN | Activé                 | Nécessaire pour le test WoL, souvent off par défaut             |
+| ErP / EuP Ready (deep sleep)       | Désactivé              | Sinon coupe le WoL en extinction complète (S5), même WoL activé |
+| Power On after AC Loss             | Power On / Last State  | Redémarre seul après coupure de courant                         |
+| Secure Boot                        | Activé, ne pas toucher | amdgpu (driver open-source) fonctionne très bien avec           |
 
 ## Dans l'installeur (Subiquity)
 
