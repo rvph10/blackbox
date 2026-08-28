@@ -1,0 +1,10 @@
+[Unit]
+Description=Lance la vérification de santé gluetun toutes les 2 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=2min
+Unit=gluetun-healthcheck.service
+
+[Install]
+WantedBy=timers.target

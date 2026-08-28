@@ -1,0 +1,9 @@
+[Unit]
+Description=Vérifie l'état de santé de gluetun et alerte sur Discord si ça change
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=kong
+ExecStart=/home/kong/blackbox/scripts/gluetun-healthcheck/check-gluetun.sh

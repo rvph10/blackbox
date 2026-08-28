@@ -27,6 +27,32 @@
   calendrier des sorties directement dans Jellyfin)
 - Runbook `setup-discord.md` : procédure complète (rôles, salons, Rules
   Screening, Welcome Screen, message d'accueil, config Jellyfin-Enhanced)
+- ADR-009 : premières notifications Discord (Layer 1) mises en place sans
+  code de bot. Liste volontairement courte pour éviter le spam : contenu
+  ajouté (Jellyfin, événement *Item Added*) vers `#annonces`, santé du VPN
+  Gluetun vers le salon admin. Écartés explicitement : doublon Seerr/
+  Jellyfin sur "média disponible", notifs de nouvelle demande (auto-approve
+  déjà actif, aucune action requise), Playback Start/Stop (vie privée),
+  User Created
+- Bug trouvé et corrigé sur le webhook Jellyfin : la destination Discord
+  avait été créée en type "Generic" avec un template JSON vide, ce qui
+  aurait fait échouer silencieusement les notifications côté Discord (API
+  Discord rejette un webhook sans `content`/`embeds`) — corrigé en
+  recréant la destination avec le type "Discord" natif du plugin, qui
+  génère l'embed automatiquement
+- Script `infra/scripts/gluetun-healthcheck/check-gluetun.sh` : vérifie
+  l'état de santé du conteneur gluetun, poste sur le webhook Discord admin
+  uniquement quand l'état change (pas à chaque exécution). Déployé sur le
+  NucBox, exécuté toutes les 2 minutes via `gluetun-healthcheck.timer`
+  (systemd), testé en conditions réelles (premier message reçu avec
+  succès)
+- Rich Presence Discord façon Spotify ("voir ce que les autres regardent")
+  : identifié comme non réalisable côté serveur (fonctionne par IPC locale
+  sur la machine de chaque utilisateur), solutions existantes
+  (`jellyfin-rpc`) notées comme option client opt-in à documenter plus
+  tard, pas un chantier serveur
+- ESP8266 (watchdog) volontairement mis en pause pour cette itération, même
+  principe que Gluetun à appliquer plus tard côté ESPHome
 
 ### 2026-08-26
 

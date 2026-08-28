@@ -34,7 +34,11 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   [ADR-008](docs/adr/008-discord-community.md). Le bot Discord lui-même
   reste à construire
 - [ ] Backup restic + rclone
-- [ ] Bot Discord
+- [ ] Bot Discord — notifications passives (Layer 1) en place sans code de
+  bot : contenu ajouté (Jellyfin → webhook Discord natif) et santé VPN
+  (Gluetun → script + timer systemd), voir [ADR-009](docs/adr/009-notifications-layer1.md).
+  Bot actif (Layer 2/3 : commandes de statut, création de compte,
+  gamification) pas commencé
 
 ## Architecture cible
 
@@ -98,6 +102,7 @@ blackbox/
 | [006](docs/adr/006-vaapi-validated.md) | Transcodage matériel VAAPI validé sur le NucBox M6 |
 | [007](docs/adr/007-arr-stack.md) | Suite *arr* : Prowlarr, Sonarr, Radarr, Bazarr, Seerr, VPN Mullvad/Gluetun |
 | [008](docs/adr/008-discord-community.md) | Discord communautaire : structure native, pas de bot pour l'instant |
+| [009](docs/adr/009-notifications-layer1.md) | Notifications passives (Layer 1) : contenu ajouté + santé VPN, sans code de bot |
 
 ## Runbooks
 
@@ -108,6 +113,7 @@ blackbox/
 | [setup-nas.md](docs/runbooks/setup-nas.md) | Config NAS (`dxp`) : RAID1, nettoyage, partage NFS, montage NucBox |
 | [setup-arr-stack.md](docs/runbooks/setup-arr-stack.md) | Suite *arr* : VPN, indexeurs, clés API, config par service |
 | [setup-discord.md](docs/runbooks/setup-discord.md) | Serveur Discord : rôles, salons, Rules Screening, accueil, intégration Seerr |
+| [setup-notifications.md](docs/runbooks/setup-notifications.md) | Notifications Layer 1 : webhook Jellyfin, script santé Gluetun |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
 
@@ -129,3 +135,5 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
 - Création de compte Jellyfin/Seerr automatisée à l'arrivée sur le Discord,
   et gamification par temps de visionnage — jugées faisables, reportées au
   bot Discord (voir [ADR-008](docs/adr/008-discord-community.md))
+- Watchdog ESP8266 pas encore branché sur les notifications Discord
+  (voir [ADR-009](docs/adr/009-notifications-layer1.md))
