@@ -1,6 +1,6 @@
 ---
 - name: docker compose up
-  ansible.builtin.command: docker compose up -d --build
+  ansible.builtin.shell: docker compose pull && docker compose up -d --remove-orphans
   args:
     chdir: /home/kong/blackbox/prod
   # Ne se déclenche que si tous les .env requis existent déjà (créés

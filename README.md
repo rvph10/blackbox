@@ -43,6 +43,11 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   Layer 2 (`/status`, `/streams`, lecture seule) déployé et vérifié, voir
   [ADR-010](docs/adr/010-bot-layer2.md). Layer 3 (création de compte,
   gamification) pas commencé
+- [x] CI/CD du bot — GitHub Actions : lint (ruff) + tests (pytest) sur PR,
+  build image `ghcr.io/rvph10/blackbox-bot` + push GHCR + déploiement via
+  runner self-hosted sur le NucBox à chaque push `main`, voir
+  [ADR-013](docs/adr/013-cicd-github-actions.md). Runner self-hosted à
+  installer sur le NucBox ([setup-cicd.md](docs/runbooks/setup-cicd.md))
 
 ## Architecture cible
 
@@ -80,6 +85,7 @@ en Wi-Fi.
 
 ```
 blackbox/
+├── .github/workflows/       # CI (lint/tests) + release (build GHCR + deploy)
 ├── docs/
 │   ├── homelab_projet.md   # brief, source de vérité vision/archi
 │   ├── audit_projet.md     # audit externe
@@ -91,7 +97,7 @@ blackbox/
 │       ├── prod/
 │       ├── staging/
 │       └── dev/
-└── bot/                      # bot Discord Python
+└── bot/                      # bot Discord Python (+ tests, config ruff/pytest)
 ```
 
 ## ADR
@@ -110,6 +116,7 @@ blackbox/
 | [010](docs/adr/010-bot-layer2.md) | Bot Discord Layer 2 : commandes de statut en lecture seule (`/status`, `/streams`) |
 | [011](docs/adr/011-backup-restic-rclone.md) | Backup restic : NAS local + Google Drive |
 | [012](docs/adr/012-ansible-retrofit.md) | Rattrapage Ansible : provisioning + déploiement du NucBox |
+| [013](docs/adr/013-cicd-github-actions.md) | CI/CD GitHub Actions pour le bot : lint/tests → image GHCR → runner self-hosted |
 
 ## Runbooks
 
@@ -122,6 +129,7 @@ blackbox/
 | [setup-discord.md](docs/runbooks/setup-discord.md) | Serveur Discord : rôles, salons, Rules Screening, accueil, intégration Seerr |
 | [setup-notifications.md](docs/runbooks/setup-notifications.md) | Notifications Layer 1 : webhook Jellyfin, script santé Gluetun |
 | [setup-bot.md](docs/runbooks/setup-bot.md) | Bot Discord Layer 2 : application Discord, clé API Jellyfin, déploiement |
+| [setup-cicd.md](docs/runbooks/setup-cicd.md) | CI/CD : runner self-hosted NucBox, package GHCR, rollback |
 | [setup-backup.md](docs/runbooks/setup-backup.md) | Backup restic : rclone/Google Drive, NAS local, planification, restauration |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).

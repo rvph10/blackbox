@@ -18,9 +18,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DISCORD_BOT_TOKEN = os.environ["DISCORD_BOT_TOKEN"]
+# Lecture tolérante au niveau module : permet d'importer main.py pour les
+# tests et le lint sans secrets. La présence réelle est vérifiée au démarrage
+# (bloc __main__).
+DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
 JELLYFIN_URL = os.environ.get("JELLYFIN_URL", "http://jellyfin:8096")
-JELLYFIN_API_KEY = os.environ["JELLYFIN_API_KEY"]
+JELLYFIN_API_KEY = os.environ.get("JELLYFIN_API_KEY", "")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("blackbox-bot")
@@ -52,7 +55,9 @@ async def streams(interaction: discord.Interaction):
         )
         return
     if not sessions:
-        await interaction.response.send_message("Personne ne regarde rien en ce moment.")
+        await interaction.response.send_message(
+            "Personne ne regarde rien en ce moment."
+        )
         return
 
     lines = [_format_session(s) for s in sessions]
@@ -95,4 +100,12 @@ def _format_session(session: dict) -> str:
     return f"{user} regarde {label}"
 
 
-client.run(DISCORD_BOT_TOKEN, log_handler=None)
+if __name__ == "__main__":
+    missing = [
+        name
+        for name in ("DISCORD_BOT_TOKEN", "JELLYFIN_API_KEY")
+        if not os.environ.get(name)
+    ]
+    if missing:
+        raise SystemExit(f"Variables d'environnement manquantes : {', '.join(missing)}")
+    client.run(DISCORD_BOT_TOKEN, log_handler=None)

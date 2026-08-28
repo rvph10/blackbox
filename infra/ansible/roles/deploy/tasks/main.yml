@@ -22,12 +22,10 @@
     mode: "0644"
   notify: docker compose up
 
-- name: Déployer le code du bot (hors .env)
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../../../bot/"
-    dest: /home/kong/blackbox/bot/
-    mode: "0644"
-  notify: docker compose up
+# Le code du bot n'est plus déployé ici : l'image est construite et poussée
+# sur GHCR par GitHub Actions puis tirée par `docker compose pull`. Seul le
+# .env du bot reste sur le NucBox (créé manuellement). Voir
+# docs/adr/013-cicd-github-actions.md.
 
 - name: Déployer le script gluetun-healthcheck (hors .env)
   ansible.builtin.copy:

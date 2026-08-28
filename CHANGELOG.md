@@ -2,6 +2,34 @@
 
 ## [Non publié]
 
+### 2026-08-29
+
+- ADR-013 : chaîne CI/CD GitHub Actions pour le bot Discord (seul code
+  applicatif maison du projet). `ci.yml` : `ruff check`, `ruff format
+  --check`, `pytest` sur PR et push `main` touchant `bot/`. `release.yml` :
+  build de l'image `ghcr.io/rvph10/blackbox-bot` (linux/amd64 seul — plus
+  aucune machine ARM dans l'archi depuis ADR-005), push GHCR, puis job
+  `deploy` sur un runner self-hosted du NucBox (`docker compose pull bot &&
+  up -d bot`)
+- Runner self-hosted plutôt que SSH depuis le cloud : pas de clé d'accès au
+  NucBox dans un secret de repo, connexion sortante uniquement, cohérent
+  avec l'absence de port entrant. Aucun secret de repo ajouté (`GITHUB_TOKEN`
+  + `packages: write` suffisent pour GHCR)
+- `bot/` : `pyproject.toml` (config ruff + pytest), `requirements-dev.txt`,
+  `tests/test_main.py` (7 tests — logique de formatage pure + appels
+  Jellyfin mockés via `aioresponses`, le bot ne se connecte jamais à
+  Discord en test). `main.py` : `client.run` déplacé sous `if __name__ ==
+  "__main__"` avec vérification des variables d'env au démarrage, lecture
+  tolérante au niveau module pour permettre l'import en test
+- `infra/docker/prod/docker-compose.yml` : service `bot` passe de
+  `build: ../bot` à `image: ghcr.io/rvph10/blackbox-bot:latest` — le code du
+  bot n'est plus déployé sur le NucBox (rôle Ansible `deploy` allégé), seul
+  `~/blackbox/bot/.env` y reste. Handler Ansible `docker compose up` fait
+  désormais `pull` avant `up -d`
+- Runbook `setup-cicd.md` : installation du runner self-hosted, passage du
+  package GHCR en public, procédure de rollback. `setup-bot.md` §4 mis à
+  jour (déploiement automatisé, commande manuelle de secours conservée)
+
 ### 2026-08-28
 
 - ADR-008 : serveur Discord communautaire construit sur les fonctionnalités

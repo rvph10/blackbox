@@ -145,10 +145,12 @@ services:
   # Bot Discord, Layer 2 (lecture seule) — voir docs/adr/010-bot-layer2.md.
   # Ne modifie jamais l'infra, uniquement des commandes de statut.
   bot:
-    # Chemin relatif au fichier compose *déployé* (~/blackbox/prod/), où
-    # bot/ est un dossier frère de prod/ — pas à la structure du repo Git
-    # (infra/docker/prod/) où bot/ est à la racine. Voir docs/runbooks/setup-bot.md.
-    build: ../bot
+    # Image construite et poussée sur GHCR par GitHub Actions à chaque push
+    # sur main touchant bot/ (workflow release.yml), puis tirée ici par le
+    # runner self-hosted. Voir docs/adr/013-cicd-github-actions.md et
+    # docs/runbooks/setup-cicd.md. Tag `latest` volontaire (rollback = re-run
+    # d'un commit antérieur ou `docker compose` avec un tag sha- précis).
+    image: ghcr.io/rvph10/blackbox-bot:latest
     container_name: bot
     env_file:
       - ../bot/.env

@@ -30,21 +30,21 @@ chmod 600 ~/blackbox/bot/.env"
 
 ## 4. Déploiement
 
-Le code (`bot/main.py`, `Dockerfile`, `requirements.txt`) se synchronise
-depuis le repo vers `~/blackbox/bot/` sur le NucBox (hors `.env`, jamais
-depuis le repo) :
+Automatisé via GitHub Actions depuis [ADR-013](../adr/013-cicd-github-actions.md) :
+un push sur `main` touchant `bot/` lint + teste le code, construit l'image
+`ghcr.io/rvph10/blackbox-bot`, la pousse sur GHCR, puis le runner
+self-hosted du NucBox fait `docker compose pull bot && docker compose up -d bot`.
+Voir [setup-cicd.md](setup-cicd.md) pour l'installation du runner.
+
+Le compose prod référence désormais `image:` (plus `build:`), donc le code
+du bot n'a plus besoin d'être présent sur le NucBox — seul `~/blackbox/bot/.env`
+y reste (créé à l'étape 3).
+
+Déploiement manuel de secours (runner indisponible) :
 
 ```bash
-rsync -av --exclude='.env' bot/ nucbox:~/blackbox/bot/
-scp infra/docker/prod/docker-compose.yml nucbox:~/blackbox/prod/docker-compose.yml
-ssh nucbox "cd ~/blackbox/prod && docker compose up -d --build bot"
+ssh nucbox "cd ~/blackbox/prod && docker compose pull bot && docker compose up -d bot"
 ```
-
-**Attention aux chemins relatifs** : `build: ../bot` dans le compose
-correspond à la structure *déployée* sur le NucBox
-(`~/blackbox/{bot,prod}` frères directs), pas à la structure du repo Git
-(`bot/` à la racine, compose sous `infra/docker/prod/`) — voir ADR-010
-pour le piège rencontré.
 
 ## 5. Inviter le bot sur le serveur
 
