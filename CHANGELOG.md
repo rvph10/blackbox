@@ -53,6 +53,23 @@
   tard, pas un chantier serveur
 - ESP8266 (watchdog) volontairement mis en pause pour cette itération, même
   principe que Gluetun à appliquer plus tard côté ESPHome
+- ADR-010 : premier vrai code du bot Discord (`bot/`, jusqu'ici vide) —
+  Layer 2, deux commandes slash en lecture seule : `/status` (Jellyfin en
+  ligne/hors ligne, volontairement simplifié) et `/streams` (qui regarde
+  quoi, accessible à tout le monde avec identités visibles — décision
+  assumée, revient en partie sur la prudence vie privée de Layer 1 car
+  interrogé à la demande plutôt que poussé automatiquement)
+- Bot en Python (`discord.py`), conteneur Docker dédié, connecté à Jellyfin
+  via le réseau Docker interne et une clé API dédiée. Déployé et vérifié en
+  conditions réelles (connexion Discord confirmée dans les logs, commandes
+  testées sur le serveur)
+- Piège de déploiement trouvé et corrigé : le chemin relatif du build
+  Docker (`../../../bot`, correct dans la structure du repo Git) ne
+  correspondait pas à la structure réelle du NucBox où `bot/` et `prod/`
+  sont frères directs — corrigé en `../bot`, commenté dans le compose pour
+  éviter de reproduire l'erreur
+- Runbook `setup-bot.md` : création de l'application Discord, clé API
+  Jellyfin dédiée, déploiement, invitation du bot, vérification
 
 ### 2026-08-26
 

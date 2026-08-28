@@ -141,3 +141,19 @@ services:
     restart: unless-stopped
     depends_on:
       - jellyfin
+
+  # Bot Discord, Layer 2 (lecture seule) — voir docs/adr/010-bot-layer2.md.
+  # Ne modifie jamais l'infra, uniquement des commandes de statut.
+  bot:
+    # Chemin relatif au fichier compose *déployé* (~/blackbox/prod/), où
+    # bot/ est un dossier frère de prod/ — pas à la structure du repo Git
+    # (infra/docker/prod/) où bot/ est à la racine. Voir docs/runbooks/setup-bot.md.
+    build: ../bot
+    container_name: bot
+    env_file:
+      - ../bot/.env
+    environment:
+      - JELLYFIN_URL=http://jellyfin:8096
+    restart: unless-stopped
+    depends_on:
+      - jellyfin

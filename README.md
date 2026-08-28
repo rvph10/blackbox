@@ -37,7 +37,8 @@ que ce soit (voir §12 du brief et §17 de l'audit).
 - [ ] Bot Discord — notifications passives (Layer 1) en place sans code de
   bot : contenu ajouté (Jellyfin → webhook Discord natif) et santé VPN
   (Gluetun → script + timer systemd), voir [ADR-009](docs/adr/009-notifications-layer1.md).
-  Bot actif (Layer 2/3 : commandes de statut, création de compte,
+  Layer 2 (`/status`, `/streams`, lecture seule) déployé et vérifié, voir
+  [ADR-010](docs/adr/010-bot-layer2.md). Layer 3 (création de compte,
   gamification) pas commencé
 
 ## Architecture cible
@@ -103,6 +104,7 @@ blackbox/
 | [007](docs/adr/007-arr-stack.md) | Suite *arr* : Prowlarr, Sonarr, Radarr, Bazarr, Seerr, VPN Mullvad/Gluetun |
 | [008](docs/adr/008-discord-community.md) | Discord communautaire : structure native, pas de bot pour l'instant |
 | [009](docs/adr/009-notifications-layer1.md) | Notifications passives (Layer 1) : contenu ajouté + santé VPN, sans code de bot |
+| [010](docs/adr/010-bot-layer2.md) | Bot Discord Layer 2 : commandes de statut en lecture seule (`/status`, `/streams`) |
 
 ## Runbooks
 
@@ -114,6 +116,7 @@ blackbox/
 | [setup-arr-stack.md](docs/runbooks/setup-arr-stack.md) | Suite *arr* : VPN, indexeurs, clés API, config par service |
 | [setup-discord.md](docs/runbooks/setup-discord.md) | Serveur Discord : rôles, salons, Rules Screening, accueil, intégration Seerr |
 | [setup-notifications.md](docs/runbooks/setup-notifications.md) | Notifications Layer 1 : webhook Jellyfin, script santé Gluetun |
+| [setup-bot.md](docs/runbooks/setup-bot.md) | Bot Discord Layer 2 : application Discord, clé API Jellyfin, déploiement |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
 
