@@ -25,25 +25,35 @@ Package public = le NucBox tire l'image sans `docker login`.
 ## 3. Installer le runner self-hosted sur le NucBox
 
 GitHub → repo `rvph10/blackbox` → **Settings** → **Actions** → **Runners**
-→ **New self-hosted runner** → **Linux / x64**. Suivre les commandes
-affichées (le token d'enregistrement est valable ~1h), en les adaptant :
+→ **New self-hosted runner** → **Linux / x64**. Reprendre les commandes
+`Download` telles quelles (version + hash à jour), puis **adapter** la
+partie `Configure` :
+
+> **Piège** : `--token` attend la valeur affichée dans le bloc *Configure*
+> (chaîne courte style `A3KC77JN…`), **pas** le hash SHA256 du tarball de
+> la section *Optional: Validate the hash*. Ce token expire en ~1 h ;
+> s'il est périmé, recharger la page pour en générer un neuf.
+
+Connecté en **`kong`** sur le NucBox (pas root — le runner a besoin du
+socket Docker et d'écrire dans `~/blackbox/prod/`) :
 
 ```bash
-ssh nucbox
-sudo mkdir -p /opt/actions-runner && sudo chown kong:kong /opt/actions-runner
-cd /opt/actions-runner
-curl -o runner.tar.gz -L <URL affichée par GitHub>
-tar xzf runner.tar.gz && rm runner.tar.gz
+# Bloc « Download » de GitHub, tel quel — crée ~/actions-runner
+mkdir actions-runner && cd actions-runner
+curl -o actions-runner.tar.gz -L <URL affichée par GitHub>
+# vérif du hash : coller la ligne shasum exacte affichée par GitHub
+tar xzf ./actions-runner.tar.gz
 
-# --labels ajoute le label `nucbox` attendu par release.yml (job deploy :
-# runs-on: [self-hosted, nucbox])
+# Bloc « Configure », adapté : --name + --labels nucbox (attendu par
+# release.yml, job deploy : runs-on: [self-hosted, nucbox]) et --unattended
 ./config.sh --url https://github.com/rvph10/blackbox \
-  --token <TOKEN GitHub> \
+  --token <TOKEN du bloc Configure, style A3KC77JN...> \
   --name nucbox \
   --labels nucbox \
   --unattended
 
-# Service systemd (démarre au boot, tourne sous kong)
+# NE PAS lancer ./run.sh (premier plan, meurt à la déconnexion SSH).
+# Service systemd à la place : démarre au boot, tourne sous kong
 sudo ./svc.sh install kong
 sudo ./svc.sh start
 sudo ./svc.sh status
@@ -108,7 +118,7 @@ docker compose up -d bot
 ## 7. Mise à jour / désinstallation du runner
 
 ```bash
-cd /opt/actions-runner
+cd ~/actions-runner
 sudo ./svc.sh stop && sudo ./svc.sh uninstall
 ./config.sh remove --token <nouveau token GitHub>
 ```
