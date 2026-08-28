@@ -76,3 +76,26 @@
   local vers le NAS (`MEDIA_PATH` dans `.env`, chemins internes au
   conteneur inchangés). Runbook `setup-nas.md` ; limite connue : IP
   codées en dur, à reconfigurer à la migration fibre (15/09)
+- ADR-007 : suite *arr* déployée (Prowlarr, Sonarr, Radarr, Bazarr, Seerr,
+  qBittorrent). Téléchargement torrent routé exclusivement via un VPN
+  Mullvad (WireGuard, Pays-Bas) dans un conteneur Gluetun dédié
+  (`network_mode: service:gluetun`, kill switch natif). Racine de stockage
+  commune (`${MEDIA_PATH}` → `/data`) entre qBittorrent et les *arr* apps
+  pour permettre le hardlink. Indexeurs : YTS + The Pirate Bay (EZTV et
+  1337x écartés, bloqués par Cloudflare même avec FlareSolverr). Bazarr
+  connecté à Sonarr/Radarr, provider OpenSubtitles.com, profil Français
+  par défaut. Jellyseerr déployé puis migré le jour même vers **Seerr**
+  (`ghcr.io/seerr-team/seerr`) suite à l'abandon du projet Jellyseerr
+  (fusionné dans Seerr en février 2026) — migration automatique sans
+  perte de données, vérifiée après coup
+- Vérification post-déploiement de toute la stack *arr* directement dans
+  les fichiers de config / API de chaque service plutôt que de se fier à
+  l'UI seule. Un bug trouvé et corrigé : `qBittorrent.conf` pointait
+  encore vers `/downloads/` (chemin absent du conteneur) pour le save
+  path et le dossier temporaire par défaut, malgré un réglage de
+  catégorie correct vers `/data/downloads`. Un problème de config Bazarr
+  également trouvé (connexion Sonarr/Radarr et providers non sauvegardés
+  malgré un premier passage dans l'UI) et corrigé après une première
+  correction trop large (clés API d'autres providers touchées par erreur,
+  revert immédiat puis correctif ciblé). Détail complet dans
+  `setup-arr-stack.md`

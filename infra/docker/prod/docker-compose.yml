@@ -10,16 +10,134 @@ services:
       - ./data/jellyfin/cache:/cache
       - ${MEDIA_PATH}:/media
     tmpfs:
-      # Dossier temporaire de transcodage en RAM plutôt que sur le SSD :
-      # moins de latence, moins d'usure disque. À pointer depuis Dashboard
-      # -> Playback -> Transcoding -> Transcoding temporary path.
       - /transcodes:size=4g
     devices:
       - /dev/dri:/dev/dri
-    # GID hôte des groupes video/render, pour l'accès à /dev/dri sans
-    # dépendre du mapping utilisateur/groupe interne à l'image.
     group_add:
       - "${VIDEO_GID}"
       - "${RENDER_GID}"
     environment:
       - TZ=${TZ}
+
+  # VPN pour tout le trafic torrent. qbittorrent tourne dans son namespace
+  # réseau (network_mode: service:gluetun) : si le tunnel tombe, gluetun
+  # coupe le réseau du conteneur entier (kill switch natif), qbittorrent
+  # n'a alors plus aucune connectivité — pas de fuite possible sur l'IP
+  # réelle. Voir docs/adr/007-arr-stack.md.
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${MULLVAD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${MULLVAD_ADDRESSES}
+      - SERVER_COUNTRIES=${MULLVAD_COUNTRY}
+      # Autorise le LAN à atteindre les ports publiés par gluetun (WebUI
+      # qbittorrent) malgré le kill switch qui bloque tout le reste.
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.129.0/24
+      - TZ=${TZ}
+    ports:
+      - "8080:8080" # WebUI qbittorrent, exposée via le netns de gluetun
+    volumes:
+      - ./data/gluetun:/gluetun
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "https://am.i.mullvad.net/connected"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8080
+    volumes:
+      - ./data/qbittorrent/config:/config
+      - ${MEDIA_PATH}:/data
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ./data/prowlarr/config:/config
+    ports:
+      - "9696:9696"
+    restart: unless-stopped
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ./data/sonarr/config:/config
+      - ${MEDIA_PATH}:/data
+    ports:
+      - "8989:8989"
+    restart: unless-stopped
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ./data/radarr/config:/config
+      - ${MEDIA_PATH}:/data
+    ports:
+      - "7878:7878"
+    restart: unless-stopped
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ./data/bazarr/config:/config
+      - ${MEDIA_PATH}:/data
+    ports:
+      - "6767:6767"
+    restart: unless-stopped
+
+  # Jellyseerr a été abandonné (fusionné dans Seerr, seerr-team, février 2026).
+  # Migration automatique depuis les données Jellyseerr existantes, aucune
+  # perte. Voir docs/adr/007-arr-stack.md.
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    init: true
+    container_name: seerr
+    environment:
+      - TZ=${TZ}
+      - PORT=5055
+    volumes:
+      - ./data/jellyseerr/config:/app/config
+    ports:
+      - "5055:5055"
+    restart: unless-stopped
+    depends_on:
+      - jellyfin
