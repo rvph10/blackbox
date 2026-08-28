@@ -54,6 +54,10 @@ jobs:
 
   deploy:
     needs: build
+    # Passe à true (variable de repo) une fois le runner self-hosted installé
+    # sur le NucBox — voir docs/runbooks/setup-cicd.md §3. Tant que la variable
+    # n'existe pas, le job est ignoré et le workflow reste vert (build seul).
+    if: vars.DEPLOY_ENABLED == 'true'
     runs-on: [self-hosted, nucbox]
     steps:
       - uses: actions/checkout@v4

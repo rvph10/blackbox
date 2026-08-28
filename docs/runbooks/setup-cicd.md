@@ -59,6 +59,19 @@ groupe `docker`, cf. [ADR-012](../adr/012-ansible-retrofit.md)) et à
   **Idle** (point vert)
 - `systemctl status 'actions.runner.*'` sur le NucBox
 
+### Activer le job `deploy`
+
+Tant que le runner n'est pas installé, le job `deploy` de `release.yml` est
+ignoré (`if: vars.DEPLOY_ENABLED == 'true'`) et le workflow reste vert avec
+le seul job `build`. Une fois le runner **Idle** :
+
+```bash
+gh variable set DEPLOY_ENABLED --body true --repo rvph10/blackbox
+```
+
+(ou GitHub → **Settings** → **Secrets and variables** → **Actions** →
+**Variables** → **New repository variable** : `DEPLOY_ENABLED` = `true`)
+
 ## 4. Prérequis côté NucBox (déjà en place)
 
 - `~/blackbox/prod/docker-compose.yml` et `~/blackbox/bot/.env` — créés par

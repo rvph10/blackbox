@@ -55,7 +55,9 @@ uniquement, cohérent avec la posture réseau du projet.
 Le job `deploy` : `checkout`, copie de `infra/docker/prod/docker-compose.yml`
 vers `~/blackbox/prod/`, puis `docker compose pull bot && docker compose up -d bot`.
 `concurrency: release-bot` (`cancel-in-progress: false`) sérialise les
-déploiements.
+déploiements. Il est gardé par `if: vars.DEPLOY_ENABLED == 'true'` : tant
+que le runner n'est pas installé, le job est ignoré plutôt que de rester en
+file d'attente (le workflow reste vert avec le seul `build`).
 
 ### Image GHCR publique
 
