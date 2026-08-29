@@ -44,12 +44,19 @@ utiles. Liste volontairement courte, deux salons aux audiences différentes :
 
 ## Aucune ligne de code de bot nécessaire pour ce qui est fait
 
-- **Jellyfin → Discord** : géré par le plugin **Webhook** déjà installé, via
-  sa destination native **Discord** (pas "Generic" — la destination Generic
-  demande un template JSON manuel et a d'abord été mal configurée avec un
-  template vide, ce qui aurait fait échouer silencieusement les notifs côté
-  Discord ; corrigé en repassant sur le type Discord dédié, qui génère
-  l'embed automatiquement).
+- **Jellyfin → Discord** : géré par le plugin **Webhook** déjà installé,
+  destination de type **Generic** avec un template Handlebars maison (voir
+  runbook). La destination **Discord native est buggée** : elle produit un
+  corps que Discord rejette (`400`, `code 50109 – invalid JSON`), bug connu
+  et non corrigé du plugin
+  ([jellyfin-plugin-webhook#369](https://github.com/jellyfin/jellyfin-plugin-webhook/issues/369)).
+  Le contournement standard est Generic + template. Pièges du template
+  (tous rencontrés) : le helper `json_encode` **échappe** le texte mais
+  n'ajoute **pas** les guillemets — il faut écrire `"{{json_encode X}}"` ;
+  et `json_encode` **lève une exception sur une valeur nulle**, donc tout
+  champ optionnel (`Overview`, `Year`) doit être sous `{{#if_exist}}`.
+  Validé le 2026-08-29 (film de test → embed « Nouveau film disponible »
+  dans `#annonces`, aucun `BadRequest` dans les logs du plugin).
 - **Gluetun → Discord** : aucune intégration native n'existe pour ça, seul
   point nécessitant un script (voir ci-dessous), mais toujours pas un
   "bot" — un script ponctuel déclenché par un timer.
@@ -87,7 +94,8 @@ installe lui-même, opt-in. À documenter comme option recommandée dans
 
 ## Conséquences
 
-- `#annonces` reçoit uniquement les nouveaux ajouts de contenu (Jellyfin)
+- `#annonces` reçoit uniquement les nouveaux ajouts de contenu (Jellyfin) —
+  Films + Épisodes (pas les Saisons, pour éviter saison + N épisodes)
 - Le salon admin reçoit les changements d'état du VPN (Gluetun) — ESP8266 à
   ajouter plus tard sur le même principe
 - `infra/scripts/gluetun-healthcheck/` ajouté au repo (script + unités

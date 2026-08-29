@@ -4,6 +4,18 @@
 
 ### 2026-08-29
 
+- Notifications `#annonces` (ADR-009) : les nouveaux ajouts Jellyfin
+  n'arrivaient jamais — la **destination "Discord" native du plugin Webhook
+  est buggée** (Discord rejette son corps, `400 / code 50109 invalid JSON`,
+  [bug amont #369](https://github.com/jellyfin/jellyfin-plugin-webhook/issues/369)).
+  Basculé sur une destination **Generic** + template Handlebars maison
+  (accroche « 🎬 Nouveau film disponible ! » / « 📺 Nouvel épisode », titre,
+  résumé, affiche, lien fiche Jellyfin). Pièges corrigés : `json_encode`
+  n'ajoute pas les guillemets (`"{{json_encode X}}"`) et lève sur valeur
+  nulle (champs optionnels sous `{{#if_exist}}`) ; `Server URL` du plugin à
+  renseigner ; header `Content-Type: application/json`. Validé de bout en
+  bout (film de test → embed dans `#annonces`). Runbook `setup-notifications.md`
+  mis à jour avec le template et la procédure de test.
 - ADR-020 : **rétention de la bibliothèque avec Maintainerr** (complète
   ADR-019 — le capacity-watcher alerte/bride, Maintainerr libère l'espace).
   Support Jellyfin natif + Seerr + Radarr/Sonarr. Déployé en **revue
