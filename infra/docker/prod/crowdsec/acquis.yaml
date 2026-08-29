@@ -1,0 +1,11 @@
+# Sources de logs analysées par CrowdSec. Voir docs/adr/016-crowdsec-traefik.md.
+---
+filenames:
+  - /var/log/traefik/access.log
+labels:
+  type: traefik
+---
+filenames:
+  - /var/log/jellyfin/*.log
+labels:
+  type: jellyfin

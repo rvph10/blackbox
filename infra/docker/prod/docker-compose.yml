@@ -142,19 +142,55 @@ services:
     depends_on:
       - jellyfin
 
+  # Moteur CrowdSec — analyse les logs Traefik + Jellyfin, détecte les
+  # brute-force / scans, expose les décisions via sa LAPI au plugin Traefik.
+  # Aucun port publié (LAPI jointe sur le réseau Docker). Voir
+  # docs/adr/016-crowdsec-traefik.md.
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: crowdsec
+    environment:
+      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/http-cve LePresidente/jellyfin
+    volumes:
+      - ./data/crowdsec/config:/etc/crowdsec
+      - ./data/crowdsec/data:/var/lib/crowdsec/data
+      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
+      - ./data/traefik/logs:/var/log/traefik:ro
+      - ./data/jellyfin/config/log:/var/log/jellyfin:ro
+    restart: unless-stopped
+
+  # Reverse proxy interne, seul point d'entrée du trafic public (via
+  # cloudflared). Chaque requête passe par le middleware CrowdSec avant
+  # d'atteindre Jellyfin / Seerr. Aucun port publié. Voir
+  # docs/adr/016-crowdsec-traefik.md.
+  traefik:
+    image: traefik:v3.7
+    container_name: traefik
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./traefik/lapi-key:/etc/traefik/lapi-key:ro
+      - ./data/traefik/logs:/var/log/traefik
+    restart: unless-stopped
+    depends_on:
+      - crowdsec
+      - jellyfin
+      - seerr
+
   # Tunnel Cloudflare — expose Jellyfin (stream.blackbox.homes) et Seerr
   # (requests.blackbox.homes) sans port forwarding. Connexion sortante
-  # uniquement, aucun port publié. Les règles d'ingress sont gérées côté
-  # Cloudflare par Terraform (infra/terraform) ; ce conteneur ne reçoit que
-  # le token. Voir docs/adr/014-cloudflare-tunnel.md.
+  # uniquement, aucun port publié. Les règles d'ingress (toutes vers
+  # traefik:80) sont gérées côté Cloudflare par Terraform (infra/terraform) ;
+  # ce conteneur ne reçoit que le token. Voir docs/adr/014-cloudflare-tunnel.md.
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
     restart: unless-stopped
     depends_on:
-      - jellyfin
-      - seerr
+      - traefik
 
   # Bot Discord, Layer 2 (lecture seule) — voir docs/adr/010-bot-layer2.md.
   # Ne modifie jamais l'infra, uniquement des commandes de statut.

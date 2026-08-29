@@ -1,0 +1,48 @@
+# Config dynamique Traefik (file provider — pas de socket Docker monté).
+# Routeurs par Host, tous derrière le middleware CrowdSec.
+
+http:
+  routers:
+    jellyfin:
+      rule: "Host(`stream.blackbox.homes`)"
+      entryPoints: [web]
+      service: jellyfin
+      middlewares: [crowdsec]
+    seerr:
+      rule: "Host(`requests.blackbox.homes`)"
+      entryPoints: [web]
+      service: seerr
+      middlewares: [crowdsec]
+
+  services:
+    jellyfin:
+      loadBalancer:
+        servers:
+          - url: "http://jellyfin:8096"
+    seerr:
+      loadBalancer:
+        servers:
+          - url: "http://seerr:5055"
+
+  middlewares:
+    crowdsec:
+      plugin:
+        crowdsec:
+          enabled: true
+          # stream : le plugin garde en cache les décisions, rafraîchies
+          # toutes les 60 s. Recommandé pour la perf (pas d'appel LAPI par
+          # requête).
+          crowdsecMode: stream
+          crowdsecLapiScheme: http
+          crowdsecLapiHost: crowdsec:8080
+          # Clé générée par `cscli bouncers add` et posée dans ce fichier
+          # (hors Git) — voir docs/runbooks/setup-crowdsec.md.
+          crowdsecLapiKeyFile: /etc/traefik/lapi-key
+          # Proxies devant Traefik (cloudflared) : lire la vraie IP client.
+          forwardedHeadersTrustedIPs:
+            - 172.16.0.0/12
+          # Réseaux de confiance : contournent toute vérification CrowdSec
+          # (jamais de self-ban depuis le LAN ou le tailnet).
+          clientTrustedIPs:
+            - 192.168.129.0/24
+            - 100.64.0.0/10

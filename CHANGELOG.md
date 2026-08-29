@@ -39,6 +39,18 @@
   option `tailscale_advertise_routes` pour joindre le NAS. Runbook
   `setup-tailscale.md`. Appliqué : NucBox sur le tailnet, Tailscale SSH et
   dashboards *arr* joignables à distance, expiration de clé désactivée
+- ADR-016 : CrowdSec pour protéger l'exposition publique (brute-force
+  Jellyfin). Vu l'absence de reverse proxy avec Cloudflare Tunnel, ajout de
+  **Traefik** en proxy interne (file provider, pas de socket Docker, aucun
+  port publié) — l'ingress Cloudflare pointe désormais vers `traefik:80`,
+  qui route par `Host` derrière un middleware CrowdSec
+  (`crowdsec-bouncer-traefik-plugin` v1.7.1, très actif — le bouncer
+  Cloudflare classique n'est plus maintenu, le Worker Bouncer jugé
+  disproportionné). Moteur CrowdSec en détection sur les logs Traefik +
+  Jellyfin, blocklist communautaire consommée. LAPI sur le réseau Docker,
+  aucune dépendance SaaS. Accès LAN/Tailscale inchangé (direct, hors proxy).
+  Config + compose + ingress Terraform écrits, runbook `setup-crowdsec.md`.
+  Reste : `terraform apply` + bootstrap de la clé bouncer sur le NucBox
 
 - ADR-013 : chaîne CI/CD GitHub Actions pour le bot Discord (seul code
   applicatif maison du projet). `ci.yml` : `ruff check`, `ruff format

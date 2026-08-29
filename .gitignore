@@ -9,6 +9,7 @@
 *.key
 *.pem
 secrets/
+infra/docker/prod/traefik/lapi-key
 
 # OS / editors
 .DS_Store

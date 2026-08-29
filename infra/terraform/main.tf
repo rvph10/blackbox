@@ -25,13 +25,16 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "blackbox" {
 
   config = {
     ingress = [
+      # Tout passe par Traefik (reverse proxy interne + middleware CrowdSec),
+      # qui route ensuite par Host vers Jellyfin / Seerr. Voir
+      # docs/adr/016-crowdsec-traefik.md.
       {
         hostname = local.jellyfin_fqdn
-        service  = "http://jellyfin:8096"
+        service  = "http://traefik:80"
       },
       {
         hostname = local.seerr_fqdn
-        service  = "http://seerr:5055"
+        service  = "http://traefik:80"
       },
       # Règle attrape-tout obligatoire (dernière position, sans hostname).
       {

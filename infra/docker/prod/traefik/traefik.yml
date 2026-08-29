@@ -1,0 +1,36 @@
+# Config statique Traefik. Reverse proxy interne : seul `cloudflared` le
+# joint (via le réseau Docker), aucun port publié sur l'hôte. Sert
+# uniquement le chemin d'exposition publique — l'accès LAN/Tailscale tape
+# les conteneurs en direct (jellyfin:8096, seerr:5055). Voir
+# docs/adr/016-crowdsec-traefik.md.
+
+entryPoints:
+  web:
+    address: ":80"
+    # `cloudflared` transmet l'IP réelle du client dans X-Forwarded-For.
+    # On lui fait confiance (sous-réseaux Docker) pour que les access logs
+    # et le plugin CrowdSec voient la vraie IP, pas 172.x.
+    forwardedHeaders:
+      trustedIPs:
+        - 172.16.0.0/12
+
+experimental:
+  plugins:
+    crowdsec:
+      moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+      version: v1.7.1
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+accessLog:
+  filePath: /var/log/traefik/access.log
+
+log:
+  level: INFO
+
+# Pas d'API/dashboard exposés.
+api:
+  dashboard: false

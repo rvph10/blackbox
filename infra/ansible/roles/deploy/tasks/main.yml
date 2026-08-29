@@ -11,6 +11,8 @@
     mode: "0755"
   loop:
     - /home/kong/blackbox/prod
+    - /home/kong/blackbox/prod/traefik
+    - /home/kong/blackbox/prod/crowdsec
     - /home/kong/blackbox/bot
     - /home/kong/blackbox/scripts/gluetun-healthcheck
     - /home/kong/blackbox/scripts/backup
@@ -20,6 +22,17 @@
     src: "{{ playbook_dir }}/../../docker/prod/docker-compose.yml"
     dest: /home/kong/blackbox/prod/docker-compose.yml
     mode: "0644"
+  notify: docker compose up
+
+- name: Déployer la config Traefik + CrowdSec (hors lapi-key, secret manuel)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../docker/prod/{{ item }}"
+    dest: "/home/kong/blackbox/prod/{{ item }}"
+    mode: "0644"
+  loop:
+    - traefik/traefik.yml
+    - traefik/dynamic.yml
+    - crowdsec/acquis.yaml
   notify: docker compose up
 
 # Le code du bot n'est plus déployé ici : l'image est construite et poussée
@@ -44,6 +57,7 @@
     path: "{{ item }}"
   loop:
     - /home/kong/blackbox/prod/.env
+    - /home/kong/blackbox/prod/traefik/lapi-key
     - /home/kong/blackbox/bot/.env
     - /home/kong/blackbox/scripts/gluetun-healthcheck/.env
     - /home/kong/blackbox/scripts/backup/.env

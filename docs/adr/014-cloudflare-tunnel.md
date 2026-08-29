@@ -50,8 +50,8 @@ doit pas.
 Zero Trust Access casserait les clients natifs (appli mobile Jellyfin,
 Infuse…) qui ne savent pas passer un portail d'authentification. Jellyfin a
 sa propre auth, Seerr utilise le SSO Jellyfin. L'exposition publique se
-limite donc au tunnel + DNS. CrowdSec (prévu) reste la couche de protection
-additionnelle côté NucBox. Access pourra servir plus tard pour d'éventuels
+limite donc au tunnel + DNS. La protection applicative (brute-force) est
+faite par CrowdSec derrière Traefik — voir [ADR-016](016-crowdsec-traefik.md). Access pourra servir plus tard pour d'éventuels
 dashboards, mais ceux-ci restent sur Tailscale (cf. [audit §6](../audit_projet.md)).
 
 ### Sous-domaines
@@ -99,4 +99,4 @@ déjà acté dans le brief §6. Repli si blocage : bascule DNS en « DNS only »
 - [x] Flux distant validé hors LAN (4G)
 - [x] Jellyfin : `cloudflared` en known proxy ; Seerr : Application URL publique
 - [ ] Sauvegarde de `terraform.tfstate` hors machine (point ouvert)
-- [ ] CrowdSec devant le tunnel (chantier séparé)
+- [x] Protection brute-force : CrowdSec + Traefik ([ADR-016](016-crowdsec-traefik.md))

@@ -59,6 +59,13 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   Tailscale SSH activé). `ssh kong@nucbox` et les dashboards *arr* joignables
   depuis le tailnet sans port ouvert. Voir [ADR-015](docs/adr/015-tailscale.md)
   et [setup-tailscale.md](docs/runbooks/setup-tailscale.md)
+- [ ] Protection de l'exposition publique — CrowdSec derrière Traefik
+  (reverse proxy interne, file provider, aucun port publié) : middleware
+  CrowdSec sur chaque route, détection sur les logs Traefik + Jellyfin,
+  blocklist communautaire. Config + compose + ingress Terraform écrits.
+  Reste : `terraform apply`, bootstrap de la clé bouncer sur le NucBox
+  ([ADR-016](docs/adr/016-crowdsec-traefik.md),
+  [setup-crowdsec.md](docs/runbooks/setup-crowdsec.md))
 
 ## Architecture cible
 
@@ -68,7 +75,7 @@ flowchart TD
     ONT[ONT fibre Proximus]
     RTR[Routeur/Firewall dédié\nVLAN mgmt/services/users]
     SW[Switch managé 24/7]
-    NUC[NucBox M6 — Ryzen 5 7640HS — allumé 24/7\nDocker: Jellyfin, Prowlarr, Sonarr,\nRadarr, Bazarr, Seerr, qBittorrent+VPN,\nJellystat, Maintainerr, CrowdSec, Bot Discord]
+    NUC[NucBox M6 — Ryzen 5 7640HS — allumé 24/7\nDocker: Traefik + CrowdSec, Jellyfin,\nProwlarr, Sonarr, Radarr, Bazarr, Seerr,\nqBittorrent+VPN, cloudflared, Bot Discord]
     NAS[Ugreen DXP2800 — dxp\nRAID1 — NFS]
     ESP8266[ESP8266 NodeMCU — watchdog externe\nESPHome, ping + alerte, Wi-Fi]
 
@@ -131,6 +138,7 @@ blackbox/
 | [013](docs/adr/013-cicd-github-actions.md) | CI/CD GitHub Actions pour le bot : lint/tests → image GHCR → runner self-hosted |
 | [014](docs/adr/014-cloudflare-tunnel.md) | Exposition publique : Cloudflare Tunnel (config distante) + Terraform scopé Cloudflare |
 | [015](docs/adr/015-tailscale.md) | Tailscale pour l'accès admin distant (SSH + dashboards *arr*), installé par Ansible |
+| [016](docs/adr/016-crowdsec-traefik.md) | CrowdSec derrière Traefik (reverse proxy interne) pour protéger l'exposition publique |
 
 ## Runbooks
 
@@ -146,6 +154,7 @@ blackbox/
 | [setup-cicd.md](docs/runbooks/setup-cicd.md) | CI/CD : runner self-hosted NucBox, package GHCR, rollback |
 | [setup-cloudflare-tunnel.md](docs/runbooks/setup-cloudflare-tunnel.md) | Cloudflare Tunnel : onboarding zone, jeton API, `terraform apply`, token, config proxy |
 | [setup-tailscale.md](docs/runbooks/setup-tailscale.md) | Tailscale : compte, clé d'auth, install via Ansible, Tailscale SSH, subnet router |
+| [setup-crowdsec.md](docs/runbooks/setup-crowdsec.md) | CrowdSec + Traefik : ingress Terraform, bootstrap de la clé bouncer, vérif, Console |
 | [setup-backup.md](docs/runbooks/setup-backup.md) | Backup restic : rclone/Google Drive, NAS local, planification, restauration |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
