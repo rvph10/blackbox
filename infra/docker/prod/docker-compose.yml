@@ -226,6 +226,29 @@ services:
       - jellystat-db
       - jellyfin
 
+  # Maintainerr — maintenance de bibliothèque : règles de rétention sur
+  # Jellyfin + Seerr + Radarr/Sonarr, collection "Bientôt retiré" avec
+  # période de grâce avant suppression. Complète le capacity-watcher
+  # (ADR-019 alerte/bride, Maintainerr libère l'espace). Dashboard via
+  # Tailscale sur :6246, jamais exposé publiquement. Voir
+  # docs/adr/020-retention-maintainerr.md.
+  maintainerr:
+    image: ghcr.io/maintainerr/maintainerr:latest
+    container_name: maintainerr
+    user: "${PUID}:${PGID}"
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ./data/maintainerr:/opt/data
+      # Même montage que les *arr (${MEDIA_PATH}:/data) : nécessaire pour le
+      # nettoyage des dossiers résiduels après suppression.
+      - ${MEDIA_PATH}:/data
+    ports:
+      - "6246:6246"
+    restart: unless-stopped
+    depends_on:
+      - jellyfin
+
   # Bot Discord, Layer 2 (lecture seule) — voir docs/adr/010-bot-layer2.md.
   # Ne modifie jamais l'infra, uniquement des commandes de statut.
   bot:

@@ -31,6 +31,13 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   seeding qBittorrent (limites alternatives) + message communautaire sur
   seuil CRIT. Voir [ADR-019](docs/adr/019-autoregulation-capacite-bande-passante.md)
   et [setup-capacity-watcher.md](docs/runbooks/setup-capacity-watcher.md)
+- [x] Rétention de la bibliothèque — **Maintainerr** déployé en revue
+  manuelle : 3 collections de règles temporelles (films dormants, séries
+  terminées inactives, « demandé puis jamais lancé »), étagère « Bientôt
+  retiré » dans Jellyfin, période de grâce avant suppression. Aucune
+  suppression automatique tant que le disque n'est pas sous pression. Voir
+  [ADR-020](docs/adr/020-retention-maintainerr.md) et
+  [setup-maintainerr.md](docs/runbooks/setup-maintainerr.md)
 - [x] RAID tranché — RAID1 ([ADR-003](docs/adr/003-raid-nas.md))
 - [x] RAID1 configuré sur le NAS — NAS branché (`dxp`), RAID1 sain,
   partage NFS `media` monté sur le NucBox et utilisé par Jellyfin
@@ -87,7 +94,7 @@ flowchart TD
     ONT[ONT fibre Proximus]
     RTR[Routeur/Firewall dédié\nVLAN mgmt/services/users]
     SW[Switch managé 24/7]
-    NUC[NucBox M6 — Ryzen 5 7640HS — allumé 24/7\nDocker: Traefik + CrowdSec, Jellyfin,\nProwlarr, Sonarr, Radarr, Bazarr, Seerr,\nqBittorrent+VPN, Jellystat, cloudflared, Bot Discord\n+ timers: gluetun-healthcheck, backup, capacity-watcher]
+    NUC[NucBox M6 — Ryzen 5 7640HS — allumé 24/7\nDocker: Traefik + CrowdSec, Jellyfin,\nProwlarr, Sonarr, Radarr, Bazarr, Seerr,\nqBittorrent+VPN, Jellystat, Maintainerr, cloudflared, Bot Discord\n+ timers: gluetun-healthcheck, backup, capacity-watcher]
     NAS[Ugreen DXP2800 — dxp\nRAID1 — NFS]
     ESP8266[ESP8266 NodeMCU — watchdog externe\nESPHome, ping + alerte, Wi-Fi]
 
@@ -154,6 +161,7 @@ blackbox/
 | [017](docs/adr/017-backup-b2.md) | Backup hors site : Backblaze B2 remplace Google Drive |
 | [018](docs/adr/018-iptv-live-tv.md) | Live TV / IPTV : Threadfin devant le module natif Jellyfin (proposé, en attente fournisseur) |
 | [019](docs/adr/019-autoregulation-capacite-bande-passante.md) | Autorégulation capacité + bande passante : Jellystat + watcher de seuil (script + timer systemd) |
+| [020](docs/adr/020-retention-maintainerr.md) | Rétention de la bibliothèque : Maintainerr (règles temporelles, collection « Bientôt retiré », revue manuelle) |
 
 ## Runbooks
 
@@ -172,14 +180,15 @@ blackbox/
 | [setup-crowdsec.md](docs/runbooks/setup-crowdsec.md) | CrowdSec + Traefik : ingress Terraform, bootstrap de la clé bouncer, vérif, Console |
 | [setup-backup.md](docs/runbooks/setup-backup.md) | Backup restic : bucket/clé Backblaze B2, NAS local, planification, restauration à blanc |
 | [setup-capacity-watcher.md](docs/runbooks/setup-capacity-watcher.md) | Autorégulation : Jellystat, script + timer capacity-watcher, seuils, limites qBittorrent |
+| [setup-maintainerr.md](docs/runbooks/setup-maintainerr.md) | Maintainerr : connexion Jellyfin/Seerr/*arr, tag `keep`, les 3 collections de rétention règle par règle |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
 
 ## Points ouverts
 
-- Rétention Maintainerr (durée avant suppression auto) — Maintainerr pas
-  encore déployé ; en attendant, le volet capacité de l'autorégulation se
-  limite à alerter/brider sur seuil disque (voir [ADR-019](docs/adr/019-autoregulation-capacite-bande-passante.md))
+- Maintainerr déployé en **revue manuelle** ([ADR-020](docs/adr/020-retention-maintainerr.md)) :
+  bascule de la Collection 1 en suppression automatique à décider quand le
+  NAS dépassera ~70 % (à 2 % aujourd'hui)
 - Seuils `UPLOAD_WARN/CRIT_MBPS` du capacity-watcher à recalibrer après la
   fibre (15/09) — valeurs actuelles calées sur ~20 Mbit/s VDSL
 - Politique d'approbation Jellyseerr par type de contenu

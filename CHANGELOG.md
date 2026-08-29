@@ -4,6 +4,21 @@
 
 ### 2026-08-29
 
+- ADR-020 : **rétention de la bibliothèque avec Maintainerr** (complète
+  ADR-019 — le capacity-watcher alerte/bride, Maintainerr libère l'espace).
+  Support Jellyfin natif + Seerr + Radarr/Sonarr. Déployé en **revue
+  manuelle** : aucune suppression automatique tant que le NAS n'est pas
+  sous pression (2 % aujourd'hui). Trois collections de règles temporelles
+  (films dormants 90/180 j grâce 14 j ; séries terminées inactives 120 j
+  grâce 21 j ; « demandé puis jamais lancé » 45 j grâce 7 j, toujours
+  manuelle) + protections globales (vu < 180 j, demandé < 90 j, ajouté
+  < 90 j, tag `keep`). Étagère « Bientôt retiré » visible dans Jellyfin.
+  `docker-compose.yml` : service `maintainerr` (`user: ${PUID}:${PGID}`,
+  volume `data/maintainerr` + `${MEDIA_PATH}:/data`, port `6246`, dashboard
+  Tailscale). Aucun secret (clés API saisies dans l'UI). Runbook
+  `setup-maintainerr.md`. Bascule auto de la Collection 1 à décider quand
+  le NAS dépassera ~70 %.
+
 - ADR-019 (**accepté, en production**) : autorégulation capacité + bande
   passante. **Jellystat** (+ Postgres dédié) pour l'observation des usages
   Jellyfin (dashboard Tailscale `:3000`, jamais exposé publiquement) et un
