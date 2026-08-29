@@ -44,17 +44,26 @@ ansible-playbook playbooks/site.yml --ask-become-pass
 ssh nucbox
 cd ~/blackbox/prod
 
-# 1. démarrer CrowdSec seul
+# 1. créer le fichier clé VIDE d'abord, en tant que kong — sinon un
+#    `docker compose up` ultérieur le crée en dossier root (bind-mount
+#    source manquante auto-créée par le démon Docker).
+touch traefik/lapi-key && chmod 600 traefik/lapi-key
+
+# 2. démarrer CrowdSec seul
 docker compose up -d crowdsec
 docker compose logs -f crowdsec      # attendre "Starting processing data"
 
-# 2. générer la clé du bouncer Traefik et la poser dans le fichier attendu
+# 3. générer la clé du bouncer et l'écrire dans le fichier
 docker exec crowdsec cscli bouncers add traefik-bouncer -o raw > traefik/lapi-key
-chmod 600 traefik/lapi-key
+cat traefik/lapi-key                 # vérifier : une clé, pas vide
 
-# 3. démarrer le reste (traefik, cloudflared relancé, etc.)
+# 4. démarrer le reste (traefik, cloudflared relancé, etc.)
 docker compose up -d
 ```
+
+Si `traefik/lapi-key` a déjà été créé en dossier root par un `up` prématuré :
+`sudo rm -rf traefik/lapi-key` puis reprendre à l'étape 1. Vérifier au besoin
+`sudo chown -R kong:kong ~/blackbox/prod/{traefik,crowdsec}`.
 
 Relancer le playbook plus tard reprendra la main normalement (la clé existe
 désormais).
