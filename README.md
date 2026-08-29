@@ -55,6 +55,10 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   en ligne, flux distant validé. Zone `blackbox.homes` passée sur Cloudflare
   (NS chez Porkbun). Voir [ADR-014](docs/adr/014-cloudflare-tunnel.md) et
   [setup-cloudflare-tunnel.md](docs/runbooks/setup-cloudflare-tunnel.md)
+- [ ] Accès admin distant — rôle Ansible `tailscale` écrit (install + `up
+  --ssh`, connexion conditionnée à une clé passée en extra-var), ADR-015 +
+  runbook. Reste : créer le compte/la clé, lancer le playbook, désactiver
+  l'expiration de clé du nœud ([setup-tailscale.md](docs/runbooks/setup-tailscale.md))
 
 ## Architecture cible
 
@@ -126,6 +130,7 @@ blackbox/
 | [012](docs/adr/012-ansible-retrofit.md) | Rattrapage Ansible : provisioning + déploiement du NucBox |
 | [013](docs/adr/013-cicd-github-actions.md) | CI/CD GitHub Actions pour le bot : lint/tests → image GHCR → runner self-hosted |
 | [014](docs/adr/014-cloudflare-tunnel.md) | Exposition publique : Cloudflare Tunnel (config distante) + Terraform scopé Cloudflare |
+| [015](docs/adr/015-tailscale.md) | Tailscale pour l'accès admin distant (SSH + dashboards *arr*), installé par Ansible |
 
 ## Runbooks
 
@@ -140,6 +145,7 @@ blackbox/
 | [setup-bot.md](docs/runbooks/setup-bot.md) | Bot Discord Layer 2 : application Discord, clé API Jellyfin, déploiement |
 | [setup-cicd.md](docs/runbooks/setup-cicd.md) | CI/CD : runner self-hosted NucBox, package GHCR, rollback |
 | [setup-cloudflare-tunnel.md](docs/runbooks/setup-cloudflare-tunnel.md) | Cloudflare Tunnel : onboarding zone, jeton API, `terraform apply`, token, config proxy |
+| [setup-tailscale.md](docs/runbooks/setup-tailscale.md) | Tailscale : compte, clé d'auth, install via Ansible, Tailscale SSH, subnet router |
 | [setup-backup.md](docs/runbooks/setup-backup.md) | Backup restic : rclone/Google Drive, NAS local, planification, restauration |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).

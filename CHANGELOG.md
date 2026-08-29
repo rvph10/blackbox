@@ -29,6 +29,15 @@
   configuré avec `cloudflared` en known proxy, Seerr Application URL publique
 - Idempotence du playbook Ansible confirmée (2ᵉ run réel :
   `ok=12 changed=0`) — point ouvert d'ADR-012 clos
+- ADR-015 : rôle Ansible `tailscale` pour l'accès admin distant (SSH +
+  dashboards *arr*) sans port ouvert. Installation idempotente via le dépôt
+  apt officiel ; `tailscale up --ssh --hostname=nucbox` conditionné à une
+  clé d'auth passée en extra-var (`-e tailscale_authkey=…`, jamais dans Git,
+  `no_log`), sautée si le nœud est déjà connecté. Tailscale SSH activé,
+  `sshd` classique inchangé (durcissement reporté au chantier routeur/VLAN).
+  Pas de subnet router par défaut (les dashboards *arr* sont sur le NucBox) —
+  option `tailscale_advertise_routes` pour joindre le NAS. Runbook
+  `setup-tailscale.md`. Pas encore appliqué
 
 - ADR-013 : chaîne CI/CD GitHub Actions pour le bot Discord (seul code
   applicatif maison du projet). `ci.yml` : `ruff check`, `ruff format

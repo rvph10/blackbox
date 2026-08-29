@@ -14,6 +14,7 @@
   gather_facts: true
   roles:
     - base
+    - tailscale
     - docker
     - deploy
     - systemd_timers

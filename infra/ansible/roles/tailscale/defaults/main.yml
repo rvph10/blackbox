@@ -1,0 +1,10 @@
+---
+# Sous-réseaux LAN à annoncer sur le tailnet (subnet router), pour joindre
+# des équipements sans Tailscale (ex. l'UI du NAS dxp). Vide = pas de subnet
+# router, seul le NucBox lui-même est joignable (suffisant pour SSH et les
+# dashboards *arr*, qui tournent dessus).
+#
+# À activer si besoin : -e tailscale_advertise_routes=192.168.129.0/24
+# (l'annonce nécessite aussi d'approuver la route dans l'admin console — voir
+# docs/runbooks/setup-tailscale.md). L'IP changera avec le routeur fibre.
+tailscale_advertise_routes: ""
