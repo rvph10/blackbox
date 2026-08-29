@@ -37,7 +37,8 @@
   `sshd` classique inchangé (durcissement reporté au chantier routeur/VLAN).
   Pas de subnet router par défaut (les dashboards *arr* sont sur le NucBox) —
   option `tailscale_advertise_routes` pour joindre le NAS. Runbook
-  `setup-tailscale.md`. Pas encore appliqué
+  `setup-tailscale.md`. Appliqué : NucBox sur le tailnet, Tailscale SSH et
+  dashboards *arr* joignables à distance, expiration de clé désactivée
 
 - ADR-013 : chaîne CI/CD GitHub Actions pour le bot Discord (seul code
   applicatif maison du projet). `ci.yml` : `ruff check`, `ruff format

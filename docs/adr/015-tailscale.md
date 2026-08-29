@@ -1,7 +1,6 @@
 # ADR 015 — Tailscale pour l'accès admin distant
 
-**Statut :** Accepté
-**Date :** 2026-08-29
+**Statut :** Accepté — en production depuis le 2026-08-29
 
 ## Contexte
 

@@ -55,10 +55,10 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   en ligne, flux distant validé. Zone `blackbox.homes` passée sur Cloudflare
   (NS chez Porkbun). Voir [ADR-014](docs/adr/014-cloudflare-tunnel.md) et
   [setup-cloudflare-tunnel.md](docs/runbooks/setup-cloudflare-tunnel.md)
-- [ ] Accès admin distant — rôle Ansible `tailscale` écrit (install + `up
-  --ssh`, connexion conditionnée à une clé passée en extra-var), ADR-015 +
-  runbook. Reste : créer le compte/la clé, lancer le playbook, désactiver
-  l'expiration de clé du nœud ([setup-tailscale.md](docs/runbooks/setup-tailscale.md))
+- [x] Accès admin distant — Tailscale sur le NucBox (rôle Ansible `tailscale`,
+  Tailscale SSH activé). `ssh kong@nucbox` et les dashboards *arr* joignables
+  depuis le tailnet sans port ouvert. Voir [ADR-015](docs/adr/015-tailscale.md)
+  et [setup-tailscale.md](docs/runbooks/setup-tailscale.md)
 
 ## Architecture cible
 
