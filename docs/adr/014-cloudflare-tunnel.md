@@ -1,6 +1,6 @@
 # ADR 014 — Exposition publique via Cloudflare Tunnel + Terraform
 
-**Statut :** Accepté (mise en œuvre partielle — voir §État)
+**Statut :** Accepté — en production depuis le 2026-08-29
 **Date :** 2026-08-29
 
 ## Contexte
@@ -92,8 +92,11 @@ déjà acté dans le brief §6. Repli si blocage : bascule DNS en « DNS only »
 ## État
 
 - [x] Code Terraform + service compose écrits
-- [ ] Zone `blackbox.homes` active sur Cloudflare (NS basculés)
-- [ ] `terraform apply` exécuté
-- [ ] `TUNNEL_TOKEN` déployé, conteneur `cloudflared` up
-- [ ] Flux distant validé (hors LAN, ex. 4G)
-- [ ] Jellyfin configuré pour le reverse proxy (known proxies / base URL)
+- [x] Zone `blackbox.homes` active sur Cloudflare (NS basculés chez Porkbun)
+- [x] `terraform apply` exécuté — tunnel `blackbox-nucbox`
+      (`71d554b6-…`), config d'ingress, 2 CNAME
+- [x] `TUNNEL_TOKEN` déployé, conteneur `cloudflared` up (4 connexions, Healthy)
+- [x] Flux distant validé hors LAN (4G)
+- [x] Jellyfin : `cloudflared` en known proxy ; Seerr : Application URL publique
+- [ ] Sauvegarde de `terraform.tfstate` hors machine (point ouvert)
+- [ ] CrowdSec devant le tunnel (chantier séparé)

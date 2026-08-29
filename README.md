@@ -8,7 +8,8 @@ réel pour la communauté, et vitrine technique pour mon portfolio.
 - Audit externe (risques, priorités, scoring) : [docs/audit_projet.md](docs/audit_projet.md)
 
 Woluwe-Saint-Lambert, Bruxelles. Fibre prévue le 15 septembre 2026.
-Domaine : `blackbox.homes` (Porkbun) — réservé pour le Cloudflare Tunnel (Phase 2).
+Domaine : `blackbox.homes` (enregistré chez Porkbun, DNS géré par Cloudflare) —
+exposition publique active via Cloudflare Tunnel.
 
 ## Où on en est
 
@@ -48,11 +49,12 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   runner self-hosted sur le NucBox à chaque push `main`, voir
   [ADR-013](docs/adr/013-cicd-github-actions.md). Runner self-hosted à
   installer sur le NucBox ([setup-cicd.md](docs/runbooks/setup-cicd.md))
-- [ ] Exposition publique — Cloudflare Tunnel + Terraform (tunnel, config
-  d'ingress, DNS) écrits, service `cloudflared` dans le compose, voir
-  [ADR-014](docs/adr/014-cloudflare-tunnel.md). Reste : basculer la zone
-  `blackbox.homes` sur Cloudflare, `terraform apply`, déployer le token
-  ([setup-cloudflare-tunnel.md](docs/runbooks/setup-cloudflare-tunnel.md))
+- [x] Exposition publique — Cloudflare Tunnel géré par Terraform (tunnel à
+  config distante, ingress, DNS), conteneur `cloudflared` sur le NucBox.
+  `stream.blackbox.homes` (Jellyfin) et `requests.blackbox.homes` (Seerr)
+  en ligne, flux distant validé. Zone `blackbox.homes` passée sur Cloudflare
+  (NS chez Porkbun). Voir [ADR-014](docs/adr/014-cloudflare-tunnel.md) et
+  [setup-cloudflare-tunnel.md](docs/runbooks/setup-cloudflare-tunnel.md)
 
 ## Architecture cible
 

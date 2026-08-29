@@ -22,8 +22,11 @@
 - Runbook `setup-cloudflare-tunnel.md` : bascule de la zone `blackbox.homes`
   sur Cloudflare (NS chez Porkbun), jeton d'API scopé, `terraform apply`,
   déploiement du token, config Jellyfin/Seerr derrière le proxy, rollback
-- Écrit mais pas encore appliqué : la zone doit d'abord être active sur
-  Cloudflare
+- Appliqué et en production : zone `blackbox.homes` basculée sur Cloudflare
+  (NS chez Porkbun), `terraform apply` (4 ressources), token déployé,
+  `cloudflared` up (Healthy, 4 connexions). `stream.blackbox.homes` et
+  `requests.blackbox.homes` accessibles hors LAN, validé en 4G. Jellyfin
+  configuré avec `cloudflared` en known proxy, Seerr Application URL publique
 - Idempotence du playbook Ansible confirmée (2ᵉ run réel :
   `ok=12 changed=0`) — point ouvert d'ADR-012 clos
 
