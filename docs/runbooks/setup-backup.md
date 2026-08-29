@@ -38,7 +38,7 @@ ADMIN_ALERT_WEBHOOK_URL=<même webhook admin que gluetun-healthcheck>
 B2_ACCOUNT_ID=<keyID de l'étape 1>
 B2_ACCOUNT_KEY=<applicationKey de l'étape 1>
 REPO_LOCAL=/mnt/nas-media/backups/restic
-REPO_REMOTE=b2:<nom-du-bucket>:restic
+REPO_REMOTE=b2:backup-kong:restic
 EOF
 chmod 600 ~/blackbox/scripts/backup/.env"
 
