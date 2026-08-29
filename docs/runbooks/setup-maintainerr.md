@@ -42,89 +42,69 @@ Maintainerr (voir les règles ci-dessous). C'est l'échappatoire manuelle.
 - **Collection handling** : créer la collection sur le serveur média
   (pour l'étagère « Bientôt retiré » visible dans Jellyfin)
 - **Rule handler / Collection handler** : quotidien
-- Ne PAS activer la suppression automatique pour l'instant (chaque
-  collection reste en « manual action » — cf. §5)
 
-## 5. Les trois collections
+## 5. Les trois collections (créées via l'API le 2026-08-29)
 
-Rules → Add. Pour chacune : **Library = Movies ou Shows**, **Schedule =
-quotidien**, **Action = supprimer** (voir détail), **Automatic = OFF**
-(validation manuelle), période de grâce = « Days » indiqué.
+Les 3 rule groups sont **déjà créés** (script `infra/scripts/` non versionné,
+POST `/api/rules`). Chacun est en **mode observation** : `arrAction = Do
+Nothing` → les collections se remplissent, l'étagère « Bientôt retiré »
+s'affiche dans Jellyfin, mais **rien n'est jamais supprimé**, ni
+automatiquement ni manuellement, tant que l'action reste sur « Do Nothing ».
 
-### 5.1 Protections communes (à remettre dans CHAQUE collection)
+Cron d'exécution : quotidien à 3 h (`0 3 * * *`).
 
-Ajouter ces conditions en **AND**, en plus des conditions propres :
+### Contenu des règles (référence — pour les recréer à la main si besoin)
 
-| Condition | Opérateur | Valeur |
-|---|---|---|
-| Jellyfin – last view date | not in last | 180 days |
-| Seerr – request date | not in last | 90 days |
-| *arr – date added | before | 90 days ago |
-| Radarr/Sonarr – tags | not contains | `keep` |
+Toutes les sections sont combinées en **ET**. `> Nj` = date **before**
+`N jours en secondes` (Maintainerr stocke les dates relatives en secondes).
 
-> « ajouté il y a plus de 90 j » = `date added` **before** `90 days ago`.
-> Certaines versions exposent ça comme `added` + `not in last 90 days`.
+**Collection 1 — Films dormants** (library Films, `movie`, grâce 14 j) :
+- `(` Jellyfin *Times viewed* `= 0` **OU** Jellyfin *Last view date* `before` 180 j `)`
+- **ET** Jellyfin *Date added* `before` 90 j
+- **ET** Radarr *Tags* `not contains` `keep`
+- **ET** Jellyfin *Present in amount of other collections* `smaller` 1
+- **ET** `(` Seerr *Requested in Seerr* `= false` **OU** Seerr *Request date* `before` 90 j `)`
 
-### 5.2 Collection 1 — Films dormants
+**Collection 2 — Séries terminées inactives** (library Séries, `show`, grâce 21 j) :
+- Sonarr *Status* `= ended`
+- **ET** Jellyfin *Last episode added at* `before` 120 j
+- **ET** Sonarr *Tags (show)* `not contains` `keep`
+- **ET** `(` Jellyfin *Amount of watched episodes* `= 0` **OU** Jellyfin *Newest episode view date* `before` 180 j `)`
+- **ET** `(` Seerr *Requested in Seerr* `= false` **OU** Seerr *Request date* `before` 120 j `)`
 
-Library **Movies**. En plus des protections communes (AND) :
-
-| Condition | Opérateur | Valeur |
-|---|---|---|
-| Jellyfin – view count | equals | 0 *(OU)* Jellyfin – last view date : not in last 180 days |
-| Plex/Jellyfin – collection | is not present | — |
-| Radarr – part of a collection | false | — |
-
-- **Grâce : 14 jours**
-- **Action** : *Delete* → cocher « delete file », « unmonitor in Radarr »,
-  « clear Seerr request ». **Ne pas** cocher « add to Radarr exclusion
-  list ».
-
-### 5.3 Collection 2 — Séries terminées inactives
-
-Library **Shows**. En plus des protections communes (AND) :
-
-| Condition | Opérateur | Valeur |
-|---|---|---|
-| Sonarr – series status | in | `ended`, `deleted` (PAS `continuing`) |
-| Sonarr – last episode added | before | 120 days ago |
-| Jellyfin – last view date | not in last | 180 days |
-
-- **Grâce : 21 jours**
-- **Action** : *Delete* → « delete files », « unmonitor series in Sonarr »,
-  « clear Seerr request ».
-
-### 5.4 Collection 3 — Demandé puis jamais lancé
-
-Library **Movies** (et une variante identique pour **Shows** si tu veux).
-En plus des protections communes **sauf** le « date added before 90 days »
-qu'on remplace par **45 days** :
-
-| Condition | Opérateur | Valeur |
-|---|---|---|
-| Seerr – is requested | true | — |
-| *arr – date added | before | 45 days ago |
-| Jellyfin – view count | equals | 0 |
-
-- **Grâce : 7 jours**
-- **Action** : *Delete* (mêmes cases que Collection 1)
-- **Automatic : OFF en permanence** — cette règle ne s'automatise jamais.
+**Collection 3 — Demandé puis jamais lancé** (library Films, `movie`, grâce 7 j) :
+- Seerr *Requested in Seerr* `= true`
+- **ET** Jellyfin *Times viewed* `= 0`
+- **ET** Jellyfin *Date added* `before` 45 j
+- **ET** Radarr *Tags* `not contains` `keep`
 
 ## 6. Vérification
 
-1. Laisser tourner un cycle (ou *Run rule* manuellement).
-2. Collections → vérifier que le contenu attrapé est bien du « dormant »
-   légitime. Faux positif → l'exclure de la collection (bouton par item) ou
-   poser le tag `keep`.
-3. Jellyfin : l'étagère « Bientôt retiré » doit apparaître avec le contenu
-   en période de grâce.
-4. Ne **rien** supprimer avant d'avoir observé 1–2 semaines et ajusté.
+```bash
+ssh nucbox 'K=<api-key>; curl -sS -H "x-api-key: $K" http://localhost:6246/api/rules | python3 -m json.tool | grep -E "\"name\"|\"id\""'
+```
 
-## 7. Bascule en automatique (plus tard)
+1. Exécution : `curl -sS -X POST -H "x-api-key: $K" http://localhost:6246/api/rules/execute`
+   (ou bouton *Run* dans l'UI). Résultat attendu aujourd'hui : **0 média**
+   (rien n'a encore 90 j de dormance).
+2. Dans quelques semaines : Collections → vérifier que le contenu attrapé
+   est bien du dormant légitime. Faux positif → l'exclure de la collection
+   (bouton par item) ou poser le tag `keep` dans Radarr/Sonarr.
+3. Jellyfin : l'étagère « Bientôt retiré » apparaît quand une collection
+   se remplit.
 
-Quand le NAS dépasse ~70 % (le capacity-watcher d'ADR-019 alertera bien
-avant) : passer **uniquement la Collection 1** en *Automatic = ON*, grâce
-14 j inchangée. Collections 2 et 3 restent manuelles.
+## 7. Passage en mode actif (plus tard)
+
+Rien ne supprime tant que `arrAction = Do Nothing`. Pour activer une
+collection, dans l'UI : éditer le rule group → **Action** →
+
+- Films / séries : **Delete** avec *unmonitor + delete files*
+  (`UNMONITOR_DELETE_ALL`), ne PAS cocher « add to arr exclusion list »
+- la grâce (14 / 21 / 7 j) est déjà réglée
+
+Ordre conseillé : **Collection 1 d'abord**, seulement quand le NAS
+dépasse ~70 % (le capacity-watcher d'ADR-019 alerte bien avant).
+Collections 2 et 3 : à activer au cas par cas, la 3 reste la plus agressive.
 
 ## 8. Ce qui n'est pas couvert
 

@@ -1,7 +1,10 @@
 # ADR 020 — Rétention de la bibliothèque : Maintainerr
 
-**Statut :** Accepté — déployé le 2026-08-29, **en mode revue manuelle**
-(aucune suppression automatique tant que le disque n'est pas sous pression).
+**Statut :** Accepté — déployé le 2026-08-29, **en mode observation**
+(`arrAction = Do Nothing` : les collections se remplissent et l'étagère
+« Bientôt retiré » s'affiche, mais aucune suppression, ni auto ni manuelle,
+tant que l'action reste sur « Do Nothing »). Les 3 rule groups ont été
+créés via l'API Maintainerr (`POST /api/rules`).
 
 **Complète :** [ADR-019](019-autoregulation-capacite-bande-passante.md). Le
 capacity-watcher *alerte* et *bride* quand le disque se remplit ; il ne
