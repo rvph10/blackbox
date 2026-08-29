@@ -55,23 +55,38 @@ c'est le principe d'ADR-011). L'ancien remote `gdrive` peut être purgé
 (`rclone purge gdrive:blackbox-backups`) et `rclone` désinstallé — il ne
 sert plus à rien (retiré du rôle Ansible `base`).
 
-## Élargissement du périmètre sauvegardé
+## Périmètre : CrowdSec et Traefik volontairement exclus
 
-Ajouté aux sources, absent depuis ADR-011 (composants créés depuis) :
-- `prod/data/crowdsec/config` — credentials LAPI/CAPI, config, notifications
-- `prod/traefik/lapi-key` — clé du bouncer Traefik
+Tentative initiale d'ajouter `prod/data/crowdsec/config` et
+`prod/traefik/lapi-key` aux sources, abandonnée au premier run réel : le
+conteneur CrowdSec tourne en **root**, son arborescence `config/hub/` et
+ses `*_credentials.yaml` sont illisibles par `kong` → `restic backup` en
+code 3 à chaque passage. Or ce contenu est **entièrement régénérable** :
+- `hub/` = les collections déclarées dans `COLLECTIONS`, retéléchargées au
+  démarrage
+- `local_api_credentials.yaml` / `online_api_credentials.yaml` = recréés par
+  `cscli` au boot
+- la clé du bouncer Traefik = inutile sans la DB CrowdSec (non sauvegardée),
+  refaite via `cscli bouncers add` à la restauration (runbook `setup-crowdsec.md`)
 
-Régénérables en théorie (`cscli bouncers add`…) mais les inclure rend la
-restauration turnkey. Le script filtre désormais les sources inexistantes
-(alerte `[INFO]` sans faire échouer la sauvegarde) plutôt que de laisser
-restic renvoyer un code non nul — même classe de bug que le
-`jellyfin/config/temp` d'ADR-011.
+Rien d'unique à sauvegarder. Le `acquis.yaml` et la config Traefik sont
+déjà dans Git et déployés par Ansible.
+
+## Robustesse du script
+
+- Filtre des sources inexistantes (alerte `[INFO]`, pas d'échec) — évite le
+  code non nul de restic sur un chemin absent, même classe de bug que le
+  `jellyfin/config/temp` d'ADR-011.
+- `restic backup` code 3 (« snapshot créé mais fichiers illisibles »)
+  traité comme **non bloquant + alerte Discord** plutôt que comme un échec :
+  mieux vaut un snapshot amputé de 2 fichiers qu'aucun snapshot, et l'alerte
+  quotidienne pousse à investiguer.
 
 ## Conséquences
 
 - `infra/scripts/backup/backup.sh` : `b2:` au lieu de `rclone:`, export
-  `B2_ACCOUNT_ID`/`B2_ACCOUNT_KEY`, filtre des sources présentes, `.env`
-  vérifie les nouvelles variables
+  `B2_ACCOUNT_ID`/`B2_ACCOUNT_KEY`, filtre des sources présentes, code 3
+  de restic non bloquant, `.env` vérifie les nouvelles variables
 - `infra/scripts/backup/.env.example` : `B2_ACCOUNT_ID`, `B2_ACCOUNT_KEY`,
   `REPO_REMOTE=b2:...`
 - Rôle Ansible `base` : `rclone` retiré (plus utilisé)

@@ -30,8 +30,11 @@ SOURCES=(
   "$HOME/blackbox/prod/data/radarr/config"
   "$HOME/blackbox/prod/data/bazarr/config"
   "$HOME/blackbox/prod/data/jellyseerr/config"
-  "$HOME/blackbox/prod/data/crowdsec/config"
-  "$HOME/blackbox/prod/traefik/lapi-key"
+  # CrowdSec et Traefik ne sont volontairement pas sauvegardés : le conteneur
+  # CrowdSec tourne en root (fichiers illisibles par kong) et tout son état
+  # est régénérable — collections retéléchargées via COLLECTIONS, credentials
+  # recréés par cscli au boot, bouncer via `cscli bouncers add`. Voir
+  # docs/adr/017-backup-b2.md et docs/runbooks/setup-crowdsec.md.
   "$HOME/blackbox/prod/.env"
   "$HOME/blackbox/bot/.env"
   "$HOME/blackbox/scripts/gluetun-healthcheck/.env"
@@ -67,10 +70,16 @@ run_backup() {
     fi
   fi
 
-  if ! restic -r "$repo" backup "${SOURCES[@]}" --tag blackbox \
-      --exclude "$HOME/blackbox/prod/data/jellyfin/config/temp" \
-      >> "$LOG_FILE" 2>&1; then
-    alert "[ALERTE] Backup restic ($label) a échoué, voir $LOG_FILE."
+  local rc=0
+  restic -r "$repo" backup "${SOURCES[@]}" --tag blackbox \
+    --exclude "$HOME/blackbox/prod/data/jellyfin/config/temp" \
+    >> "$LOG_FILE" 2>&1 || rc=$?
+  # restic : 0 = OK, 3 = snapshot créé mais des fichiers étaient illisibles
+  # (partiel, non bloquant — on alerte pour investiguer), autre = échec réel.
+  if [ "$rc" -eq 3 ]; then
+    alert "[ALERTE] Backup restic ($label) : snapshot créé, fichiers illisibles ignorés (code 3), voir $LOG_FILE."
+  elif [ "$rc" -ne 0 ]; then
+    alert "[ALERTE] Backup restic ($label) a échoué (code $rc), voir $LOG_FILE."
     return 1
   fi
 

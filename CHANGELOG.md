@@ -40,8 +40,11 @@
   clé d'application restreinte au bucket. Le dépôt NAS local garde tout
   l'historique (dépôts indépendants)
 - `backup.sh` : `b2:` au lieu de `rclone:`, `B2_ACCOUNT_ID`/`B2_ACCOUNT_KEY`,
-  filtre des sources inexistantes (alerte `[INFO]` au lieu d'un échec).
-  Ajout au périmètre : `data/crowdsec/config` et `traefik/lapi-key`
+  filtre des sources inexistantes, code 3 de restic (snapshot partiel)
+  traité comme non bloquant + alerte. CrowdSec/Traefik **exclus**
+  volontairement (conteneur root illisible par `kong`, état 100 %
+  régénérable). Dépôt B2 `restic init` + premier snapshot + `check
+  --read-data` OK (clé restreinte au bucket, backend natif restic)
 - Rôle Ansible `base` : `rclone` retiré. Runbook `setup-backup.md` §1
   réécrit (bucket + clé B2), §8 mis à jour avec la procédure de test à blanc
 - Étendu la LV racine du NucBox : l'installeur Ubuntu plafonne à ~100 Go,

@@ -141,3 +141,8 @@ préalable dans un dossier séparé.
   re-téléchargeable via la suite *arr* si besoin)
 - Le dossier `.git` du repo — déjà versionné et poussé sur GitHub
   séparément
+- CrowdSec (`data/crowdsec/`) et Traefik (`traefik/`) — conteneur CrowdSec
+  en root (illisible par `kong`) et état 100 % régénérable : collections via
+  `COLLECTIONS`, credentials par `cscli` au boot, bouncer via
+  `cscli bouncers add` (voir [setup-crowdsec.md](setup-crowdsec.md)). La
+  config versionnée (`acquis.yaml`, `traefik/*.yml`) est dans Git + Ansible.
