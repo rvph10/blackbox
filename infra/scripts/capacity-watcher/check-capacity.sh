@@ -75,12 +75,15 @@ qbt_alt_limits() {
   local want="$1" jar
   [ -n "$QBT_USER" ] && [ -n "$QBT_PASS" ] || { alert "[INFO] capacity-watcher : QBT_USER/QBT_PASS non renseignés, bascule qBittorrent ignorée."; return 0; }
   jar="$(mktemp)"
-  if ! curl -fsS -c "$jar" --data-urlencode "username=$QBT_USER" --data-urlencode "password=$QBT_PASS" \
-      "$QBT_URL/api/v2/auth/login" | grep -q "Ok."; then
+  curl -fsS -c "$jar" --data-urlencode "username=$QBT_USER" --data-urlencode "password=$QBT_PASS" \
+    "$QBT_URL/api/v2/auth/login" > /dev/null 2>&1 || true
+  # Le corps de /auth/login est vide sur certaines versions : on valide la
+  # session en interrogeant un endpoint authentifié plutôt que le corps.
+  local mode
+  mode="$(curl -fsS -b "$jar" "$QBT_URL/api/v2/transfer/speedLimitsMode" 2>/dev/null || echo "")"
+  if [ "$mode" != "0" ] && [ "$mode" != "1" ]; then
     rm -f "$jar"; alert "[ALERTE] capacity-watcher : authentification qBittorrent échouée."; return 1
   fi
-  local mode
-  mode="$(curl -fsS -b "$jar" "$QBT_URL/api/v2/transfer/speedLimitsMode" 2>/dev/null || echo 0)"
   if { [ "$want" = "on" ] && [ "$mode" != "1" ]; } || { [ "$want" = "off" ] && [ "$mode" = "1" ]; }; then
     curl -fsS -b "$jar" -X POST "$QBT_URL/api/v2/transfer/toggleSpeedLimitsMode" > /dev/null || true
   fi
