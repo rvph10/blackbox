@@ -16,6 +16,7 @@
     - /home/kong/blackbox/bot
     - /home/kong/blackbox/scripts/gluetun-healthcheck
     - /home/kong/blackbox/scripts/backup
+    - /home/kong/blackbox/scripts/capacity-watcher
 
 - name: Déployer docker-compose.yml
   ansible.builtin.copy:
@@ -63,6 +64,12 @@
     dest: /home/kong/blackbox/scripts/backup/backup.sh
     mode: "0755"
 
+- name: Déployer le script capacity-watcher (hors .env)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../scripts/capacity-watcher/check-capacity.sh"
+    dest: /home/kong/blackbox/scripts/capacity-watcher/check-capacity.sh
+    mode: "0755"
+
 - name: Vérifier la présence des secrets requis
   ansible.builtin.stat:
     path: "{{ item }}"
@@ -72,6 +79,7 @@
     - /home/kong/blackbox/bot/.env
     - /home/kong/blackbox/scripts/gluetun-healthcheck/.env
     - /home/kong/blackbox/scripts/backup/.env
+    - /home/kong/blackbox/scripts/capacity-watcher/.env
   register: env_files
 
 - name: Avertir si des secrets manquent (création manuelle requise, voir runbooks)

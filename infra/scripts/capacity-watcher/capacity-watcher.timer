@@ -1,0 +1,10 @@
+[Unit]
+Description=Lance le watcher capacité/bande passante toutes les 2 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+Unit=capacity-watcher.service
+
+[Install]
+WantedBy=timers.target

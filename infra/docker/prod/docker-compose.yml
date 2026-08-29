@@ -192,6 +192,40 @@ services:
     depends_on:
       - traefik
 
+  # Observation des usages Jellyfin (historique de lecture, sessions
+  # concurrentes, bande passante) — base du dashboard capacité. Dashboard
+  # joignable via Tailscale sur :3000, jamais exposé sur le tunnel public.
+  # Voir docs/adr/019-autoregulation-capacite-bande-passante.md.
+  jellystat-db:
+    image: postgres:16-alpine
+    container_name: jellystat-db
+    environment:
+      - POSTGRES_USER=jellystat
+      - POSTGRES_PASSWORD=${JELLYSTAT_DB_PASSWORD}
+      - POSTGRES_DB=jfstat
+    volumes:
+      - ./data/jellystat/db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  jellystat:
+    image: cyfershepard/jellystat:latest
+    container_name: jellystat
+    environment:
+      - POSTGRES_USER=jellystat
+      - POSTGRES_PASSWORD=${JELLYSTAT_DB_PASSWORD}
+      - POSTGRES_IP=jellystat-db
+      - POSTGRES_PORT=5432
+      - JWT_SECRET=${JELLYSTAT_JWT_SECRET}
+      - TZ=${TZ}
+    volumes:
+      - ./data/jellystat/backup:/app/backend/backup-data
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+      - jellystat-db
+      - jellyfin
+
   # Bot Discord, Layer 2 (lecture seule) — voir docs/adr/010-bot-layer2.md.
   # Ne modifie jamais l'infra, uniquement des commandes de statut.
   bot:

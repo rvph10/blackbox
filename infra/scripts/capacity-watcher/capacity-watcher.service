@@ -1,0 +1,9 @@
+[Unit]
+Description=Autorégulation capacité disque + bande passante montante (ADR-019)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=kong
+ExecStart=/home/kong/blackbox/scripts/capacity-watcher/check-capacity.sh

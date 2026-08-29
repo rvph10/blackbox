@@ -4,6 +4,21 @@
 
 ### 2026-08-29
 
+- ADR-019 (**accepté, en production**) : autorégulation capacité + bande
+  passante. **Jellystat** (+ Postgres dédié) pour l'observation des usages
+  Jellyfin (dashboard Tailscale `:3000`, jamais exposé publiquement) et un
+  watcher `infra/scripts/capacity-watcher/check-capacity.sh` + timer systemd
+  (2 min, schéma ADR-009). À chaque passage : `df` sur `MEDIA_MOUNT` +
+  somme des bitrates des sessions Jellyfin actives (`/Sessions`). Trois
+  niveaux avec hystérésis (fichier d'état) : WARN → alerte Discord admin ;
+  CRIT → bascule des **limites alternatives qBittorrent** (bride le seeding,
+  non destructif, réversible) + alerte admin + message communautaire ;
+  retour OK → limites désactivées. Seuils absolus dans le `.env`
+  (`DISK_WARN/CRIT_PCT`, `UPLOAD_WARN/CRIT_MBPS` calés sur ~20 Mbit/s VDSL,
+  à remonter après la fibre). Ansible : `jq` dans le rôle `base`,
+  déploiement du script + unité `capacity-watcher`. Runbook
+  `setup-capacity-watcher.md`. Jellystat hors périmètre backup restic
+  (Postgres reconstructible via Full Sync).
 - ADR-014 : exposition publique de Jellyfin et Seerr via **Cloudflare
   Tunnel**, préparé avant la fibre (le tunnel est sortant, il n'attend pas
   le routeur/VLAN). Tunnel à configuration distante (`config_src =

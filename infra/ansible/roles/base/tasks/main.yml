@@ -8,6 +8,7 @@
     name:
       - curl
       - git
+      - jq # parsing API Jellyfin dans capacity-watcher, voir ADR-019
       - mesa-va-drivers # VAAPI, voir ADR-006
       - vainfo
       - restic # backup, voir ADR-011 / ADR-017

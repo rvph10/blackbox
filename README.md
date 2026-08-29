@@ -21,15 +21,24 @@ que ce soit (voir §12 du brief et §17 de l'audit).
 - [x] OS installé sur le NucBox
 - [x] Décision extinction programmée — abandonnée, NucBox allumé 24/7, WoL abandonné ([ADR-005](docs/adr/005-nucbox-always-on.md))
 - [x] Test transcodage matériel VAAPI — validé sur Radeon 760M ([ADR-006](docs/adr/006-vaapi-validated.md))
-- [ ] Débit montant fibre réel — bloqué jusqu'au 15/09
+- [ ] Débit montant fibre réel — bloqué jusqu'au 15/09. En attendant,
+  l'autorégulation tourne sur les ~20 Mbit/s mesurés (VDSL) : seuils dans le
+  `.env` du watcher, à remonter après la fibre sans changement de code
+- [x] Autorégulation capacité + bande passante — **Jellystat** (observation
+  des usages Jellyfin, dashboard via Tailscale) + **capacity-watcher**
+  (script + timer systemd, toutes les 2 min) : surveille l'espace disque du
+  NAS et le débit montant streaming, alerte Discord sur seuil WARN, bride le
+  seeding qBittorrent (limites alternatives) + message communautaire sur
+  seuil CRIT. Voir [ADR-019](docs/adr/019-autoregulation-capacite-bande-passante.md)
+  et [setup-capacity-watcher.md](docs/runbooks/setup-capacity-watcher.md)
 - [x] RAID tranché — RAID1 ([ADR-003](docs/adr/003-raid-nas.md))
 - [x] RAID1 configuré sur le NAS — NAS branché (`dxp`), RAID1 sain,
   partage NFS `media` monté sur le NucBox et utilisé par Jellyfin
 - [ ] Routeur/firewall dédié + VLAN — bloqué jusqu'à la fibre
 - [x] Stack applicative — Jellyfin + suite *arr* déployés sur le NucBox
   (Prowlarr, Sonarr, Radarr, Bazarr, Seerr, qBittorrent derrière un VPN
-  Mullvad/Gluetun), voir [ADR-007](docs/adr/007-arr-stack.md). Postgres pas
-  encore nécessaire (pas de service qui le requiert pour l'instant)
+  Mullvad/Gluetun), voir [ADR-007](docs/adr/007-arr-stack.md). Un Postgres
+  dédié est apparu avec Jellystat ([ADR-019](docs/adr/019-autoregulation-capacite-bande-passante.md))
 - [x] Serveur Discord communautaire — structure native (rôles, Rules
   Screening, Welcome Screen, accueil, intégration Seerr/Jellyfin), voir
   [ADR-008](docs/adr/008-discord-community.md). Le bot Discord lui-même
@@ -78,7 +87,7 @@ flowchart TD
     ONT[ONT fibre Proximus]
     RTR[Routeur/Firewall dédié\nVLAN mgmt/services/users]
     SW[Switch managé 24/7]
-    NUC[NucBox M6 — Ryzen 5 7640HS — allumé 24/7\nDocker: Traefik + CrowdSec, Jellyfin,\nProwlarr, Sonarr, Radarr, Bazarr, Seerr,\nqBittorrent+VPN, cloudflared, Bot Discord]
+    NUC[NucBox M6 — Ryzen 5 7640HS — allumé 24/7\nDocker: Traefik + CrowdSec, Jellyfin,\nProwlarr, Sonarr, Radarr, Bazarr, Seerr,\nqBittorrent+VPN, Jellystat, cloudflared, Bot Discord\n+ timers: gluetun-healthcheck, backup, capacity-watcher]
     NAS[Ugreen DXP2800 — dxp\nRAID1 — NFS]
     ESP8266[ESP8266 NodeMCU — watchdog externe\nESPHome, ping + alerte, Wi-Fi]
 
@@ -143,6 +152,8 @@ blackbox/
 | [015](docs/adr/015-tailscale.md) | Tailscale pour l'accès admin distant (SSH + dashboards *arr*), installé par Ansible |
 | [016](docs/adr/016-crowdsec-traefik.md) | CrowdSec derrière Traefik (reverse proxy interne) pour protéger l'exposition publique |
 | [017](docs/adr/017-backup-b2.md) | Backup hors site : Backblaze B2 remplace Google Drive |
+| [018](docs/adr/018-iptv-live-tv.md) | Live TV / IPTV : Threadfin devant le module natif Jellyfin (proposé, en attente fournisseur) |
+| [019](docs/adr/019-autoregulation-capacite-bande-passante.md) | Autorégulation capacité + bande passante : Jellystat + watcher de seuil (script + timer systemd) |
 
 ## Runbooks
 
@@ -160,12 +171,17 @@ blackbox/
 | [setup-tailscale.md](docs/runbooks/setup-tailscale.md) | Tailscale : compte, clé d'auth, install via Ansible, Tailscale SSH, subnet router |
 | [setup-crowdsec.md](docs/runbooks/setup-crowdsec.md) | CrowdSec + Traefik : ingress Terraform, bootstrap de la clé bouncer, vérif, Console |
 | [setup-backup.md](docs/runbooks/setup-backup.md) | Backup restic : bucket/clé Backblaze B2, NAS local, planification, restauration à blanc |
+| [setup-capacity-watcher.md](docs/runbooks/setup-capacity-watcher.md) | Autorégulation : Jellystat, script + timer capacity-watcher, seuils, limites qBittorrent |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
 
 ## Points ouverts
 
-- Rétention Maintainerr (durée avant suppression auto)
+- Rétention Maintainerr (durée avant suppression auto) — Maintainerr pas
+  encore déployé ; en attendant, le volet capacité de l'autorégulation se
+  limite à alerter/brider sur seuil disque (voir [ADR-019](docs/adr/019-autoregulation-capacite-bande-passante.md))
+- Seuils `UPLOAD_WARN/CRIT_MBPS` du capacity-watcher à recalibrer après la
+  fibre (15/09) — valeurs actuelles calées sur ~20 Mbit/s VDSL
 - Politique d'approbation Jellyseerr par type de contenu
 - Choix du routeur/firewall dédié (voir audit §15)
 - Modèle d'UPS (compatibilité NUT à vérifier)
@@ -188,3 +204,7 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
   [ADR-014](docs/adr/014-cloudflare-tunnel.md))
 - Conformité CGU Cloudflare sur le streaming proxifié : risque assumé,
   repli documenté (voir [ADR-014](docs/adr/014-cloudflare-tunnel.md))
+- Live TV / IPTV (voir [ADR-018](docs/adr/018-iptv-live-tv.md)) : nombre de
+  comptes fournisseur à acheter (1 flux/compte, streaming simultané
+  interdit), specs de flux, support proxy Threadfin, usage multi-comptes
+  depuis une seule IP — en attente de la réponse du fournisseur
