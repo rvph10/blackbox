@@ -86,6 +86,8 @@ accentués/non-latins que la police par défaut).
 - Chemins locaux temporaires (`infra/docker/prod/data/media/`) en
   attendant le NAS — à rebasculer sur le point de montage NFS/SMB une fois
   disponible (voir [ADR-003](../adr/003-raid-nas.md)).
-- Live TV / IPTV : pas configuré. Prévu nativement dans Jellyfin (module
-  Live TV, flux M3U + guide XMLTV), à faire une fois l'URL M3U du
-  fournisseur IPTV disponible — ce n'est pas un outil séparé.
+- Live TV / IPTV : pas configuré. Approche retenue = **Threadfin** (proxy
+  M3U/EPG, tuner HDHomeRun virtuel) devant le module Live TV natif de
+  Jellyfin, voir [ADR-018](../adr/018-iptv-live-tv.md). En attente de la
+  réponse du fournisseur (nombre de comptes, specs de flux) avant
+  déploiement et rédaction de la section dédiée ici.

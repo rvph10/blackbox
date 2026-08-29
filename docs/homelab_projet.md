@@ -252,3 +252,7 @@ automatisation complète (bot, watcher, extinction) en tâche de fond.
 - Politique exacte d'approbation Jellyseerr par type de contenu.
 - Durée par défaut des comptes invités temporaires.
 - Arbitrage RAID1/RAID0 sur le DXP2800.
+- Live TV / IPTV ([ADR-018](adr/018-iptv-live-tv.md), proposé) : Threadfin
+  devant le module natif Jellyfin retenu ; en attente de la réponse du
+  fournisseur sur le nombre de comptes (1 flux/compte), les specs de flux
+  et le support proxy.

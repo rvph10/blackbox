@@ -46,6 +46,18 @@
   déploiement du script + unité `capacity-watcher`. Runbook
   `setup-capacity-watcher.md`. Jellystat hors périmètre backup restic
   (Postgres reconstructible via Full Sync).
+- ADR-018 (**proposé**) : Live TV / IPTV. Choix logiciel = **Threadfin**
+  (proxy M3U/EPG, tuner HDHomeRun virtuel) devant le module Live TV natif de
+  Jellyfin — préféré à Jellyfin-seul (gestion des chaînes pénible sur un gros
+  bouquet) et à TVHeadend (trop lourd). Coût ressources : conteneur
+  négligeable (~150–300 Mo RAM, CPU nul) ; le vrai coût est le transcodage
+  Jellyfin (1080i désentrelacé ≈ 1,5 flux ADR-006), ~12–14 flux équivalents
+  au pire pour 10 viewers, dans la marge des 20+ mesurés. WAN : ~50–120
+  Mbit/s entrants permanents. Contrainte structurante = **1 flux/compte
+  fournisseur, streaming simultané interdit** → ~10 comptes nécessaires.
+  Passage en « Accepté » bloqué sur la réponse du fournisseur (nb de comptes,
+  specs de flux, support proxy, multi-comptes depuis une seule IP). Pas
+  d'exposition publique (hors Cloudflare Tunnel), admin via Tailscale.
 - ADR-014 : exposition publique de Jellyfin et Seerr via **Cloudflare
   Tunnel**, préparé avant la fibre (le tunnel est sortant, il n'attend pas
   le routeur/VLAN). Tunnel à configuration distante (`config_src =
