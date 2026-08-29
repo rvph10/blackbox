@@ -29,9 +29,10 @@
   configuré avec `cloudflared` en known proxy, Seerr Application URL publique
 - Idempotence du playbook Ansible confirmée (2ᵉ run réel :
   `ok=12 changed=0`) — point ouvert d'ADR-012 clos
-- Test de restauration à blanc restic (point ouvert d'ADR-011) : **dépôt NAS
-  local validé** — `check --read-data` sans erreur, 1338 fichiers restaurés,
-  toutes les bases SQLite `PRAGMA integrity_check = ok`, secrets intègres
+- Test de restauration à blanc restic (point ouvert d'ADR-011) : **clos** —
+  dépôt NAS local (restauration + `check --read-data` + bases SQLite
+  `integrity_check = ok` + secrets) et dépôt B2 (`init` + snapshot +
+  `check --read-data` sans erreur). Timer quotidien : `EXIT=0` sur les deux
 - ADR-017 : le test a révélé que le **dépôt Google Drive était figé depuis
   2 jours** — `rclone config` sans `client_id` tape dans le client OAuth
   partagé de rclone (`project_number 202264815644`), régulièrement saturé

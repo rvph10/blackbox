@@ -38,9 +38,9 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   indépendants : NAS local + Backblaze B2 (backend natif restic ; Google
   Drive abandonné, quota OAuth partagé de rclone), quotidien via systemd
   timer. Voir [ADR-011](docs/adr/011-backup-restic-rclone.md) +
-  [ADR-017](docs/adr/017-backup-b2.md). **Restauration à blanc du dépôt
-  local validée le 2026-08-29** (intégrité, bases SQLite, secrets) ; dépôt
-  B2 à revalider au premier run complet
+  [ADR-017](docs/adr/017-backup-b2.md). **Restauration à blanc validée le
+  2026-08-29** sur les deux dépôts (intégrité `--read-data`, bases SQLite,
+  secrets)
 - [ ] Bot Discord — notifications passives (Layer 1) en place sans code de
   bot : contenu ajouté (Jellyfin → webhook Discord natif) et santé VPN
   (Gluetun → script + timer systemd), voir [ADR-009](docs/adr/009-notifications-layer1.md).
@@ -183,9 +183,6 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
   bot Discord (voir [ADR-008](docs/adr/008-discord-community.md))
 - Watchdog ESP8266 pas encore branché sur les notifications Discord
   (voir [ADR-009](docs/adr/009-notifications-layer1.md))
-- Restauration à blanc du dépôt Backblaze B2 pas encore validée (dépôt
-  neuf, cf. [ADR-017](docs/adr/017-backup-b2.md) — le dépôt NAS local, lui,
-  a été testé le 2026-08-29)
 - État Terraform (`infra/terraform/terraform.tfstate`) : backend local
   gitignoré, sauvegarde hors machine à mettre en place (voir
   [ADR-014](docs/adr/014-cloudflare-tunnel.md))

@@ -91,5 +91,8 @@ déjà dans Git et déployés par Ansible.
   `REPO_REMOTE=b2:...`
 - Rôle Ansible `base` : `rclone` retiré (plus utilisé)
 - Runbook `setup-backup.md` §1 réécrit (bucket + clé B2 au lieu de rclone)
-- Restauration à blanc : local **validée** ; B2 à valider au premier run
-  réel puis `restic check`
+- Restauration à blanc **validée** (2026-08-29) : dépôt local (intégrité
+  `--read-data`, bases SQLite, secrets) ET dépôt B2 (`restic init`, premier
+  snapshot 145 Mio, `check --read-data` sans erreur). Clé restreinte au
+  bucket : aucun souci `b2_list_buckets` avec le backend natif restic.
+  Point ouvert d'ADR-011 clos.
