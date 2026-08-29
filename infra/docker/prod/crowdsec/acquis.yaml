@@ -1,11 +1,18 @@
 # Sources de logs analysées par CrowdSec. Voir docs/adr/016-crowdsec-traefik.md.
+#
+# Patterns en glob (pas de chemin littéral) : CrowdSec re-scanne
+# périodiquement et récupère un fichier créé après son démarrage. Avec un
+# chemin littéral absent au boot, la source est abandonnée définitivement
+# (crowdsec démarre avant traefik → access.log pas encore créé).
 ---
 filenames:
-  - /var/log/traefik/access.log
+  - /var/log/traefik/*.log
 labels:
   type: traefik
 ---
+# Uniquement le log principal (log_YYYYMMDD.log) : éviter les FFmpeg.*.log
+# de transcodage, non parsables et volumineux.
 filenames:
-  - /var/log/jellyfin/*.log
+  - /var/log/jellyfin/log_*.log
 labels:
   type: jellyfin
