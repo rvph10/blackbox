@@ -59,13 +59,13 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   Tailscale SSH activé). `ssh kong@nucbox` et les dashboards *arr* joignables
   depuis le tailnet sans port ouvert. Voir [ADR-015](docs/adr/015-tailscale.md)
   et [setup-tailscale.md](docs/runbooks/setup-tailscale.md)
-- [ ] Protection de l'exposition publique — CrowdSec derrière Traefik
-  (reverse proxy interne, file provider, aucun port publié) : middleware
-  CrowdSec sur chaque route, détection sur les logs Traefik + Jellyfin,
-  blocklist communautaire. Config + compose + ingress Terraform écrits.
-  Reste : `terraform apply`, bootstrap de la clé bouncer sur le NucBox
-  ([ADR-016](docs/adr/016-crowdsec-traefik.md),
-  [setup-crowdsec.md](docs/runbooks/setup-crowdsec.md))
+- [x] Protection de l'exposition publique — CrowdSec derrière Traefik
+  (reverse proxy interne, file provider, aucun port publié). Le trafic public
+  passe par `cloudflared → traefik → jellyfin/seerr` avec middleware CrowdSec
+  sur chaque route ; détection sur les logs Traefik + Jellyfin, blocklist
+  communautaire. Accès LAN/Tailscale inchangé (direct). Voir
+  [ADR-016](docs/adr/016-crowdsec-traefik.md) et
+  [setup-crowdsec.md](docs/runbooks/setup-crowdsec.md)
 
 ## Architecture cible
 

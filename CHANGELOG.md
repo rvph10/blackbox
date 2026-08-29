@@ -49,8 +49,11 @@
   disproportionné). Moteur CrowdSec en détection sur les logs Traefik +
   Jellyfin, blocklist communautaire consommée. LAPI sur le réseau Docker,
   aucune dépendance SaaS. Accès LAN/Tailscale inchangé (direct, hors proxy).
-  Config + compose + ingress Terraform écrits, runbook `setup-crowdsec.md`.
-  Reste : `terraform apply` + bootstrap de la clé bouncer sur le NucBox
+  Runbook `setup-crowdsec.md`. Appliqué : `terraform apply` (ingress →
+  traefik:80), Traefik + CrowdSec up, bouncer validé, `stream.` / `requests.`
+  toujours servis (via cloudflared → traefik → app). Piège rencontré :
+  `traefik/lapi-key` auto-créé en dossier root par un `docker compose up`
+  prématuré — runbook corrigé (créer le fichier vide d'abord)
 
 - ADR-013 : chaîne CI/CD GitHub Actions pour le bot Discord (seul code
   applicatif maison du projet). `ci.yml` : `ruff check`, `ruff format

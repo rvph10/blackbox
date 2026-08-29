@@ -1,7 +1,6 @@
 # ADR 016 — CrowdSec derrière Traefik pour protéger l'exposition publique
 
-**Statut :** Accepté
-**Date :** 2026-08-29
+**Statut :** Accepté — en production depuis le 2026-08-29
 
 ## Contexte
 
