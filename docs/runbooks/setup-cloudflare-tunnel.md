@@ -60,6 +60,15 @@ terraform plan      # attendu : 4 à créer (tunnel, config, 2 CNAME)
 terraform apply
 ```
 
+> `TF_VAR_cloudflare_api_token` doit être exporté dans le shell courant,
+> sinon Terraform demande le jeton à chaque commande (`Enter a value:`).
+>
+> `plan`/`apply` affiche un warning « This resource cannot be destroyed from
+> Terraform » sur `..._tunnel_cloudflared_config` : bénin. L'API Cloudflare
+> n'a pas de DELETE pour la config d'ingress — elle n'existe que tant que le
+> tunnel existe et disparaît en cascade avec lui (`terraform destroy` retire
+> bien tunnel + CNAME).
+
 Vérifs post-apply :
 - Cloudflare → **Zero Trust → Networks → Tunnels** : `blackbox-nucbox`
   présent, statut **Down** (normal, le conteneur n'existe pas encore)
