@@ -34,10 +34,13 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   Screening, Welcome Screen, accueil, intégration Seerr/Jellyfin), voir
   [ADR-008](docs/adr/008-discord-community.md). Le bot Discord lui-même
   reste à construire
-- [x] Backup restic + rclone — configs applicatives (pas la médiathèque),
-  deux dépôts indépendants : NAS local + Google Drive, quotidien via
-  systemd timer, voir [ADR-011](docs/adr/011-backup-restic-rclone.md).
-  Restauration à blanc pas encore testée en conditions réelles
+- [x] Backup restic — configs applicatives (pas la médiathèque), deux dépôts
+  indépendants : NAS local + Backblaze B2 (backend natif restic ; Google
+  Drive abandonné, quota OAuth partagé de rclone), quotidien via systemd
+  timer. Voir [ADR-011](docs/adr/011-backup-restic-rclone.md) +
+  [ADR-017](docs/adr/017-backup-b2.md). **Restauration à blanc du dépôt
+  local validée le 2026-08-29** (intégrité, bases SQLite, secrets) ; dépôt
+  B2 à revalider au premier run complet
 - [ ] Bot Discord — notifications passives (Layer 1) en place sans code de
   bot : contenu ajouté (Jellyfin → webhook Discord natif) et santé VPN
   (Gluetun → script + timer systemd), voir [ADR-009](docs/adr/009-notifications-layer1.md).
@@ -133,12 +136,13 @@ blackbox/
 | [008](docs/adr/008-discord-community.md) | Discord communautaire : structure native, pas de bot pour l'instant |
 | [009](docs/adr/009-notifications-layer1.md) | Notifications passives (Layer 1) : contenu ajouté + santé VPN, sans code de bot |
 | [010](docs/adr/010-bot-layer2.md) | Bot Discord Layer 2 : commandes de statut en lecture seule (`/status`, `/streams`) |
-| [011](docs/adr/011-backup-restic-rclone.md) | Backup restic : NAS local + Google Drive |
+| [011](docs/adr/011-backup-restic-rclone.md) | Backup restic : NAS local + hors site |
 | [012](docs/adr/012-ansible-retrofit.md) | Rattrapage Ansible : provisioning + déploiement du NucBox |
 | [013](docs/adr/013-cicd-github-actions.md) | CI/CD GitHub Actions pour le bot : lint/tests → image GHCR → runner self-hosted |
 | [014](docs/adr/014-cloudflare-tunnel.md) | Exposition publique : Cloudflare Tunnel (config distante) + Terraform scopé Cloudflare |
 | [015](docs/adr/015-tailscale.md) | Tailscale pour l'accès admin distant (SSH + dashboards *arr*), installé par Ansible |
 | [016](docs/adr/016-crowdsec-traefik.md) | CrowdSec derrière Traefik (reverse proxy interne) pour protéger l'exposition publique |
+| [017](docs/adr/017-backup-b2.md) | Backup hors site : Backblaze B2 remplace Google Drive |
 
 ## Runbooks
 
@@ -155,7 +159,7 @@ blackbox/
 | [setup-cloudflare-tunnel.md](docs/runbooks/setup-cloudflare-tunnel.md) | Cloudflare Tunnel : onboarding zone, jeton API, `terraform apply`, token, config proxy |
 | [setup-tailscale.md](docs/runbooks/setup-tailscale.md) | Tailscale : compte, clé d'auth, install via Ansible, Tailscale SSH, subnet router |
 | [setup-crowdsec.md](docs/runbooks/setup-crowdsec.md) | CrowdSec + Traefik : ingress Terraform, bootstrap de la clé bouncer, vérif, Console |
-| [setup-backup.md](docs/runbooks/setup-backup.md) | Backup restic : rclone/Google Drive, NAS local, planification, restauration |
+| [setup-backup.md](docs/runbooks/setup-backup.md) | Backup restic : bucket/clé Backblaze B2, NAS local, planification, restauration à blanc |
 
 Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.md)) : [setup-wol-nucbox.md](docs/runbooks/setup-wol-nucbox.md).
 
@@ -179,9 +183,9 @@ Le runbook WoL est archivé (obsolète, [ADR-005](docs/adr/005-nucbox-always-on.
   bot Discord (voir [ADR-008](docs/adr/008-discord-community.md))
 - Watchdog ESP8266 pas encore branché sur les notifications Discord
   (voir [ADR-009](docs/adr/009-notifications-layer1.md))
-- Restauration restic (NAS local + Google Drive) jamais testée en
-  conditions réelles, seule la sauvegarde l'a été (voir
-  [ADR-011](docs/adr/011-backup-restic-rclone.md))
+- Restauration à blanc du dépôt Backblaze B2 pas encore validée (dépôt
+  neuf, cf. [ADR-017](docs/adr/017-backup-b2.md) — le dépôt NAS local, lui,
+  a été testé le 2026-08-29)
 - État Terraform (`infra/terraform/terraform.tfstate`) : backend local
   gitignoré, sauvegarde hors machine à mettre en place (voir
   [ADR-014](docs/adr/014-cloudflare-tunnel.md))

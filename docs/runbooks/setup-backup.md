@@ -1,24 +1,23 @@
-# Runbook — backup restic (NAS local + Google Drive)
+# Runbook — backup restic (NAS local + Backblaze B2)
 
-Contexte et choix : [ADR-011](../adr/011-backup-restic-rclone.md).
+Contexte et choix : [ADR-011](../adr/011-backup-restic-rclone.md) puis
+[ADR-017](../adr/017-backup-b2.md) (B2 remplace Google Drive — le remote
+rclone/Drive tapait dans le quota OAuth partagé de rclone et tombait en
+`403 RATE_LIMIT_EXCEEDED`).
 
-## 1. Remote rclone (Google Drive)
+## 1. Bucket + clé Backblaze B2
 
-Étape à faire par l'utilisateur (connexion à son propre compte Google, pas
-automatisable) :
+À faire par l'utilisateur (compte perso B2) :
 
-```bash
-ssh nucbox
-rclone config
-# n (new remote) → nom "gdrive" → storage "18" (Google Drive)
-# client_id / client_secret : laisser vide
-# scope : "1" (accès complet)
-# Use auto config : n (si SSH sans navigateur graphique)
-# → suivre l'URL "rclone authorize" donnée, coller le token retourné
-# Configure as Shared Drive : n
-```
-
-Vérifier : `rclone lsd gdrive:`
+1. Compte sur [backblaze.com](https://www.backblaze.com/sign-up/cloud-storage) →
+   **B2 Cloud Storage**
+2. **Buckets → Create a Bucket** : nom global unique (ex. `blackbox-backups`),
+   **Private**, chiffrement + object lock laissés par défaut
+3. **Application Keys → Add a New Application Key** :
+   - Name : `blackbox`
+   - **Allow access to Bucket(s)** : le bucket créé ci-dessus (clé restreinte)
+   - Type of access : **Read and Write**
+   - noter `keyID` et `applicationKey` (affichée une seule fois)
 
 ## 2. `restic`
 
@@ -36,13 +35,19 @@ PASSPHRASE=$(openssl rand -base64 32)
 ssh nucbox "cat > ~/blackbox/scripts/backup/.env <<EOF
 RESTIC_PASSWORD=$PASSPHRASE
 ADMIN_ALERT_WEBHOOK_URL=<même webhook admin que gluetun-healthcheck>
+B2_ACCOUNT_ID=<keyID de l'étape 1>
+B2_ACCOUNT_KEY=<applicationKey de l'étape 1>
 REPO_LOCAL=/mnt/nas-media/backups/restic
-REPO_REMOTE=rclone:gdrive:blackbox-backups
+REPO_REMOTE=b2:<nom-du-bucket>:restic
 EOF
 chmod 600 ~/blackbox/scripts/backup/.env"
 
 ssh nucbox "mkdir -p /mnt/nas-media/backups/restic"
 ```
+
+`rclone` n'est plus nécessaire (retiré du rôle Ansible `base`) —
+`sudo apt remove rclone` si tu veux nettoyer. L'ancien remote Drive peut
+être purgé : `rclone purge gdrive:blackbox-backups` avant désinstallation.
 
 ## 4. Déploiement du script
 
@@ -91,25 +96,43 @@ ssh nucbox "systemctl list-timers blackbox-backup.timer --no-pager"
 ## 7. Vérification des snapshots
 
 ```bash
-ssh nucbox "cd ~/blackbox/scripts/backup && source .env && \
-  export RESTIC_PASSWORD RCLONE_CONFIG=\$HOME/.config/rclone/rclone.conf && \
-  restic -r \"\$REPO_LOCAL\" snapshots --compact && \
-  restic -r \"\$REPO_REMOTE\" snapshots --compact"
+ssh nucbox 'cd ~/blackbox/scripts/backup && source .env && \
+  export RESTIC_PASSWORD B2_ACCOUNT_ID B2_ACCOUNT_KEY && \
+  restic -r "$REPO_LOCAL"  snapshots --compact && \
+  restic -r "$REPO_REMOTE" snapshots --compact'
 ```
 
-## 8. Restauration (procédure de référence, non testée en conditions réelles)
+## 8. Restauration à blanc (testée le 2026-08-29)
+
+Procédure complète : préparer l'env, vérifier l'intégrité des deux dépôts
+(`restic check --read-data` en local, `--read-data-subset` sur B2),
+restaurer `latest` dans `~/restore-test/`, valider l'arborescence, les
+bases SQLite (`PRAGMA integrity_check`) et les `.env`, puis nettoyer.
 
 ```bash
-# Lister les snapshots disponibles
-restic -r <REPO_LOCAL ou REPO_REMOTE> snapshots
+ssh nucbox
+cd ~/blackbox/scripts/backup && source .env
+export RESTIC_PASSWORD B2_ACCOUNT_ID B2_ACCOUNT_KEY
+mkdir -p ~/restore-test
 
-# Restaurer un snapshot dans un dossier temporaire (jamais directement
-# sur les données live sans vérification préalable)
-restic -r <repo> restore <snapshot-id> --target /tmp/restore-test
+restic -r "$REPO_LOCAL"  check --read-data
+restic -r "$REPO_REMOTE" check --read-data-subset=10%
+
+restic -r "$REPO_LOCAL" restore latest --target ~/restore-test
+find ~/restore-test -path '*/config/*.db' ! -name '*.db-*' \
+  -exec sh -c 'echo -n "$1: "; sqlite3 "$1" "PRAGMA integrity_check;"' _ {} \;
+find ~/restore-test -name '.env' -exec sh -c 'echo "$1: $(wc -l < "$1") lignes"' _ {} \;
+
+rm -rf ~/restore-test
 ```
 
-À tester réellement (restauration à blanc) dès que possible plutôt que de
-supposer que ça fonctionnera le jour où ce sera nécessaire — point ouvert.
+**Résultat 2026-08-29 (dépôt NAS local)** : `check --read-data` sans erreur,
+1338 fichiers restaurés, toutes les bases SQLite `integrity_check = ok`, les
+3 `.env` non vides. Restauration locale validée. Le dépôt B2 (nouveau, cf.
+ADR-017) est à revalider au premier run complet.
+
+Ne jamais restaurer directement sur les données live sans vérification
+préalable dans un dossier séparé.
 
 ## 9. Ce qui n'est pas couvert
 

@@ -10,8 +10,7 @@
       - git
       - mesa-va-drivers # VAAPI, voir ADR-006
       - vainfo
-      - restic # voir ADR-011
-      - rclone # voir ADR-011
+      - restic # backup, voir ADR-011 / ADR-017
     state: present
     update_cache: true
     cache_valid_time: 3600

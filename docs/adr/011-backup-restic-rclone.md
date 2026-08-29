@@ -1,6 +1,8 @@
 # ADR 011 — Backup restic : NAS local + Google Drive
 
-**Statut :** Accepté
+**Statut :** Accepté — destination hors site remplacée par Backblaze B2
+([ADR-017](017-backup-b2.md), 2026-08-29). Le reste (deux dépôts
+indépendants, périmètre, passphrase, rétention, planification) tient.
 **Date :** 2026-08-28
 
 ## Contexte

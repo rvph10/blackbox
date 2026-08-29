@@ -29,6 +29,27 @@
   configuré avec `cloudflared` en known proxy, Seerr Application URL publique
 - Idempotence du playbook Ansible confirmée (2ᵉ run réel :
   `ok=12 changed=0`) — point ouvert d'ADR-012 clos
+- Test de restauration à blanc restic (point ouvert d'ADR-011) : **dépôt NAS
+  local validé** — `check --read-data` sans erreur, 1338 fichiers restaurés,
+  toutes les bases SQLite `PRAGMA integrity_check = ok`, secrets intègres
+- ADR-017 : le test a révélé que le **dépôt Google Drive était figé depuis
+  2 jours** — `rclone config` sans `client_id` tape dans le client OAuth
+  partagé de rclone (`project_number 202264815644`), régulièrement saturé
+  → `403 RATE_LIMIT_EXCEEDED`. Bascule vers **Backblaze B2, backend natif
+  restic** (plus de rclone dans le chemin hors site) : offre gratuite 10 Go,
+  clé d'application restreinte au bucket. Le dépôt NAS local garde tout
+  l'historique (dépôts indépendants)
+- `backup.sh` : `b2:` au lieu de `rclone:`, `B2_ACCOUNT_ID`/`B2_ACCOUNT_KEY`,
+  filtre des sources inexistantes (alerte `[INFO]` au lieu d'un échec).
+  Ajout au périmètre : `data/crowdsec/config` et `traefik/lapi-key`
+- Rôle Ansible `base` : `rclone` retiré. Runbook `setup-backup.md` §1
+  réécrit (bucket + clé B2), §8 mis à jour avec la procédure de test à blanc
+- Étendu la LV racine du NucBox : l'installeur Ubuntu plafonne à ~100 Go,
+  `/` passée de 98 Go à 936 Go (Docker, bases *arr, cache Jellyfin sur `/`) —
+  noté dans `install-os-nucbox.md`
+- Import Radarr bloqué diagnostiqué (film étranger *La Captura* / *Facing El
+  Chapo* : titre local ≠ titre TMDB → `Manual Import required`, sécurité pas
+  bug)
 - ADR-015 : rôle Ansible `tailscale` pour l'accès admin distant (SSH +
   dashboards *arr*) sans port ouvert. Installation idempotente via le dépôt
   apt officiel ; `tailscale up --ssh --hostname=nucbox` conditionné à une
