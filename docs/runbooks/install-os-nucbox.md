@@ -20,8 +20,15 @@ en avril). Vérifier le SHA256 avant de flasher sur clé USB.
 
 ## Dans l'installeur (Subiquity)
 
-- Partitionnement : disque entier + LVM (défaut) — laisse de la marge si un
-  second SSD en miroir est ajouté plus tard (pas encore tranché).
+- Partitionnement : disque entier + LVM (défaut). **L'installeur plafonne la
+  LV racine à ~100 Go** et laisse le reste du VG non alloué. Après le premier
+  boot, étendre la racine à tout le disque :
+  ```bash
+  sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+  sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
+  ```
+  (fait le 2026-08-29 : `/` passée de 98 Go à 936 Go. Le média est sur le
+  NAS, mais Docker, les bases *arr et le cache Jellyfin vivent sur `/`.)
 - Cocher OpenSSH Server, importer la clé publique GitHub si dispo.
 - Ne PAS cocher le Docker snap proposé par l'installeur. Le snap a un modèle de
   confinement différent de Docker CE (apt) — problématique avec les bind mounts
