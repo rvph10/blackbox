@@ -9,6 +9,7 @@ import aiohttp
 import pytest
 from aioresponses import aioresponses
 
+import cards
 import config
 import db
 import jellyfin
@@ -157,6 +158,39 @@ def test_presence_text():
     assert now_playing.presence_text([{"NowPlayingItem": {"Name": "Dune"}}]) == (
         "1 flux · Dune"
     )
+
+
+# --- cards : rendu PNG (smoke) -------------------------------------------
+def _is_png(buf) -> bool:
+    return buf.getvalue()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_render_welcome_png():
+    assert _is_png(cards.render_welcome("s3g3n", None))
+
+
+def test_render_scoreboard_png_complet_et_partiel():
+    full = cards.render_scoreboard(
+        [
+            {"name": "rvph", "avatar": None, "seconds": 14 * 3600},
+            {"name": "Bob", "avatar": None, "seconds": 9 * 3600},
+            {"name": "Cléo", "avatar": None, "seconds": 4 * 3600},
+        ],
+        period_days=15,
+        movie="Dune",
+        total_seconds=40 * 3600,
+        total_plays=20,
+    )
+    assert _is_png(full)
+    # moins de 3 personnes classées : ne doit pas planter
+    partial = cards.render_scoreboard(
+        [{"name": "rvph", "avatar": None, "seconds": 3600}],
+        period_days=15,
+        movie=None,
+        total_seconds=3600,
+        total_plays=1,
+    )
+    assert _is_png(partial)
 
 
 # --- db : aller-retour SQLite -------------------------------------------

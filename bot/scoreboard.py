@@ -1,8 +1,8 @@
-"""Classement bihebdomadaire posté dans #classement (ADR-021).
+"""Classement bihebdomadaire posté dans #classement (ADR-021 / ADR-022).
 
 Toutes les 15 jours (ancré à la première exécution, état en base `meta`).
-Top 3 pingé, film/série de la quinzaine, nouveaux membres, total serveur,
-transfert du rôle « Tête d'affiche » au n°1.
+Carte-image (podium top 3, couronne sur le n°1) + courte légende qui pingue
+le top 3. Transfert du rôle « Tête d'affiche » au n°1.
 """
 
 import datetime as dt
@@ -10,6 +10,7 @@ import logging
 
 import discord
 
+import cards
 import db
 import jellystat
 from config import (
@@ -39,22 +40,9 @@ async def due() -> bool:
     )
 
 
-async def _member_top_title(jf_user_id: str) -> str | None:
-    rows = await jellystat.last_played(jf_user_id)
-    counts: dict[str, int] = {}
-    for r in rows:
-        name = r.get("SeriesName") or r.get("NowPlayingItemName") or r.get("Name")
-        if name:
-            counts[name] = counts.get(name, 0) + 1
-    return max(counts, key=counts.get) if counts else None
-
-
-async def build_embed(
-    guild: discord.Guild,
-) -> tuple[discord.Embed, discord.Member | None]:
+async def _gather(guild: discord.Guild) -> dict:
     members = await db.all_members()
-
-    ranked: list[tuple[dict, discord.Member, int, int]] = []
+    ranked: list[tuple[discord.Member, int, int]] = []
     total_seconds = 0
     total_plays = 0
     for entry in members:
@@ -67,71 +55,43 @@ async def build_embed(
         total_seconds += seconds
         total_plays += plays
         if seconds > 0:
-            ranked.append((entry, member, seconds, plays))
-
-    ranked.sort(key=lambda x: x[2], reverse=True)
-
-    embed = discord.Embed(
-        title="Classement de la quinzaine",
-        description=f"Les {SCOREBOARD_INTERVAL_DAYS} derniers jours sur Blackbox.",
-        colour=0x5865F2,
-    )
-
-    if ranked:
-        medals = ["1.", "2.", "3."]
-        lines = []
-        for i, (entry, member, seconds, _plays) in enumerate(ranked[:3]):
-            title = await _member_top_title(entry["jf_user_id"])
-            extra = f" — surtout *{title}*" if title else ""
-            lines.append(f"{medals[i]} {member.mention} · {_fmt_hours(seconds)}{extra}")
-        embed.add_field(name="Top 3", value="\n".join(lines), inline=False)
-    else:
-        embed.add_field(
-            name="Top 3",
-            value="Personne n'a rien regardé cette quinzaine.",
-            inline=False,
-        )
+            ranked.append((member, seconds, plays))
+    ranked.sort(key=lambda x: x[1], reverse=True)
 
     movie = await jellystat.most_viewed(SCOREBOARD_INTERVAL_DAYS, "Movie")
-    series = await jellystat.most_viewed(SCOREBOARD_INTERVAL_DAYS, "Series")
-    highlights = []
-    if movie:
-        highlights.append(f"Film : **{movie[0].get('Name', '?')}**")
-    if series:
-        highlights.append(f"Série : **{series[0].get('Name', '?')}**")
-    if highlights:
-        embed.add_field(
-            name="À l'affiche cette quinzaine",
-            value="\n".join(highlights),
-            inline=False,
-        )
+    return {
+        "ranked": ranked[:3],
+        "total_seconds": total_seconds,
+        "total_plays": total_plays,
+        "movie": movie[0].get("Name") if movie else None,
+    }
 
-    cutoff = dt.datetime.now(dt.UTC) - dt.timedelta(days=SCOREBOARD_INTERVAL_DAYS)
-    newcomers = [
-        guild.get_member(e["discord_id"])
-        for e in members
-        if e.get("created_at") and dt.datetime.fromisoformat(e["created_at"]) >= cutoff
-    ]
-    newcomers = [m for m in newcomers if m]
-    if newcomers:
-        embed.add_field(
-            name="Nouveaux membres",
-            value=", ".join(m.mention for m in newcomers),
-            inline=False,
-        )
 
-    embed.add_field(
-        name="Total serveur",
-        value=f"{_fmt_hours(total_seconds)} regardées · {total_plays} lectures",
-        inline=False,
+async def _build_card(data: dict) -> discord.File:
+    entries = []
+    for member, seconds, _plays in data["ranked"]:
+        avatar = await cards.fetch_avatar(member.display_avatar.replace(size=256).url)
+        entries.append(
+            {"name": member.display_name, "avatar": avatar, "seconds": seconds}
+        )
+    buf = cards.render_scoreboard(
+        entries,
+        period_days=SCOREBOARD_INTERVAL_DAYS,
+        movie=data["movie"],
+        total_seconds=data["total_seconds"],
+        total_plays=data["total_plays"],
     )
+    return discord.File(buf, filename="classement.png")
 
-    headliner = ranked[0][1] if ranked else None
-    if headliner:
-        embed.set_footer(
-            text=f"Tête d'affiche de la quinzaine : {headliner.display_name}"
-        )
-    return embed, headliner
+
+def _caption(data: dict) -> str:
+    if not data["ranked"]:
+        return "**Classement de la quinzaine** — personne n'a rien regardé cette fois."
+    medals = ["🥇", "🥈", "🥉"]
+    lines = ["**Classement de la quinzaine**"]
+    for i, (member, seconds, _plays) in enumerate(data["ranked"]):
+        lines.append(f"{medals[i]} {member.mention} · {_fmt_hours(seconds)}")
+    return "\n".join(lines)
 
 
 async def _transfer_headliner(
@@ -160,8 +120,11 @@ async def post(guild: discord.Guild) -> bool:
     if channel is None:
         logger.warning("salon #classement (%s) introuvable", SCOREBOARD_CHANNEL_ID)
         return False
-    embed, winner = await build_embed(guild)
-    await channel.send(embed=embed)
+
+    data = await _gather(guild)
+    await channel.send(content=_caption(data), file=await _build_card(data))
+
+    winner = data["ranked"][0][0] if data["ranked"] else None
     await _transfer_headliner(guild, winner)
     await db.set_meta(LAST_RUN_KEY, dt.datetime.now(dt.UTC).isoformat())
     logger.info("classement posté dans #classement")

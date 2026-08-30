@@ -14,6 +14,7 @@ import string
 
 import discord
 
+import cards
 import db
 import jellyfin
 from config import PUBLIC_REQUESTS_URL, PUBLIC_STREAM_URL
@@ -93,7 +94,9 @@ async def provision_member(
         member.id, user["Id"], username, display_name=display, note=note
     )
 
-    dm_ok = await _try_dm(member, welcome_message(username, password))
+    dm_ok = await _try_dm(
+        member, welcome_message(username, password), await _welcome_card(member)
+    )
     if dm_ok:
         await admin_alert(
             f"[OK] Compte Jellyfin `{username}` créé pour {member.mention}, "
@@ -109,9 +112,21 @@ async def provision_member(
     return {"status": "ok", "jf_username": username, "dm": False, "password": password}
 
 
-async def _try_dm(member: discord.abc.User, content: str) -> bool:
+async def _welcome_card(member: discord.abc.User) -> discord.File | None:
     try:
-        await member.send(content)
-        return True
+        avatar = await cards.fetch_avatar(member.display_avatar.replace(size=256).url)
+        buf = cards.render_welcome(getattr(member, "display_name", member.name), avatar)
+        return discord.File(buf, filename="bienvenue.png")
+    except Exception:
+        logger.exception("génération de la carte de bienvenue")
+        return None
+
+
+async def _try_dm(
+    member: discord.abc.User, content: str, file: discord.File | None = None
+) -> bool:
+    try:
+        await member.send(content, file=file)
     except (discord.Forbidden, discord.HTTPException):
         return False
+    return True

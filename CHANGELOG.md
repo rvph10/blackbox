@@ -4,6 +4,15 @@
 
 ### 2026-08-30
 
+- Bot : **cartes-images** (Pillow, `bot/cards.py`) pour le classement
+  (podium 3 places, photos de profil Discord rondes, couronne dorée
+  dessinée sur le n°1) et le MP de bienvenue (avatar + « Bienvenue sur
+  Blackbox »). `Pillow` + `fonts-dejavu-core` ajoutés à l'image. Le
+  classement poste l'image + une courte légende qui pingue le top 3
+  (fini l'embed compact).
+- Bot : panneau live — le pseudo affiché est celui du membre **Discord**
+  (repli Jellyfin), appareil et débit retirés.
+
 - ADR-022 : **panneau « en direct » des lectures**. Un message-embed unique
   maintenu par le bot dans `#salle-de-projection` (lecture seule),
   rafraîchi toutes les 45 s : qui regarde quoi (pseudo Discord), barre de

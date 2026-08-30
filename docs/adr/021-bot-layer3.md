@@ -74,6 +74,11 @@ Posté dans `#classement` (`1543646643629461628`), toutes les 15 jours à
 - **Total serveur** : heures cumulées, nombre de lectures
 - **Tête d'affiche de la quinzaine** : le n°1, rôle `Tête d'affiche`
   transféré (retiré à l'ancien, donné au nouveau)
+- rendu sous forme de **carte-image** (Pillow, `bot/cards.py`) : podium 3
+  places, photos de profil Discord en rond, couronne dorée dessinée sur le
+  n°1 ; une courte légende texte pingue le top 3. Le MP de bienvenue
+  embarque aussi une carte (avatar + « Bienvenue sur Blackbox »). Police
+  `fonts-dejavu-core` dans l'image.
 
 **IPTV** : le calcul compte toute lecture enregistrée par Jellystat. Le
 Live TV crée des sessions mais avec des métadonnées pauvres — inclus
