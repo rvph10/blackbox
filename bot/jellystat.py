@@ -62,11 +62,13 @@ async def last_played(jf_user_id: str) -> list[dict]:
 
 async def top_genre(jf_user_id: str) -> str | None:
     try:
-        rows = await _get(
+        payload = await _get(
             "/stats/getGenreUserStats", {"userid": jf_user_id, "size": 1, "page": 1}
         )
     except aiohttp.ClientError:
         return None
+    # L'endpoint renvoie {current_page, pages, size, results: [...]}.
+    rows = payload.get("results", []) if isinstance(payload, dict) else payload
     return rows[0]["genre"] if rows else None
 
 

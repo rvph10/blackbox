@@ -45,7 +45,7 @@ async def _unique_username(base: str) -> str:
 
 def welcome_message(username: str, password: str) -> str:
     return (
-        f"Bienvenue sur **Blackbox** 🎬\n\n"
+        f"Bienvenue sur **Blackbox** !\n\n"
         f"Ton compte est prêt. Garde ce message, le mot de passe n'est affiché "
         f"qu'une fois (tu pourras le changer dans ton profil Jellyfin).\n\n"
         f"**Identifiant :** `{username}`\n"
@@ -70,7 +70,7 @@ async def provision_member(
     existing = await db.get_member(member.id)
     if existing:
         await admin_alert(
-            f"ℹ️ {member.mention} a déjà un compte Jellyfin "
+            f"[INFO] {member.mention} a déjà un compte Jellyfin "
             f"(`{existing['jf_username']}`), rien de créé."
         )
         return {"status": "already", "jf_username": existing["jf_username"]}
@@ -83,7 +83,7 @@ async def provision_member(
     except jellyfin.JellyfinError as exc:
         logger.exception("échec création compte pour %s", member)
         await admin_alert(
-            f"❌ Création du compte Jellyfin de {member.mention} échouée : {exc}"
+            f"[ALERTE] Création du compte Jellyfin de {member.mention} échouée : {exc}"
         )
         return {"status": "error", "error": str(exc)}
 
@@ -96,13 +96,13 @@ async def provision_member(
     dm_ok = await _try_dm(member, welcome_message(username, password))
     if dm_ok:
         await admin_alert(
-            f"✅ Compte Jellyfin `{username}` créé pour {member.mention}, "
+            f"[OK] Compte Jellyfin `{username}` créé pour {member.mention}, "
             f"identifiants envoyés en MP."
         )
         return {"status": "ok", "jf_username": username, "dm": True}
 
     await admin_alert(
-        f"⚠️ Compte Jellyfin `{username}` créé pour {member.mention} mais le MP "
+        f"[ALERTE] Compte Jellyfin `{username}` créé pour {member.mention} mais le MP "
         f"a échoué (MP fermés). À transmettre en main propre :\n"
         f"`{username}` / `{password}`"
     )

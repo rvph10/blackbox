@@ -58,7 +58,7 @@ class BlackboxBot(commands.Bot):
 
     async def on_ready(self) -> None:
         logger.info("Connecté en tant que %s", self.user)
-        await admin_alert(f"🟢 Bot Blackbox démarré (`{self.user}`).")
+        await admin_alert(f"[OK] Bot Blackbox démarré (`{self.user}`).")
 
         guild = self._guild()
         if guild is None:
@@ -84,7 +84,7 @@ class BlackboxBot(commands.Bot):
         if entry is None:
             return
         await admin_alert(
-            f"👋 {member} a quitté le Discord — compte Jellyfin "
+            f"[INFO] {member} a quitté le Discord — compte Jellyfin "
             f"`{entry['jf_username']}` toujours actif. `/desactiver` si besoin."
         )
 
@@ -102,7 +102,9 @@ class BlackboxBot(commands.Bot):
             await gamification.recompute_all(guild)
         except Exception:
             logger.exception("recompute des paliers a échoué")
-            await admin_alert("⚠️ Recalcul des paliers a échoué, voir les logs du bot.")
+            await admin_alert(
+                "[ALERTE] Recalcul des paliers a échoué, voir les logs du bot."
+            )
 
     @tasks.loop(time=_SCOREBOARD_CHECK_AT)
     async def scoreboard_check(self) -> None:
@@ -113,7 +115,9 @@ class BlackboxBot(commands.Bot):
             await scoreboard.post(guild)
         except Exception:
             logger.exception("post du classement a échoué")
-            await admin_alert("⚠️ Post du classement a échoué, voir les logs du bot.")
+            await admin_alert(
+                "[ALERTE] Post du classement a échoué, voir les logs du bot."
+            )
 
     @daily_tier_recompute.before_loop
     @scoreboard_check.before_loop

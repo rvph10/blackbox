@@ -78,7 +78,7 @@ async def build_embed(
     )
 
     if ranked:
-        medals = ["🥇", "🥈", "🥉"]
+        medals = ["1.", "2.", "3."]
         lines = []
         for i, (entry, member, seconds, _plays) in enumerate(ranked[:3]):
             title = await _member_top_title(entry["jf_user_id"])
@@ -96,9 +96,9 @@ async def build_embed(
     series = await jellystat.most_viewed(SCOREBOARD_INTERVAL_DAYS, "Series")
     highlights = []
     if movie:
-        highlights.append(f"🎬 Film : **{movie[0].get('Name', '?')}**")
+        highlights.append(f"Film : **{movie[0].get('Name', '?')}**")
     if series:
-        highlights.append(f"📺 Série : **{series[0].get('Name', '?')}**")
+        highlights.append(f"Série : **{series[0].get('Name', '?')}**")
     if highlights:
         embed.add_field(
             name="À l'affiche cette quinzaine",

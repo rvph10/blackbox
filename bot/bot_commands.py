@@ -13,7 +13,12 @@ import db
 import jellyfin
 import jellystat
 import provisioning
-from config import ADMIN_ROLE_NAME, next_tier, tier_for_seconds
+from config import (
+    ADMIN_ROLE_NAME,
+    PUBLIC_STREAM_URL,
+    next_tier,
+    tier_for_seconds,
+)
 from notify import admin_alert
 
 logger = logging.getLogger("blackbox-bot.commands")
@@ -35,7 +40,22 @@ def register(tree: app_commands.CommandTree) -> None:
     @tree.command(name="status", description="Jellyfin est-il en ligne ?")
     async def status(interaction: discord.Interaction):
         online = await jellyfin.is_online()
-        await interaction.response.send_message("En ligne" if online else "Hors ligne")
+        if not online:
+            await interaction.response.send_message(
+                "Jellyfin est hors ligne — impossible de regarder pour le moment."
+            )
+            return
+        sessions = await jellyfin.active_sessions()
+        count = len(sessions) if sessions else 0
+        if count == 0:
+            detail = "personne ne regarde rien"
+        elif count == 1:
+            detail = "1 lecture en cours"
+        else:
+            detail = f"{count} lectures en cours"
+        await interaction.response.send_message(
+            f"Jellyfin est en ligne — {detail}. ({PUBLIC_STREAM_URL})"
+        )
 
     @tree.command(name="streams", description="Qui regarde quoi en ce moment")
     async def streams(interaction: discord.Interaction):
@@ -86,7 +106,9 @@ def register(tree: app_commands.CommandTree) -> None:
                 "Échec de la réinitialisation, un admin a été prévenu.",
                 ephemeral=True,
             )
-            await admin_alert(f"❌ Reset mdp de {interaction.user.mention} : {exc}")
+            await admin_alert(
+                f"[ALERTE] Reset mdp de {interaction.user.mention} : {exc}"
+            )
             return
         try:
             await interaction.user.send(
@@ -110,28 +132,38 @@ def register(tree: app_commands.CommandTree) -> None:
                 "Aucun compte lié au tien. Préviens un admin.", ephemeral=True
             )
             return
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer()
 
-        activity = {
-            r["UserId"]: float(r.get("TotalWatchTime") or 0)
-            for r in await jellystat.all_user_activity()
-        }
+        try:
+            activity = {
+                r["UserId"]: float(r.get("TotalWatchTime") or 0)
+                for r in await jellystat.all_user_activity()
+            }
+        except Exception:
+            logger.exception("messtats : Jellystat injoignable")
+            await interaction.followup.send(
+                "Les statistiques sont indisponibles pour le moment, réessaie."
+            )
+            return
+
         seconds = activity.get(entry["jf_user_id"], 0.0)
         ranking = sorted(activity.values(), reverse=True)
         rank = ranking.index(seconds) + 1 if seconds in ranking else len(ranking) + 1
         genre = await jellystat.top_genre(entry["jf_user_id"])
 
         lines = [
-            f"**Temps total :** {seconds / 3600:.1f} h",
-            f"**Palier :** {tier_for_seconds(seconds)}",
+            f"**{interaction.user.display_name}**",
+            f"Temps total : {seconds / 3600:.1f} h",
+            f"Palier : {tier_for_seconds(seconds)}",
         ]
         nxt = next_tier(seconds)
         if nxt:
-            lines.append(f"**Prochain palier :** {nxt[0]} dans {nxt[1] / 3600:.1f} h")
+            lines.append(f"Prochain palier : {nxt[0]} dans {nxt[1] / 3600:.1f} h")
         if genre:
-            lines.append(f"**Genre le plus regardé :** {genre}")
-        lines.append(f"**Rang :** {rank} / {len(ranking)}")
-        await interaction.followup.send("\n".join(lines), ephemeral=True)
+            lines.append(f"Genre le plus regardé : {genre}")
+        if ranking:
+            lines.append(f"Rang : {rank} / {len(ranking)}")
+        await interaction.followup.send("\n".join(lines))
 
     @tree.command(
         name="roulette", description="Un film au hasard que tu n'as pas encore vu"
@@ -152,7 +184,7 @@ def register(tree: app_commands.CommandTree) -> None:
             return
         if movie is None:
             await interaction.followup.send(
-                "Tu as déjà tout vu, ou la bibliothèque est vide. 🍿"
+                "Tu as déjà tout vu, ou la bibliothèque est vide."
             )
             return
         year = movie.get("ProductionYear")
@@ -160,7 +192,9 @@ def register(tree: app_commands.CommandTree) -> None:
         overview = (movie.get("Overview") or "").strip()
         if len(overview) > 300:
             overview = overview[:297] + "…"
-        embed = discord.Embed(title=f"🎲 {title}", description=overview or None)
+        link = f"{PUBLIC_STREAM_URL}/web/#/details?id={movie['Id']}"
+        embed = discord.Embed(title=title, url=link, description=overview or None)
+        embed.add_field(name="Regarder", value=link, inline=False)
         await interaction.followup.send(embed=embed)
 
     # --- admin ---------------------------------------------------------------
@@ -233,7 +267,7 @@ def register(tree: app_commands.CommandTree) -> None:
             f"Compte `{entry['jf_username']}` désactivé.", ephemeral=True
         )
         await admin_alert(
-            f"🔒 Compte `{entry['jf_username']}` ({membre.mention}) désactivé "
+            f"[INFO] Compte `{entry['jf_username']}` ({membre.mention}) désactivé "
             f"par {interaction.user.mention}."
         )
 
