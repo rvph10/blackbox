@@ -123,35 +123,33 @@ def test_episode_label():
 
 
 def test_build_embed_vide():
-    embed, bitrate = now_playing.build_embed([])
-    assert bitrate == 0
+    embed = now_playing.build_embed([])
     assert "Personne" in embed.description
 
 
-def test_build_embed_actif_somme_les_bitrates():
+def test_build_embed_actif_utilise_le_nom_discord():
     sessions = [
         {
-            "UserName": "Alice",
+            "UserId": "jf-alice",
+            "UserName": "alice_jf",
             "PlayMethod": "DirectPlay",
-            "NowPlayingItem": {
-                "Name": "Dune",
-                "Bitrate": 8_000_000,
-                "RunTimeTicks": 10,
-            },
+            "NowPlayingItem": {"Name": "Dune", "RunTimeTicks": 10},
             "PlayState": {"PositionTicks": 5},
         },
         {
-            "UserName": "Bob",
+            "UserId": "jf-bob",
+            "UserName": "bob_jf",
             "PlayMethod": "Transcode",
-            "NowPlayingItem": {"Name": "Heat", "Bitrate": 20_000_000},
-            "TranscodingInfo": {"Bitrate": 6_000_000},
+            "NowPlayingItem": {"Name": "Heat"},
             "PlayState": {},
         },
     ]
-    embed, bitrate = now_playing.build_embed(sessions)
-    assert bitrate == 14_000_000
+    embed = now_playing.build_embed(sessions, {"jf-alice": "Alice"})
     assert len(embed.fields) == 2
-    assert "Mbit/s" in embed.footer.text
+    assert embed.fields[0].name.startswith("Alice — Dune")  # nom Discord
+    assert embed.fields[1].name.startswith("bob_jf — Heat")  # repli Jellyfin
+    assert "transcodage" in embed.fields[1].value
+    assert "Mbit" not in (embed.footer.text or "")
 
 
 def test_presence_text():

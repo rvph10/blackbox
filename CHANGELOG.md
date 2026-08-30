@@ -6,9 +6,9 @@
 
 - ADR-022 : **panneau « en direct » des lectures**. Un message-embed unique
   maintenu par le bot dans `#salle-de-projection` (lecture seule),
-  rafraîchi toutes les 45 s : qui regarde quoi, barre de progression,
-  transcodage / lecture directe, appareil, débit sortant estimé (cf.
-  ADR-019). Statut du bot mis à jour en parallèle (« Regarde : N flux »).
+  rafraîchi toutes les 45 s : qui regarde quoi (pseudo Discord), barre de
+  progression, transcodage / lecture directe. Statut du bot mis à jour en
+  parallèle (« Regarde : N flux »).
   **La slash command `/streams` est supprimée.** Nouveau module
   `bot/now_playing.py`, `tasks.loop(seconds=45)`, `NOW_PLAYING_CHANNEL_ID`
   dans le `.env`. Salon `#salle-de-projection` à créer en lecture seule.

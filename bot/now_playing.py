@@ -11,7 +11,7 @@ import discord
 
 import db
 import jellyfin
-from config import NOW_PLAYING_CHANNEL_ID
+from config import DISCORD_GUILD_ID, NOW_PLAYING_CHANNEL_ID
 
 logger = logging.getLogger("blackbox-bot.now_playing")
 
@@ -40,24 +40,21 @@ def _episode_label(item: dict) -> str:
     return f"{series} — {name}"
 
 
-def _session_bitrate(session: dict) -> int:
-    transcoding = session.get("TranscodingInfo") or {}
-    if transcoding.get("Bitrate"):
-        return int(transcoding["Bitrate"])
-    return int(session.get("NowPlayingItem", {}).get("Bitrate") or 0)
-
-
 def _play_mode(session: dict) -> str:
     method = session.get("PlayMethod", "")
     if method == "Transcode":
         return "transcodage"
     if method in ("DirectStream", "DirectPlay"):
         return "lecture directe"
-    return method or "?"
+    return method or ""
 
 
-def build_embed(sessions: list[dict]) -> tuple[discord.Embed, int]:
-    """Retourne (embed, débit sortant total en bit/s)."""
+def build_embed(
+    sessions: list[dict], names: dict[str, str] | None = None
+) -> discord.Embed:
+    """`names` : jf_user_id -> nom à afficher (pseudo Discord). Repli sur le
+    nom d'utilisateur Jellyfin."""
+    names = names or {}
     now = dt.datetime.now(dt.UTC)
     if not sessions:
         embed = discord.Embed(
@@ -67,33 +64,28 @@ def build_embed(sessions: list[dict]) -> tuple[discord.Embed, int]:
             timestamp=now,
         )
         embed.set_footer(text="Mis à jour")
-        return embed, 0
+        return embed
 
     embed = discord.Embed(title="Salle de projection", colour=0x57F287, timestamp=now)
-    total_bitrate = 0
     for session in sessions:
         item = session.get("NowPlayingItem", {})
         state = session.get("PlayState", {})
-        paused = " (en pause)" if state.get("IsPaused") else ""
+        paused = " · en pause" if state.get("IsPaused") else ""
         bar = _progress_bar(
             state.get("PositionTicks") or 0, item.get("RunTimeTicks") or 0
         )
-        total_bitrate += _session_bitrate(session)
-        device = session.get("DeviceName") or session.get("Client") or "?"
-        value = (
-            f"{bar}\n{_play_mode(session)} · {device}{paused}"
-            if bar
-            else (f"{_play_mode(session)} · {device}{paused}")
+        who = names.get(session.get("UserId", "")) or session.get(
+            "UserName", "Quelqu’un"
         )
+        mode = _play_mode(session)
+        value = " · ".join(filter(None, [bar, mode])) + paused
         embed.add_field(
-            name=f"{session.get('UserName', 'Quelqu’un')} — {_episode_label(item)}",
-            value=value,
+            name=f"{who} — {_episode_label(item)}",
+            value=value or "​",
             inline=False,
         )
-
-    mbps = total_bitrate / 1_000_000
-    embed.set_footer(text=f"~{mbps:.1f} Mbit/s sortants · mis à jour")
-    return embed, total_bitrate
+    embed.set_footer(text="Mis à jour")
+    return embed
 
 
 def presence_text(sessions: list[dict] | None) -> str:
@@ -102,6 +94,19 @@ def presence_text(sessions: list[dict] | None) -> str:
     if len(sessions) == 1:
         return f"1 flux · {sessions[0].get('NowPlayingItem', {}).get('Name', '?')}"
     return f"{len(sessions)} flux en cours"
+
+
+async def _discord_names(client: discord.Client) -> dict[str, str]:
+    """jf_user_id -> nom affiché du membre Discord correspondant."""
+    guild = client.get_guild(DISCORD_GUILD_ID) if DISCORD_GUILD_ID else None
+    if guild is None:
+        return {}
+    out: dict[str, str] = {}
+    for entry in await db.all_members():
+        member = guild.get_member(entry["discord_id"])
+        if member is not None:
+            out[entry["jf_user_id"]] = member.display_name
+    return out
 
 
 async def _resolve_message(
@@ -125,7 +130,7 @@ async def update(client: discord.Client) -> None:
         return
 
     sessions = await jellyfin.active_sessions()
-    embed, _ = build_embed(sessions or [])
+    embed = build_embed(sessions or [], await _discord_names(client))
 
     message = await _resolve_message(channel)
     try:

@@ -23,10 +23,12 @@ Un **unique message-embed** maintenu par le bot dans **`#salle-de-projection`**
   aux redémarrages ; si le message a été supprimé, le bot en repost un.
 - Contenu :
   - rien en cours → « Personne ne regarde en ce moment. » + horodatage
-  - sinon, une ligne par lecture : `pseudo · Titre (SxxEyy) · barre de
-    progression · lecture directe / transcodage · appareil`
-  - pied : débit sortant estimé (somme des bitrates, cf. ADR-019) +
-    « mis à jour il y a X s »
+  - sinon, une ligne par lecture : `pseudo Discord — Titre (SxxEyy) ·
+    barre de progression · lecture directe / transcodage · (en pause)`
+  - le pseudo affiché est celui du **membre Discord** (via le mapping
+    ADR-021), repli sur le nom d'utilisateur Jellyfin
+  - pas d'appareil ni de débit affichés (jugés inutiles)
+  - pied : « mis à jour » + horodatage
 - En parallèle : `change_presence` (ligne « Regarde : N flux » sous le nom
   du bot dans la sidebar).
 - **`/streams` est supprimée.**
