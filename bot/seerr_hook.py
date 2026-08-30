@@ -14,6 +14,7 @@ from aiohttp import web
 
 import db
 import jellyfin
+import seerr
 from config import (
     CONTENT_CHANNEL_ID,
     PUBLIC_STREAM_URL,
@@ -53,7 +54,13 @@ async def _requester_label(payload: dict) -> str:
     return "quelqu'un"
 
 
-async def _watch_link(title: str, media_type: str) -> str:
+async def _watch_link(title: str, media_type: str, tmdb_id: str) -> str:
+    """Fiche Jellyfin du contenu : via Jellyseerr d'abord (lien exact), puis
+    recherche par titre dans Jellyfin, sinon la page d'accueil."""
+    if tmdb_id:
+        url = await seerr.media_url(media_type, tmdb_id)
+        if url:
+            return url
     jf_type = "Series" if media_type == "tv" else "Movie"
     item = await jellyfin.find_item(title.split(" (")[0], jf_type)
     if item:
@@ -97,7 +104,7 @@ async def _handle(request: web.Request) -> web.Response:
     overview = (payload.get("message") or "").strip()
     if len(overview) > 350:
         overview = overview[:347] + "…"
-    link = await _watch_link(title, media_type)
+    link = await _watch_link(title, media_type, str(payload.get("tmdbId") or ""))
 
     embed = discord.Embed(title=title, description=overview or None, url=link)
     image = payload.get("image") or ""

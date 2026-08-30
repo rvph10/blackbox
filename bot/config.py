@@ -19,6 +19,10 @@ JELLYFIN_API_KEY = os.environ.get("JELLYFIN_API_KEY", "")
 JELLYSTAT_URL = os.environ.get("JELLYSTAT_URL", "http://jellystat:3000")
 JELLYSTAT_API_KEY = os.environ.get("JELLYSTAT_API_KEY", "")
 
+# --- Jellyseerr (lecture : lien Jellyfin d'un contenu) -----------------
+SEERR_URL = os.environ.get("SEERR_URL", "http://seerr:5055")
+SEERR_API_KEY = os.environ.get("SEERR_API_KEY", "")
+
 # --- Divers -----------------------------------------------------------------
 ADMIN_ALERT_WEBHOOK_URL = os.environ.get("ADMIN_ALERT_WEBHOOK_URL", "")
 PUBLIC_STREAM_URL = os.environ.get("PUBLIC_STREAM_URL", "https://stream.blackbox.homes")

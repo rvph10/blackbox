@@ -11,8 +11,12 @@
   bot poste dans `#annonces` (affiche TMDB, titre, résumé, lien « Regarder »
   vers la fiche Jellyfin) **en pinguant le demandeur** (ID Discord de son
   profil Jellyseerr, repli sur le mapping `jf_username`). Dédup sur l'ID de
-  demande. `bot/seerr_hook.py`, `aiohttp.web` (déjà présent), `.env` :
-  `SEERR_WEBHOOK_SECRET`, `CONTENT_CHANNEL_ID`.
+  demande. Le lien « Regarder » pointe sur la **fiche Jellyfin exacte** du
+  contenu (`mediaInfo.mediaUrl` via l'API Jellyseerr, `bot/seerr.py`),
+  repli recherche par titre. `bot/seerr_hook.py`, `aiohttp.web` (déjà
+  présent), `.env` : `SEERR_WEBHOOK_SECRET`, `CONTENT_CHANNEL_ID`,
+  `SEERR_URL`, `SEERR_API_KEY`.
+- Bot : phrases d'accueil raccourcies (plus de « détails en MP »).
 - Bot : **message d'accueil public** à `on_member_join` dans `#annonces`
   (`WELCOME_CHANNEL_ID`) — pingue le nouvel arrivant, texte **aléatoire**
   (pool éditable `bot/welcome_lines.py`) + carte de bienvenue sans
