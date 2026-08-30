@@ -4,6 +4,15 @@
 
 ### 2026-08-30
 
+- Bot : **annonces « nouveau contenu » via Jellyseerr → écouteur HTTP du
+  bot** (révise ADR-009). Le plugin Webhook de Jellyfin est retiré ;
+  l'agent Webhook de Jellyseerr POST l'event « Media Available » sur
+  `http://bot:8000/jellyseerr` (jamais exposé, header secret vérifié). Le
+  bot poste dans `#annonces` (affiche TMDB, titre, résumé, lien « Regarder »
+  vers la fiche Jellyfin) **en pinguant le demandeur** (ID Discord de son
+  profil Jellyseerr, repli sur le mapping `jf_username`). Dédup sur l'ID de
+  demande. `bot/seerr_hook.py`, `aiohttp.web` (déjà présent), `.env` :
+  `SEERR_WEBHOOK_SECRET`, `CONTENT_CHANNEL_ID`.
 - Bot : **message d'accueil public** à `on_member_join` dans `#annonces`
   (`WELCOME_CHANNEL_ID`) — pingue le nouvel arrivant, texte **aléatoire**
   (pool éditable `bot/welcome_lines.py`) + carte de bienvenue sans

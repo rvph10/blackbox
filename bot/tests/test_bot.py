@@ -15,6 +15,7 @@ import db
 import jellyfin
 import now_playing
 import provisioning
+import seerr_hook
 
 
 # --- config : paliers -----------------------------------------------------
@@ -200,6 +201,38 @@ def test_render_scoreboard_png_complet_et_partiel():
         total_plays=1,
     )
     assert _is_png(partial)
+
+
+# --- seerr_hook : webhook Jellyseerr ------------------------------------
+def test_make_app_route():
+    app = seerr_hook.make_app(object())
+    paths = {r.resource.canonical for r in app.router.routes()}
+    assert "/jellyseerr" in paths
+
+
+@pytest.mark.asyncio
+async def test_requester_label(tmp_path, monkeypatch):
+    monkeypatch.setattr(db, "BOT_DB_PATH", str(tmp_path / "t.db"))
+    await db.init()
+    await db.add_member(42, "jf-x", "bob")
+
+    # ID Discord présent dans le profil Jellyseerr → priorité
+    assert (
+        await seerr_hook._requester_label({"requestedBy_discordId": "999"}) == "<@999>"
+    )
+    # sinon match par nom d'utilisateur Jellyfin
+    assert await seerr_hook._requester_label({"requestedBy_username": "Bob"}) == "<@42>"
+    # inconnu → nom brut
+    assert await seerr_hook._requester_label({"requestedBy_username": "Zoe"}) == "Zoe"
+
+
+@pytest.mark.asyncio
+async def test_dedup(tmp_path, monkeypatch):
+    monkeypatch.setattr(db, "BOT_DB_PATH", str(tmp_path / "t.db"))
+    await db.init()
+    assert not await seerr_hook._already_announced("r1")
+    await seerr_hook._remember("r1")
+    assert await seerr_hook._already_announced("r1")
 
 
 # --- db : aller-retour SQLite -------------------------------------------

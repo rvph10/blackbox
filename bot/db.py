@@ -83,6 +83,17 @@ async def get_by_jf_user_id(jf_user_id: str) -> dict | None:
         return dict(row) if row else None
 
 
+async def get_by_jf_username(jf_username: str) -> dict | None:
+    async with aiosqlite.connect(BOT_DB_PATH) as conn:
+        conn.row_factory = aiosqlite.Row
+        cur = await conn.execute(
+            "SELECT * FROM members WHERE jf_username = ? COLLATE NOCASE",
+            (jf_username,),
+        )
+        row = await cur.fetchone()
+        return dict(row) if row else None
+
+
 async def all_members() -> list[dict]:
     async with aiosqlite.connect(BOT_DB_PATH) as conn:
         conn.row_factory = aiosqlite.Row

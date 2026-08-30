@@ -3,6 +3,14 @@
 **Statut :** Accepté
 **Date :** 2026-08-28
 
+> **Révision 2026-08-30** — l'annonce « nouveau contenu » ne passe plus par
+> le plugin Webhook de Jellyfin (destination Generic + template Handlebars)
+> mais par un **écouteur HTTP dans le bot** alimenté par l'agent Webhook de
+> **Jellyseerr** (event « Media Available »). Ça permet de **pinguer le
+> membre Discord qui a fait la demande**. Voir
+> [ADR-021](021-bot-layer3.md) et `bot/seerr_hook.py`. Le reste d'ADR-009
+> (santé Gluetun via script + timer) est inchangé.
+
 ## Contexte
 
 Suite à [ADR-008](008-discord-community.md), premier chantier du bot Discord

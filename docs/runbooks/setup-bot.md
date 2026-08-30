@@ -56,6 +56,8 @@ PUBLIC_REQUESTS_URL=https://requests.blackbox.homes
 SCOREBOARD_CHANNEL_ID=1543646643629461628
 NOW_PLAYING_CHANNEL_ID=1543666526400422089
 WELCOME_CHANNEL_ID=1542926415484166194
+CONTENT_CHANNEL_ID=1542926415484166194
+SEERR_WEBHOOK_SECRET=<openssl rand -hex 24>
 EOF
 chmod 600 ~/blackbox/bot/.env"
 ```
@@ -119,6 +121,26 @@ provisionnés automatiquement.
   lit Jellystat (`getAllUserActivity`), attribue le rôle de palier.
 - **Classement** — vérifié tous les jours à 19h00, posté dans `#classement`
   si ≥ 15 jours depuis le dernier (état en base `meta`).
+
+## 9bis. Annonces « nouveau contenu » (Jellyseerr → bot)
+
+Le bot ouvre un écouteur HTTP interne sur `:8000` (jamais publié — joignable
+seulement par `seerr → bot:8000` sur le réseau Docker).
+
+Config Jellyseerr (Settings → Notifications → **Webhook**) :
+- **Webhook URL** : `http://bot:8000/jellyseerr`
+- **Authorization Header** : la valeur de `SEERR_WEBHOOK_SECRET`
+- **Notification Types** : cocher **Media Available** uniquement
+- **JSON Payload** : template minimal (`notification_type`, `subject`,
+  `message`, `image`, `media_type`, `tmdbId`, `requestedBy_username`,
+  `requestedBy_settings_discordId`)
+
+Peut se faire via l'API : `POST /api/v1/settings/notifications/webhook`
+puis `POST /api/v1/settings/notifications/webhook/test` (le bot répond en
+postant `[OK] test reçu` dans le salon admin).
+
+Le plugin Webhook de **Jellyfin** doit être **désactivé** (l'annonce ne
+passe plus par lui).
 
 ## 10. Accueil des nouveaux (à l'arrivée)
 

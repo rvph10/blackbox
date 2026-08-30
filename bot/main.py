@@ -11,6 +11,7 @@ import logging
 import os
 
 import discord
+from aiohttp import web
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
@@ -20,7 +21,13 @@ import gamification
 import now_playing
 import provisioning
 import scoreboard
-from config import DISCORD_BOT_TOKEN, DISCORD_GUILD_ID, NOW_PLAYING_REFRESH_SECONDS
+import seerr_hook
+from config import (
+    DISCORD_BOT_TOKEN,
+    DISCORD_GUILD_ID,
+    NOW_PLAYING_REFRESH_SECONDS,
+    SEERR_WEBHOOK_PORT,
+)
 from notify import admin_alert
 
 load_dotenv()
@@ -44,6 +51,7 @@ class BlackboxBot(commands.Bot):
         intents = discord.Intents.default()
         intents.members = True
         super().__init__(command_prefix="!", intents=intents)
+        self._web_runner: web.AppRunner | None = None
 
     async def setup_hook(self) -> None:
         await db.init()
@@ -57,6 +65,19 @@ class BlackboxBot(commands.Bot):
         self.daily_tier_recompute.start()
         self.scoreboard_check.start()
         self.now_playing_panel.start()
+        await self._start_webhook_listener()
+
+    async def _start_webhook_listener(self) -> None:
+        runner = web.AppRunner(seerr_hook.make_app(self))
+        await runner.setup()
+        await web.TCPSite(runner, "0.0.0.0", SEERR_WEBHOOK_PORT).start()
+        self._web_runner = runner
+        logger.info("webhook Jellyseerr en écoute sur :%d", SEERR_WEBHOOK_PORT)
+
+    async def close(self) -> None:
+        if self._web_runner is not None:
+            await self._web_runner.cleanup()
+        await super().close()
 
     async def on_ready(self) -> None:
         logger.info("Connecté en tant que %s", self.user)

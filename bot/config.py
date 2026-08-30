@@ -56,6 +56,14 @@ WELCOME_CHANNEL_ID = int(
     os.environ.get("WELCOME_CHANNEL_ID", "1542926415484166194") or "0"
 )
 
+# --- Annonces de contenu (webhook Jellyseerr → bot) --------------------
+CONTENT_CHANNEL_ID = int(
+    os.environ.get("CONTENT_CHANNEL_ID", str(WELCOME_CHANNEL_ID)) or "0"
+)
+SEERR_WEBHOOK_SECRET = os.environ.get("SEERR_WEBHOOK_SECRET", "")
+SEERR_WEBHOOK_PORT = int(os.environ.get("SEERR_WEBHOOK_PORT", "8000"))
+TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w342"
+
 # --- Politique Jellyfin des nouveaux comptes -------------------------------
 NEW_USER_POLICY = {
     "IsAdministrator": False,

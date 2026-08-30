@@ -68,6 +68,26 @@ async def random_unplayed_movie(user_id: str) -> dict | None:
     return items[0] if items else None
 
 
+async def find_item(name: str, item_type: str) -> dict | None:
+    """Premier item de la bibliothèque correspondant au titre (best effort)."""
+    params = {
+        "searchTerm": name,
+        "IncludeItemTypes": item_type,
+        "Recursive": "true",
+        "Limit": "1",
+    }
+    try:
+        async with aiohttp.ClientSession(timeout=_TIMEOUT) as s:
+            async with s.get(
+                f"{JELLYFIN_URL}/Items", headers=_HEADERS, params=params
+            ) as resp:
+                resp.raise_for_status()
+                items = (await resp.json()).get("Items", [])
+    except (aiohttp.ClientError, TimeoutError):
+        return None
+    return items[0] if items else None
+
+
 async def list_users() -> list[dict]:
     url = f"{JELLYFIN_URL}/Users"
     async with aiohttp.ClientSession(timeout=_TIMEOUT) as s:
