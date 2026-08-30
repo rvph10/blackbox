@@ -17,9 +17,10 @@ from dotenv import load_dotenv
 import bot_commands
 import db
 import gamification
+import now_playing
 import provisioning
 import scoreboard
-from config import DISCORD_BOT_TOKEN, DISCORD_GUILD_ID
+from config import DISCORD_BOT_TOKEN, DISCORD_GUILD_ID, NOW_PLAYING_REFRESH_SECONDS
 from notify import admin_alert
 
 load_dotenv()
@@ -55,6 +56,7 @@ class BlackboxBot(commands.Bot):
             await self.tree.sync()
         self.daily_tier_recompute.start()
         self.scoreboard_check.start()
+        self.now_playing_panel.start()
 
     async def on_ready(self) -> None:
         logger.info("Connecté en tant que %s", self.user)
@@ -119,8 +121,16 @@ class BlackboxBot(commands.Bot):
                 "[ALERTE] Post du classement a échoué, voir les logs du bot."
             )
 
+    @tasks.loop(seconds=NOW_PLAYING_REFRESH_SECONDS)
+    async def now_playing_panel(self) -> None:
+        try:
+            await now_playing.update(self)
+        except Exception:
+            logger.exception("mise à jour du panneau live a échoué")
+
     @daily_tier_recompute.before_loop
     @scoreboard_check.before_loop
+    @now_playing_panel.before_loop
     async def _wait_ready(self) -> None:
         await self.wait_until_ready()
 

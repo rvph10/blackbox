@@ -45,6 +45,12 @@ SCOREBOARD_CHANNEL_ID = int(
 )
 SCOREBOARD_INTERVAL_DAYS = 15
 
+# --- Panneau « en direct » (ADR-022) -----------------------------------
+NOW_PLAYING_CHANNEL_ID = int(
+    os.environ.get("NOW_PLAYING_CHANNEL_ID", "1543666526400422089") or "0"
+)
+NOW_PLAYING_REFRESH_SECONDS = 45
+
 # --- Politique Jellyfin des nouveaux comptes -------------------------------
 NEW_USER_POLICY = {
     "IsAdministrator": False,

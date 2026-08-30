@@ -59,13 +59,14 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   secrets)
 - [x] Bot Discord — Layer 1 (notifications passives : Jellyfin → webhook,
   Gluetun → script+timer, [ADR-009](docs/adr/009-notifications-layer1.md)),
-  Layer 2 (`/status`, `/streams`, lecture seule,
-  [ADR-010](docs/adr/010-bot-layer2.md)), **Layer 3** : création du compte
-  Jellyfin à l'arrivée sur le Discord + MP des identifiants, paliers de
-  visionnage (rôles Discord, recalcul quotidien via Jellystat), classement
-  bihebdo dans `#classement`, commandes `/moncompte` `/messtats`
-  `/roulette` + admin `/creer-compte` `/lier` `/desactiver`. Bot stateful
-  (SQLite, mapping Discord ↔ Jellyfin, dans le backup). Voir
+  Layer 2 (`/status`, lecture seule, [ADR-010](docs/adr/010-bot-layer2.md)),
+  **Layer 3** : création du compte Jellyfin à l'arrivée sur le Discord + MP
+  des identifiants, paliers de visionnage (rôles Discord, recalcul quotidien
+  via Jellystat), classement bihebdo dans `#classement`, **panneau « en
+  direct » des lectures** dans `#salle-de-projection`
+  ([ADR-022](docs/adr/022-panneau-live-lectures.md)), commandes `/moncompte`
+  `/messtats` `/roulette` + admin `/creer-compte` `/lier` `/desactiver`. Bot
+  stateful (SQLite, mapping Discord ↔ Jellyfin, dans le backup). Voir
   [ADR-021](docs/adr/021-bot-layer3.md) et
   [setup-bot.md](docs/runbooks/setup-bot.md)
 - [x] CI/CD du bot — GitHub Actions : lint (ruff) + tests (pytest) sur PR,
@@ -168,6 +169,7 @@ blackbox/
 | [019](docs/adr/019-autoregulation-capacite-bande-passante.md) | Autorégulation capacité + bande passante : Jellystat + watcher de seuil (script + timer systemd) |
 | [020](docs/adr/020-retention-maintainerr.md) | Rétention de la bibliothèque : Maintainerr (règles temporelles, collection « Bientôt retiré », revue manuelle) |
 | [021](docs/adr/021-bot-layer3.md) | Bot Discord Layer 3 : provisioning de comptes Jellyfin + gamification + classement (bot stateful) |
+| [022](docs/adr/022-panneau-live-lectures.md) | Panneau « en direct » des lectures dans un salon dédié (remplace `/streams`) |
 
 ## Runbooks
 

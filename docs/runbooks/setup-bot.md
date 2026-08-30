@@ -24,6 +24,8 @@ Intégrer des liens.
   lui).
 - Créer le rôle **`SysAdmin`** (ou vérifier qu'il existe) — seul rôle
   autorisé pour les commandes admin (repli : permission Administrator).
+- Créer le salon **`#salle-de-projection`** (ADR-022) : `@everyone` →
+  *Envoyer des messages* refusé, le bot y poste et édite un message unique.
 
 ## 2. Clés API
 
@@ -52,6 +54,7 @@ ADMIN_ALERT_WEBHOOK_URL=<même webhook admin que gluetun-healthcheck / backup>
 PUBLIC_STREAM_URL=https://stream.blackbox.homes
 PUBLIC_REQUESTS_URL=https://requests.blackbox.homes
 SCOREBOARD_CHANNEL_ID=1543646643629461628
+NOW_PLAYING_CHANNEL_ID=1543666526400422089
 EOF
 chmod 600 ~/blackbox/bot/.env"
 ```
@@ -98,8 +101,7 @@ provisionnés automatiquement.
 
 | Commande | Accès | Comportement |
 |---|---|---|
-| `/status` | tous | Jellyfin en ligne / hors ligne |
-| `/streams` | tous | sessions de lecture en cours (identités visibles, cf. ADR-010) |
+| `/status` | tous | Jellyfin en ligne / hors ligne + nb de lectures en cours |
 | `/moncompte` | tous | rappel de l'identifiant ; `reinitialiser:True` → nouveau mot de passe en MP |
 | `/messtats` | tous | heures cumulées, palier, prochain palier, genre préféré, rang |
 | `/roulette` | tous | un film non vu au hasard |
@@ -109,6 +111,10 @@ provisionnés automatiquement.
 
 ## 9. Tâches de fond
 
+- **Panneau « en direct »** — toutes les 45 s : `GET /Sessions`, édition
+  d'un message unique dans `#salle-de-projection` (qui regarde quoi,
+  progression, transcodage, débit sortant estimé) + statut du bot
+  (« Regarde : N flux »). ADR-022.
 - **Recalcul des paliers** — tous les jours à 05h00 (Europe/Brussels) :
   lit Jellystat (`getAllUserActivity`), attribue le rôle de palier.
 - **Classement** — vérifié tous les jours à 19h00, posté dans `#classement`

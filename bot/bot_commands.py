@@ -57,23 +57,6 @@ def register(tree: app_commands.CommandTree) -> None:
             f"Jellyfin est en ligne — {detail}. ({PUBLIC_STREAM_URL})"
         )
 
-    @tree.command(name="streams", description="Qui regarde quoi en ce moment")
-    async def streams(interaction: discord.Interaction):
-        sessions = await jellyfin.active_sessions()
-        if sessions is None:
-            await interaction.response.send_message(
-                "Jellyfin est injoignable pour le moment."
-            )
-            return
-        if not sessions:
-            await interaction.response.send_message(
-                "Personne ne regarde rien en ce moment."
-            )
-            return
-        await interaction.response.send_message(
-            "\n".join(jellyfin.describe_session(s) for s in sessions)
-        )
-
     @tree.command(
         name="moncompte",
         description="Rappel de ton identifiant, ou réinitialise ton mot de passe",

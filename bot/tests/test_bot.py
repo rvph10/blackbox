@@ -12,6 +12,7 @@ from aioresponses import aioresponses
 import config
 import db
 import jellyfin
+import now_playing
 import provisioning
 
 
@@ -98,6 +99,66 @@ async def test_active_sessions_erreur_http():
     with aioresponses() as m:
         m.get(f"{jellyfin.JELLYFIN_URL}/Sessions", status=401)
         assert await jellyfin.active_sessions() is None
+
+
+# --- now_playing : panneau live -------------------------------------------
+def test_progress_bar():
+    assert now_playing._progress_bar(0, 0) == ""
+    assert now_playing._progress_bar(0, 100).endswith("0%")
+    assert now_playing._progress_bar(50, 100).endswith("50%")
+    assert now_playing._progress_bar(200, 100).endswith("100%")  # clampé
+
+
+def test_episode_label():
+    assert now_playing._episode_label({"Name": "Dune", "ProductionYear": 2021}) == (
+        "Dune (2021)"
+    )
+    ep = {
+        "Name": "The Pod",
+        "SeriesName": "Severance",
+        "ParentIndexNumber": 2,
+        "IndexNumber": 4,
+    }
+    assert now_playing._episode_label(ep) == "Severance — S02E04 · The Pod"
+
+
+def test_build_embed_vide():
+    embed, bitrate = now_playing.build_embed([])
+    assert bitrate == 0
+    assert "Personne" in embed.description
+
+
+def test_build_embed_actif_somme_les_bitrates():
+    sessions = [
+        {
+            "UserName": "Alice",
+            "PlayMethod": "DirectPlay",
+            "NowPlayingItem": {
+                "Name": "Dune",
+                "Bitrate": 8_000_000,
+                "RunTimeTicks": 10,
+            },
+            "PlayState": {"PositionTicks": 5},
+        },
+        {
+            "UserName": "Bob",
+            "PlayMethod": "Transcode",
+            "NowPlayingItem": {"Name": "Heat", "Bitrate": 20_000_000},
+            "TranscodingInfo": {"Bitrate": 6_000_000},
+            "PlayState": {},
+        },
+    ]
+    embed, bitrate = now_playing.build_embed(sessions)
+    assert bitrate == 14_000_000
+    assert len(embed.fields) == 2
+    assert "Mbit/s" in embed.footer.text
+
+
+def test_presence_text():
+    assert now_playing.presence_text(None) == "personne ne regarde"
+    assert now_playing.presence_text([{"NowPlayingItem": {"Name": "Dune"}}]) == (
+        "1 flux · Dune"
+    )
 
 
 # --- db : aller-retour SQLite -------------------------------------------
