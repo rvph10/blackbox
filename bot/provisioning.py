@@ -7,6 +7,7 @@ Flux (ADR-021) :
 Seerr : rien, auto-import au premier login.
 """
 
+import io
 import logging
 import re
 import secrets
@@ -17,7 +18,8 @@ import discord
 import cards
 import db
 import jellyfin
-from config import PUBLIC_REQUESTS_URL, PUBLIC_STREAM_URL
+import welcome_lines
+from config import PUBLIC_REQUESTS_URL, PUBLIC_STREAM_URL, WELCOME_CHANNEL_ID
 from notify import admin_alert
 
 logger = logging.getLogger("blackbox-bot.provisioning")
@@ -62,11 +64,12 @@ def welcome_message(username: str, password: str) -> str:
 
 
 async def provision_member(
-    member: discord.abc.User, *, manual_by: str | None = None
+    member: discord.abc.User, *, manual_by: str | None = None, announce: bool = False
 ) -> dict:
     """Crée le compte Jellyfin d'un membre et tente le MP. Retourne un résumé.
 
     Idempotent : si un mapping existe déjà, ne recrée rien.
+    `announce` : poster aussi un message d'accueil public (arrivée réelle).
     """
     existing = await db.get_member(member.id)
     if existing:
@@ -94,9 +97,12 @@ async def provision_member(
         member.id, user["Id"], username, display_name=display, note=note
     )
 
+    png = await _welcome_png(member)
     dm_ok = await _try_dm(
-        member, welcome_message(username, password), await _welcome_card(member)
+        member, welcome_message(username, password), _file(png, "bienvenue.png")
     )
+    if announce:
+        await _announce_arrival(member, png)
     if dm_ok:
         await admin_alert(
             f"[OK] Compte Jellyfin `{username}` créé pour {member.mention}, "
@@ -112,14 +118,32 @@ async def provision_member(
     return {"status": "ok", "jf_username": username, "dm": False, "password": password}
 
 
-async def _welcome_card(member: discord.abc.User) -> discord.File | None:
+async def _welcome_png(member: discord.abc.User) -> bytes | None:
     try:
         avatar = await cards.fetch_avatar(member.display_avatar.replace(size=256).url)
         buf = cards.render_welcome(getattr(member, "display_name", member.name), avatar)
-        return discord.File(buf, filename="bienvenue.png")
+        return buf.getvalue()
     except Exception:
         logger.exception("génération de la carte de bienvenue")
         return None
+
+
+def _file(png: bytes | None, name: str) -> discord.File | None:
+    return discord.File(io.BytesIO(png), filename=name) if png else None
+
+
+async def _announce_arrival(member: discord.Member, png: bytes | None) -> None:
+    channel = member.guild.get_channel(WELCOME_CHANNEL_ID)
+    if channel is None:
+        logger.warning("salon d'accueil (%s) introuvable", WELCOME_CHANNEL_ID)
+        return
+    try:
+        await channel.send(
+            content=welcome_lines.pick(member.mention),
+            file=_file(png, "bienvenue.png"),
+        )
+    except discord.HTTPException as exc:
+        logger.warning("message d'accueil non posté : %s", exc)
 
 
 async def _try_dm(

@@ -4,6 +4,10 @@
 
 ### 2026-08-30
 
+- Bot : **message d'accueil public** à `on_member_join` dans `#annonces`
+  (`WELCOME_CHANNEL_ID`) — pingue le nouvel arrivant, texte **aléatoire**
+  (pool éditable `bot/welcome_lines.py`) + carte de bienvenue sans
+  identifiants. `/creer-compte` ne poste rien de public.
 - Bot : **cartes-images** (Pillow, `bot/cards.py`) pour le classement
   (podium 3 places, photos de profil Discord rondes, couronne dorée
   dessinée sur le n°1) et le MP de bienvenue (avatar + « Bienvenue sur

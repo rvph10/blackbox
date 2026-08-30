@@ -55,6 +55,7 @@ PUBLIC_STREAM_URL=https://stream.blackbox.homes
 PUBLIC_REQUESTS_URL=https://requests.blackbox.homes
 SCOREBOARD_CHANNEL_ID=1543646643629461628
 NOW_PLAYING_CHANNEL_ID=1543666526400422089
+WELCOME_CHANNEL_ID=1542926415484166194
 EOF
 chmod 600 ~/blackbox/bot/.env"
 ```
@@ -113,19 +114,27 @@ provisionnés automatiquement.
 
 - **Panneau « en direct »** — toutes les 45 s : `GET /Sessions`, édition
   d'un message unique dans `#salle-de-projection` (qui regarde quoi,
-  progression, transcodage, débit sortant estimé) + statut du bot
-  (« Regarde : N flux »). ADR-022.
+  progression, transcodage) + statut du bot (« Regarde : N flux »). ADR-022.
 - **Recalcul des paliers** — tous les jours à 05h00 (Europe/Brussels) :
   lit Jellystat (`getAllUserActivity`), attribue le rôle de palier.
 - **Classement** — vérifié tous les jours à 19h00, posté dans `#classement`
   si ≥ 15 jours depuis le dernier (état en base `meta`).
 
-## 10. Départ d'un membre
+## 10. Accueil des nouveaux (à l'arrivée)
+
+À `on_member_join`, en plus du provisioning : message d'accueil **public**
+dans le salon `WELCOME_CHANNEL_ID` (`#annonces`), qui pingue le nouvel
+arrivant, avec un texte **aléatoire** (pool éditable dans
+`bot/welcome_lines.py`) + la carte de bienvenue (avatar, **sans**
+identifiants — ceux-là restent en MP). `/creer-compte` ne poste **pas** de
+message public (le membre est déjà là depuis un moment).
+
+## 11. Départ d'un membre
 
 `on_member_remove` → alerte admin uniquement (« compte toujours actif »).
 Jamais de désactivation automatique. Utiliser `/desactiver` si besoin.
 
-## 11. Ce que le bot ne touche pas
+## 12. Ce que le bot ne touche pas
 
 Gluetun, les conteneurs, le NAS, les backups, Terraform, Tailscale,
 CrowdSec. Périmètre : Discord + Jellyfin (comptes) + Jellystat (lecture).

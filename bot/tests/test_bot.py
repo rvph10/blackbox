@@ -47,6 +47,15 @@ def test_generate_password_longueur_et_charset():
     assert provisioning.generate_password() != provisioning.generate_password()
 
 
+def test_welcome_lines_pick():
+    import welcome_lines
+
+    assert welcome_lines.LINES
+    line = welcome_lines.pick("<@123>")
+    assert "<@123>" in line
+    assert "{mention}" not in line
+
+
 # --- jellyfin : rendu + HTTP mocké --------------------------------------
 def test_describe_session_film():
     s = {"UserName": "Alice", "NowPlayingItem": {"Name": "Blade Runner"}}

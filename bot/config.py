@@ -51,6 +51,11 @@ NOW_PLAYING_CHANNEL_ID = int(
 )
 NOW_PLAYING_REFRESH_SECONDS = 45
 
+# --- Accueil des nouveaux membres -------------------------------------
+WELCOME_CHANNEL_ID = int(
+    os.environ.get("WELCOME_CHANNEL_ID", "1542926415484166194") or "0"
+)
+
 # --- Politique Jellyfin des nouveaux comptes -------------------------------
 NEW_USER_POLICY = {
     "IsAdministrator": False,

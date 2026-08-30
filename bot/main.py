@@ -79,7 +79,7 @@ class BlackboxBot(commands.Bot):
 
     async def on_member_join(self, member: discord.Member) -> None:
         logger.info("nouveau membre : %s", member)
-        await provisioning.provision_member(member)
+        await provisioning.provision_member(member, announce=True)
 
     async def on_member_remove(self, member: discord.Member) -> None:
         entry = await db.get_member(member.id)
