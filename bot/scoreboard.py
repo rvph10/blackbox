@@ -21,7 +21,7 @@ from config import (
 logger = logging.getLogger("blackbox-bot.scoreboard")
 
 _WINDOW_HOURS = SCOREBOARD_INTERVAL_DAYS * 24
-_LAST_RUN_KEY = "scoreboard_last_run"
+LAST_RUN_KEY = "scoreboard_last_run"
 
 
 def _fmt_hours(seconds: float) -> str:
@@ -30,7 +30,7 @@ def _fmt_hours(seconds: float) -> str:
 
 
 async def due() -> bool:
-    last = await db.get_meta(_LAST_RUN_KEY)
+    last = await db.get_meta(LAST_RUN_KEY)
     if last is None:
         return True
     last_dt = dt.datetime.fromisoformat(last)
@@ -163,6 +163,6 @@ async def post(guild: discord.Guild) -> bool:
     embed, winner = await build_embed(guild)
     await channel.send(embed=embed)
     await _transfer_headliner(guild, winner)
-    await db.set_meta(_LAST_RUN_KEY, dt.datetime.now(dt.UTC).isoformat())
+    await db.set_meta(LAST_RUN_KEY, dt.datetime.now(dt.UTC).isoformat())
     logger.info("classement posté dans #classement")
     return True

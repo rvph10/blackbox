@@ -60,6 +60,21 @@ class BlackboxBot(commands.Bot):
         logger.info("Connecté en tant que %s", self.user)
         await admin_alert(f"🟢 Bot Blackbox démarré (`{self.user}`).")
 
+        guild = self._guild()
+        if guild is None:
+            return
+        # Rôles de palier créés dès le démarrage (ADR-021).
+        try:
+            await gamification.ensure_tier_roles(guild)
+        except discord.DiscordException:
+            logger.exception("création des rôles de palier au démarrage")
+        # Ne pas poster un classement vide juste après le tout premier
+        # démarrage : on ancre le cycle à maintenant.
+        if await db.get_meta(scoreboard.LAST_RUN_KEY) is None:
+            await db.set_meta(
+                scoreboard.LAST_RUN_KEY, dt.datetime.now(dt.UTC).isoformat()
+            )
+
     async def on_member_join(self, member: discord.Member) -> None:
         logger.info("nouveau membre : %s", member)
         await provisioning.provision_member(member)
