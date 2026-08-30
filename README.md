@@ -57,12 +57,17 @@ que ce soit (voir §12 du brief et §17 de l'audit).
   [ADR-017](docs/adr/017-backup-b2.md). **Restauration à blanc validée le
   2026-08-29** sur les deux dépôts (intégrité `--read-data`, bases SQLite,
   secrets)
-- [ ] Bot Discord — notifications passives (Layer 1) en place sans code de
-  bot : contenu ajouté (Jellyfin → webhook Discord natif) et santé VPN
-  (Gluetun → script + timer systemd), voir [ADR-009](docs/adr/009-notifications-layer1.md).
-  Layer 2 (`/status`, `/streams`, lecture seule) déployé et vérifié, voir
-  [ADR-010](docs/adr/010-bot-layer2.md). Layer 3 (création de compte,
-  gamification) pas commencé
+- [x] Bot Discord — Layer 1 (notifications passives : Jellyfin → webhook,
+  Gluetun → script+timer, [ADR-009](docs/adr/009-notifications-layer1.md)),
+  Layer 2 (`/status`, `/streams`, lecture seule,
+  [ADR-010](docs/adr/010-bot-layer2.md)), **Layer 3** : création du compte
+  Jellyfin à l'arrivée sur le Discord + MP des identifiants, paliers de
+  visionnage (rôles Discord, recalcul quotidien via Jellystat), classement
+  bihebdo dans `#classement`, commandes `/moncompte` `/messtats`
+  `/roulette` + admin `/creer-compte` `/lier` `/desactiver`. Bot stateful
+  (SQLite, mapping Discord ↔ Jellyfin, dans le backup). Voir
+  [ADR-021](docs/adr/021-bot-layer3.md) et
+  [setup-bot.md](docs/runbooks/setup-bot.md)
 - [x] CI/CD du bot — GitHub Actions : lint (ruff) + tests (pytest) sur PR,
   build image `ghcr.io/rvph10/blackbox-bot` + push GHCR + déploiement via
   runner self-hosted sur le NucBox à chaque push `main`, voir
@@ -162,6 +167,7 @@ blackbox/
 | [018](docs/adr/018-iptv-live-tv.md) | Live TV / IPTV : Threadfin devant le module natif Jellyfin (proposé, en attente fournisseur) |
 | [019](docs/adr/019-autoregulation-capacite-bande-passante.md) | Autorégulation capacité + bande passante : Jellystat + watcher de seuil (script + timer systemd) |
 | [020](docs/adr/020-retention-maintainerr.md) | Rétention de la bibliothèque : Maintainerr (règles temporelles, collection « Bientôt retiré », revue manuelle) |
+| [021](docs/adr/021-bot-layer3.md) | Bot Discord Layer 3 : provisioning de comptes Jellyfin + gamification + classement (bot stateful) |
 
 ## Runbooks
 

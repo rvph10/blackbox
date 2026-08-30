@@ -1,111 +1,117 @@
-"""Bot Discord Blackbox — Layer 2 : commandes de statut en lecture seule.
+"""Bot Discord Blackbox — Layer 3.
 
-Ne modifie jamais l'infra (pas de création de compte, pas d'action sur les
-conteneurs) — voir docs/adr/008-discord-community.md pour le modèle en
-couches. Deux commandes :
-  /status  — Jellyfin en ligne ou hors ligne, rien de plus (volontairement
-             simplifié, le dashboard reste l'outil de détail)
-  /streams — liste des sessions de lecture en cours (utilisateur + titre)
+Provisioning de comptes Jellyfin à l'arrivée, gamification par temps de
+visionnage, classement bihebdomadaire. Voir docs/adr/021-bot-layer3.md.
+
+Toujours aucun accès à Gluetun, aux conteneurs, au NAS ou aux backups.
 """
 
+import datetime as dt
 import logging
 import os
 
-import aiohttp
 import discord
-from discord import app_commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
+import bot_commands
+import db
+import gamification
+import provisioning
+import scoreboard
+from config import DISCORD_BOT_TOKEN, DISCORD_GUILD_ID
+from notify import admin_alert
+
 load_dotenv()
-
-# Lecture tolérante au niveau module : permet d'importer main.py pour les
-# tests et le lint sans secrets. La présence réelle est vérifiée au démarrage
-# (bloc __main__).
-DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
-JELLYFIN_URL = os.environ.get("JELLYFIN_URL", "http://jellyfin:8096")
-JELLYFIN_API_KEY = os.environ.get("JELLYFIN_API_KEY", "")
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("blackbox-bot")
 
-intents = discord.Intents.default()
-client = discord.Client(intents=intents)
-tree = app_commands.CommandTree(client)
+_TZ = dt.timezone(dt.timedelta(hours=1))  # Europe/Brussels (approx., pas de DST)
+_TIER_RECOMPUTE_AT = dt.time(hour=5, minute=0, tzinfo=_TZ)
+_SCOREBOARD_CHECK_AT = dt.time(hour=19, minute=0, tzinfo=_TZ)
+
+REQUIRED_ENV = (
+    "DISCORD_BOT_TOKEN",
+    "JELLYFIN_API_KEY",
+    "JELLYSTAT_API_KEY",
+    "ADMIN_ALERT_WEBHOOK_URL",
+)
 
 
-@client.event
-async def on_ready():
-    await tree.sync()
-    logger.info("Connecté en tant que %s", client.user)
+class BlackboxBot(commands.Bot):
+    def __init__(self) -> None:
+        intents = discord.Intents.default()
+        intents.members = True
+        super().__init__(command_prefix="!", intents=intents)
 
+    async def setup_hook(self) -> None:
+        await db.init()
+        bot_commands.register(self.tree)
+        if DISCORD_GUILD_ID:
+            guild = discord.Object(id=DISCORD_GUILD_ID)
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
+        else:
+            await self.tree.sync()
+        self.daily_tier_recompute.start()
+        self.scoreboard_check.start()
 
-@tree.command(name="status", description="Jellyfin est-il en ligne ?")
-async def status(interaction: discord.Interaction):
-    online = await _jellyfin_online()
-    message = "En ligne" if online else "Hors ligne"
-    await interaction.response.send_message(message)
+    async def on_ready(self) -> None:
+        logger.info("Connecté en tant que %s", self.user)
+        await admin_alert(f"🟢 Bot Blackbox démarré (`{self.user}`).")
 
+    async def on_member_join(self, member: discord.Member) -> None:
+        logger.info("nouveau membre : %s", member)
+        await provisioning.provision_member(member)
 
-@tree.command(name="streams", description="Qui regarde quoi en ce moment")
-async def streams(interaction: discord.Interaction):
-    sessions = await _active_sessions()
-    if sessions is None:
-        await interaction.response.send_message(
-            "Jellyfin est injoignable pour le moment."
+    async def on_member_remove(self, member: discord.Member) -> None:
+        entry = await db.get_member(member.id)
+        if entry is None:
+            return
+        await admin_alert(
+            f"👋 {member} a quitté le Discord — compte Jellyfin "
+            f"`{entry['jf_username']}` toujours actif. `/desactiver` si besoin."
         )
-        return
-    if not sessions:
-        await interaction.response.send_message(
-            "Personne ne regarde rien en ce moment."
-        )
-        return
 
-    lines = [_format_session(s) for s in sessions]
-    await interaction.response.send_message("\n".join(lines))
+    def _guild(self) -> discord.Guild | None:
+        if DISCORD_GUILD_ID:
+            return self.get_guild(DISCORD_GUILD_ID)
+        return self.guilds[0] if self.guilds else None
 
+    @tasks.loop(time=_TIER_RECOMPUTE_AT)
+    async def daily_tier_recompute(self) -> None:
+        guild = self._guild()
+        if guild is None:
+            return
+        try:
+            await gamification.recompute_all(guild)
+        except Exception:
+            logger.exception("recompute des paliers a échoué")
+            await admin_alert("⚠️ Recalcul des paliers a échoué, voir les logs du bot.")
 
-async def _jellyfin_online() -> bool:
-    url = f"{JELLYFIN_URL}/System/Info/Public"
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                return resp.status == 200
-    except (aiohttp.ClientError, TimeoutError):
-        return False
+    @tasks.loop(time=_SCOREBOARD_CHECK_AT)
+    async def scoreboard_check(self) -> None:
+        guild = self._guild()
+        if guild is None or not await scoreboard.due():
+            return
+        try:
+            await scoreboard.post(guild)
+        except Exception:
+            logger.exception("post du classement a échoué")
+            await admin_alert("⚠️ Post du classement a échoué, voir les logs du bot.")
 
-
-async def _active_sessions() -> list[dict] | None:
-    url = f"{JELLYFIN_URL}/Sessions"
-    headers = {"X-Emby-Token": JELLYFIN_API_KEY}
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)
-            ) as resp:
-                if resp.status != 200:
-                    return None
-                sessions = await resp.json()
-    except (aiohttp.ClientError, TimeoutError):
-        return None
-
-    return [s for s in sessions if s.get("NowPlayingItem")]
+    @daily_tier_recompute.before_loop
+    @scoreboard_check.before_loop
+    async def _wait_ready(self) -> None:
+        await self.wait_until_ready()
 
 
-def _format_session(session: dict) -> str:
-    user = session.get("UserName", "Quelqu'un")
-    item = session["NowPlayingItem"]
-    title = item.get("Name", "un contenu")
-    series = item.get("SeriesName")
-    label = f"{series} — {title}" if series else title
-    return f"{user} regarde {label}"
+def require_env() -> None:
+    missing = [name for name in REQUIRED_ENV if not os.environ.get(name)]
+    if missing:
+        raise SystemExit(f"Variables d'environnement manquantes : {', '.join(missing)}")
 
 
 if __name__ == "__main__":
-    missing = [
-        name
-        for name in ("DISCORD_BOT_TOKEN", "JELLYFIN_API_KEY")
-        if not os.environ.get(name)
-    ]
-    if missing:
-        raise SystemExit(f"Variables d'environnement manquantes : {', '.join(missing)}")
-    client.run(DISCORD_BOT_TOKEN, log_handler=None)
+    require_env()
+    BlackboxBot().run(DISCORD_BOT_TOKEN, log_handler=None)

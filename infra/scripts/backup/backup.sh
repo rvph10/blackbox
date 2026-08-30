@@ -30,6 +30,9 @@ SOURCES=(
   "$HOME/blackbox/prod/data/radarr/config"
   "$HOME/blackbox/prod/data/bazarr/config"
   "$HOME/blackbox/prod/data/jellyseerr/config"
+  # Bot Discord Layer 3 : mapping Discord <-> Jellyfin + état du cycle
+  # (SQLite), pas trivialement régénérable. Voir ADR-021.
+  "$HOME/blackbox/prod/data/bot"
   # CrowdSec et Traefik ne sont volontairement pas sauvegardés : le conteneur
   # CrowdSec tourne en root (fichiers illisibles par kong) et tout son état
   # est régénérable — collections retéléchargées via COLLECTIONS, credentials

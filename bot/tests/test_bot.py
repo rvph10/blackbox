@@ -1,0 +1,126 @@
+"""Tests unitaires — logique pure, HTTP mocké, base SQLite temporaire.
+
+Le bot ne se connecte jamais à Discord ici : `main.py` ne lance `run()` que
+sous `if __name__ == "__main__"`, et `config.py` lit l'env avec des valeurs
+par défaut.
+"""
+
+import aiohttp
+import pytest
+from aioresponses import aioresponses
+
+import config
+import db
+import jellyfin
+import provisioning
+
+
+# --- config : paliers -----------------------------------------------------
+def test_tier_for_seconds():
+    assert config.tier_for_seconds(0) == "Figurant"
+    assert config.tier_for_seconds(14 * 3600) == "Figurant"
+    assert config.tier_for_seconds(15 * 3600) == "Second rôle"
+    assert config.tier_for_seconds(60 * 3600) == "Premier rôle"
+    assert config.tier_for_seconds(500 * 3600) == "Réalisateur"
+
+
+def test_next_tier():
+    name, remaining = config.next_tier(10 * 3600)
+    assert name == "Second rôle"
+    assert remaining == 5 * 3600
+    assert config.next_tier(200 * 3600) is None
+
+
+# --- provisioning : helpers -------------------------------------------------
+def test_clean_username():
+    assert provisioning.clean_username("Jean-Michel_92") == "jeanmichel92"
+    assert provisioning.clean_username("Éléonore") == "lonore"
+    assert provisioning.clean_username("???") == "membre"
+
+
+def test_generate_password_longueur_et_charset():
+    pw = provisioning.generate_password()
+    assert len(pw) == 20
+    assert pw.isalnum()
+    assert provisioning.generate_password() != provisioning.generate_password()
+
+
+# --- jellyfin : rendu + HTTP mocké --------------------------------------
+def test_describe_session_film():
+    s = {"UserName": "Alice", "NowPlayingItem": {"Name": "Blade Runner"}}
+    assert jellyfin.describe_session(s) == "Alice regarde Blade Runner"
+
+
+def test_describe_session_serie():
+    s = {
+        "UserName": "Alice",
+        "NowPlayingItem": {"Name": "Pilot", "SeriesName": "Severance"},
+    }
+    assert jellyfin.describe_session(s) == "Alice regarde Severance — Pilot"
+
+
+def test_describe_session_defauts():
+    assert jellyfin.describe_session({}) == "Quelqu'un regarde un contenu"
+
+
+@pytest.mark.asyncio
+async def test_is_online_vrai():
+    with aioresponses() as m:
+        m.get(f"{jellyfin.JELLYFIN_URL}/System/Info/Public", status=200)
+        assert await jellyfin.is_online() is True
+
+
+@pytest.mark.asyncio
+async def test_is_online_injoignable():
+    with aioresponses() as m:
+        m.get(
+            f"{jellyfin.JELLYFIN_URL}/System/Info/Public",
+            exception=aiohttp.ClientError(),
+        )
+        assert await jellyfin.is_online() is False
+
+
+@pytest.mark.asyncio
+async def test_active_sessions_filtre_inactifs():
+    payload = [
+        {"UserName": "Alice", "NowPlayingItem": {"Name": "X"}},
+        {"UserName": "Bob"},
+    ]
+    with aioresponses() as m:
+        m.get(f"{jellyfin.JELLYFIN_URL}/Sessions", status=200, payload=payload)
+        sessions = await jellyfin.active_sessions()
+    assert sessions is not None
+    assert [s["UserName"] for s in sessions] == ["Alice"]
+
+
+@pytest.mark.asyncio
+async def test_active_sessions_erreur_http():
+    with aioresponses() as m:
+        m.get(f"{jellyfin.JELLYFIN_URL}/Sessions", status=401)
+        assert await jellyfin.active_sessions() is None
+
+
+# --- db : aller-retour SQLite -------------------------------------------
+@pytest.mark.asyncio
+async def test_db_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setattr(db, "BOT_DB_PATH", str(tmp_path / "t.db"))
+    await db.init()
+
+    await db.add_member(1, "jf-1", "alice", display_name="Alice")
+    entry = await db.get_member(1)
+    assert entry["jf_username"] == "alice"
+    assert (await db.get_by_jf_user_id("jf-1"))["discord_id"] == 1
+
+    await db.set_tier(1, "Second rôle")
+    assert (await db.get_member(1))["tier"] == "Second rôle"
+
+    await db.append_note(1, "test")
+    assert "test" in (await db.get_member(1))["note"]
+
+    await db.set_meta("k", "v")
+    assert await db.get_meta("k") == "v"
+
+    # add_member est idempotent (upsert)
+    await db.add_member(1, "jf-1b", "alice2")
+    assert (await db.get_member(1))["jf_username"] == "alice2"
+    assert len(await db.all_members()) == 1

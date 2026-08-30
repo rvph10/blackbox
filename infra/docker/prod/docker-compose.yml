@@ -249,8 +249,10 @@ services:
     depends_on:
       - jellyfin
 
-  # Bot Discord, Layer 2 (lecture seule) — voir docs/adr/010-bot-layer2.md.
-  # Ne modifie jamais l'infra, uniquement des commandes de statut.
+  # Bot Discord — Layer 3 : provisioning de comptes Jellyfin à l'arrivée sur
+  # le Discord, gamification par temps de visionnage, classement bihebdo.
+  # Voir docs/adr/021-bot-layer3.md. Aucun accès à Gluetun / conteneurs /
+  # NAS / backups.
   bot:
     # Image construite et poussée sur GHCR par GitHub Actions à chaque push
     # sur main touchant bot/ (workflow release.yml), puis tirée ici par le
@@ -263,6 +265,12 @@ services:
       - ../bot/.env
     environment:
       - JELLYFIN_URL=http://jellyfin:8096
+      - JELLYSTAT_URL=http://jellystat:3000
+    volumes:
+      # Mapping Discord ↔ Jellyfin + état du cycle (SQLite). Dans le
+      # périmètre backup restic (voir infra/scripts/backup/backup.sh).
+      - ./data/bot:/data
     restart: unless-stopped
     depends_on:
       - jellyfin
+      - jellystat

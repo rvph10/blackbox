@@ -2,6 +2,35 @@
 
 ## [Non publié]
 
+### 2026-08-30
+
+- ADR-021 : **bot Discord Layer 3**. Le bot passe de lecteur passif à
+  acteur avec état.
+  - **Provisioning** : `on_member_join` → compte Jellyfin créé par API
+    (nom dérivé du pseudo, mot de passe aléatoire jamais stocké, policy :
+    2 bibliothèques, 3 flux simultanés, pas admin) → mapping en base →
+    identifiants envoyés en MP (repli alerte admin si MP fermés). Seerr :
+    rien, auto-import au premier login.
+  - **Gamification** cosmétique : 4 rôles cumulatifs (`Figurant` /
+    `Second rôle` / `Premier rôle` / `Réalisateur`, seuils 0/15/60/180 h),
+    recalcul quotidien 05h00 depuis Jellystat.
+  - **Classement** tous les 15 j dans `#classement` : top 3 pingé, film /
+    série de la quinzaine, nouveaux membres, total serveur, rôle
+    `Tête d'affiche` transféré au n°1.
+  - **Commandes** : `/moncompte` (rappel identifiant + reset mdp en MP),
+    `/messtats`, `/roulette` (film non vu au hasard) ; admin (rôle
+    `SysAdmin`) `/creer-compte`, `/lier`, `/desactiver`.
+  - `bot/` refondu en modules (`config`, `db`, `jellyfin`, `jellystat`,
+    `provisioning`, `gamification`, `scoreboard`, `bot_commands`, `main`),
+    `discord.ext.commands.Bot` + `tasks`. SQLite (`aiosqlite`) dans le
+    volume `./data/bot`, ajouté aux sources restic.
+  - `docker-compose.yml` : volume `./data/bot`, `JELLYSTAT_URL`,
+    `depends_on: jellystat`. `.env.example` : `DISCORD_GUILD_ID`,
+    `JELLYSTAT_URL/API_KEY`, `ADMIN_ALERT_WEBHOOK_URL`, URLs publiques.
+  - Intent privilégié **Server Members**, bot ré-invité avec
+    **Manage Roles**. Jellyseerr : « Enable new Jellyfin Sign-In ».
+  - Runbook `setup-bot.md` réécrit.
+
 ### 2026-08-29
 
 - Notifications `#annonces` (ADR-009) : les nouveaux ajouts Jellyfin
