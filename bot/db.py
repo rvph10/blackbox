@@ -94,6 +94,12 @@ async def get_by_jf_username(jf_username: str) -> dict | None:
         return dict(row) if row else None
 
 
+async def delete_member(discord_id: int) -> None:
+    async with aiosqlite.connect(BOT_DB_PATH) as conn:
+        await conn.execute("DELETE FROM members WHERE discord_id = ?", (discord_id,))
+        await conn.commit()
+
+
 async def all_members() -> list[dict]:
     async with aiosqlite.connect(BOT_DB_PATH) as conn:
         conn.row_factory = aiosqlite.Row

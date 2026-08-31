@@ -1,7 +1,7 @@
 """Slash commands du bot.
 
-Publiques : /status /streams /moncompte /messtats /roulette
-Admin (rôle SysAdmin) : /creer-compte /lier /desactiver
+Publiques : /status /moncompte /messtats /roulette
+Admin (rôle SysAdmin) : /creer-compte /lier /desactiver /reactiver /supprimer
 """
 
 import logging
@@ -229,33 +229,104 @@ def register(tree: app_commands.CommandTree) -> None:
 
     @tree.command(
         name="desactiver",
-        description="[admin] Désactive le compte Jellyfin d'un membre",
+        description="[admin] Désactive un compte Jellyfin (nom Jellyfin ou ID Discord)",
+    )
+    @app_commands.describe(
+        identifiant="Nom d'utilisateur Jellyfin ou ID Discord du membre"
     )
     @admin_only
-    async def desactiver(interaction: discord.Interaction, membre: discord.Member):
-        entry = await db.get_member(membre.id)
+    async def desactiver(interaction: discord.Interaction, identifiant: str):
+        await _set_account_disabled(interaction, identifiant, disabled=True)
+
+    @tree.command(
+        name="reactiver",
+        description="[admin] Réactive un compte Jellyfin désactivé",
+    )
+    @app_commands.describe(
+        identifiant="Nom d'utilisateur Jellyfin ou ID Discord du membre"
+    )
+    @admin_only
+    async def reactiver(interaction: discord.Interaction, identifiant: str):
+        await _set_account_disabled(interaction, identifiant, disabled=False)
+
+    @tree.command(
+        name="supprimer",
+        description="[admin] SUPPRIME définitivement un compte Jellyfin + son mapping",
+    )
+    @app_commands.describe(
+        identifiant="Nom d'utilisateur Jellyfin ou ID Discord",
+        confirmation="Retape le nom d'utilisateur Jellyfin exact pour confirmer",
+    )
+    @admin_only
+    async def supprimer(
+        interaction: discord.Interaction, identifiant: str, confirmation: str
+    ):
+        entry = await _resolve_entry(identifiant)
         if entry is None:
             await interaction.response.send_message(
-                "Ce membre n'a pas de compte lié.", ephemeral=True
+                f"Aucun compte lié pour `{identifiant}`.", ephemeral=True
+            )
+            return
+        if confirmation.strip().casefold() != entry["jf_username"].casefold():
+            await interaction.response.send_message(
+                f"Confirmation incorrecte : retape `{entry['jf_username']}`.",
+                ephemeral=True,
             )
             return
         await interaction.response.defer(ephemeral=True)
         try:
-            await jellyfin.set_disabled(entry["jf_user_id"], True)
+            await jellyfin.delete_user(entry["jf_user_id"])
         except jellyfin.JellyfinError as exc:
-            await interaction.followup.send(f"Échec : {exc}", ephemeral=True)
+            await interaction.followup.send(f"Échec Jellyfin : {exc}", ephemeral=True)
             return
-        await db.append_note(membre.id, f"désactivé par {interaction.user}")
+        await db.delete_member(entry["discord_id"])
         await interaction.followup.send(
-            f"Compte `{entry['jf_username']}` désactivé.", ephemeral=True
+            f"Compte `{entry['jf_username']}` supprimé (Jellyfin + mapping). "
+            "Le compte Jellyseerr éventuel reste à retirer à la main.",
+            ephemeral=True,
         )
         await admin_alert(
-            f"[INFO] Compte `{entry['jf_username']}` ({membre.mention}) désactivé "
+            f"[ALERTE] Compte `{entry['jf_username']}` **supprimé définitivement** "
             f"par {interaction.user.mention}."
         )
 
-    for cmd in (creer_compte, lier, desactiver):
+    for cmd in (creer_compte, lier, desactiver, reactiver, supprimer):
         cmd.on_error = _admin_error
+
+
+async def _resolve_entry(identifiant: str) -> dict | None:
+    """Mapping retrouvé par nom d'utilisateur Jellyfin ou par ID Discord."""
+    identifiant = identifiant.strip()
+    if identifiant.isdigit():
+        entry = await db.get_member(int(identifiant))
+        if entry is not None:
+            return entry
+    return await db.get_by_jf_username(identifiant)
+
+
+async def _set_account_disabled(
+    interaction: discord.Interaction, identifiant: str, *, disabled: bool
+) -> None:
+    entry = await _resolve_entry(identifiant)
+    if entry is None:
+        await interaction.response.send_message(
+            f"Aucun compte lié pour `{identifiant}`.", ephemeral=True
+        )
+        return
+    await interaction.response.defer(ephemeral=True)
+    verb = "désactivé" if disabled else "réactivé"
+    try:
+        await jellyfin.set_disabled(entry["jf_user_id"], disabled)
+    except jellyfin.JellyfinError as exc:
+        await interaction.followup.send(f"Échec : {exc}", ephemeral=True)
+        return
+    await db.append_note(entry["discord_id"], f"{verb} par {interaction.user}")
+    await interaction.followup.send(
+        f"Compte `{entry['jf_username']}` {verb}.", ephemeral=True
+    )
+    await admin_alert(
+        f"[INFO] Compte `{entry['jf_username']}` {verb} par {interaction.user.mention}."
+    )
 
 
 async def _admin_error(

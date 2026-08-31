@@ -134,6 +134,19 @@ async def set_disabled(user_id: str, disabled: bool) -> None:
         await _post_policy(s, user_id, policy)
 
 
+async def delete_user(user_id: str) -> None:
+    """Suppression définitive du compte Jellyfin (irréversible)."""
+    async with aiohttp.ClientSession(timeout=_TIMEOUT) as s:
+        async with s.delete(
+            f"{JELLYFIN_URL}/Users/{user_id}", headers=_HEADERS
+        ) as resp:
+            if resp.status not in (200, 204):
+                raise JellyfinError(
+                    f"suppression user {user_id} : HTTP {resp.status} "
+                    f"{await resp.text()}"
+                )
+
+
 async def _set_password(
     session: aiohttp.ClientSession, user_id: str, new_password: str
 ) -> None:

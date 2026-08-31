@@ -112,6 +112,42 @@ async def test_active_sessions_erreur_http():
         assert await jellyfin.active_sessions() is None
 
 
+@pytest.mark.asyncio
+async def test_delete_user_ok_et_erreur():
+    with aioresponses() as m:
+        m.delete(f"{jellyfin.JELLYFIN_URL}/Users/abc", status=204)
+        await jellyfin.delete_user("abc")
+    with aioresponses() as m:
+        m.delete(f"{jellyfin.JELLYFIN_URL}/Users/abc", status=404)
+        with pytest.raises(jellyfin.JellyfinError):
+            await jellyfin.delete_user("abc")
+
+
+@pytest.mark.asyncio
+async def test_resolve_entry_par_nom_ou_id_discord(tmp_path, monkeypatch):
+    import bot_commands
+
+    monkeypatch.setattr(db, "BOT_DB_PATH", str(tmp_path / "t.db"))
+    await db.init()
+    await db.add_member(688703615770296331, "jf-1", "kong", display_name="rvph")
+
+    assert (await bot_commands._resolve_entry("kong"))["jf_user_id"] == "jf-1"
+    assert (await bot_commands._resolve_entry("KONG"))["jf_user_id"] == "jf-1"
+    assert (await bot_commands._resolve_entry("688703615770296331"))[
+        "jf_username"
+    ] == "kong"
+    assert await bot_commands._resolve_entry("inconnu") is None
+
+
+@pytest.mark.asyncio
+async def test_delete_member(tmp_path, monkeypatch):
+    monkeypatch.setattr(db, "BOT_DB_PATH", str(tmp_path / "t.db"))
+    await db.init()
+    await db.add_member(1, "jf-1", "alice")
+    await db.delete_member(1)
+    assert await db.get_member(1) is None
+
+
 # --- now_playing : panneau live -------------------------------------------
 def test_progress_bar():
     assert now_playing._progress_bar(0, 0) == ""

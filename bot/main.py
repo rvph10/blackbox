@@ -115,9 +115,12 @@ class BlackboxBot(discord.Client):
         entry = await db.get_member(member.id)
         if entry is None:
             return
+        jf = entry["jf_username"]
         await admin_alert(
-            f"[INFO] {member} a quitté le Discord — compte Jellyfin "
-            f"`{entry['jf_username']}` toujours actif. `/desactiver` si besoin."
+            f"[INFO] {member} a quitté le Discord — compte Jellyfin `{jf}` "
+            f"toujours actif (ID Discord `{member.id}`).\n"
+            f"Le couper : `/desactiver identifiant:{jf}`  ·  "
+            f"le supprimer : `/supprimer` (identifiant `{jf}`, confirmation `{jf}`)."
         )
 
     def _guild(self) -> discord.Guild | None:

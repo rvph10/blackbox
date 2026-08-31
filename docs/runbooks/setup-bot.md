@@ -112,7 +112,9 @@ provisionnés automatiquement.
 | `/roulette` | tous | un film non vu au hasard |
 | `/creer-compte @m` | SysAdmin | provisioning manuel |
 | `/lier @m <user>` | SysAdmin | mappe un compte Jellyfin existant |
-| `/desactiver @m` | SysAdmin | `IsDisabled: true` côté Jellyfin + note |
+| `/desactiver <identifiant>` | SysAdmin | `IsDisabled: true` côté Jellyfin + note. `identifiant` = nom d'utilisateur Jellyfin **ou** ID Discord (marche même si le membre a quitté le serveur) |
+| `/reactiver <identifiant>` | SysAdmin | `IsDisabled: false` (miroir de `/desactiver`) |
+| `/supprimer <identifiant> <confirmation>` | SysAdmin | **suppression définitive** du compte Jellyfin (`DELETE /Users`) + du mapping en base. `confirmation` doit être le nom d'utilisateur Jellyfin exact. Le compte Jellyseerr éventuel reste à retirer à la main. |
 
 ## 9. Tâches de fond
 
@@ -155,8 +157,12 @@ message public (le membre est déjà là depuis un moment).
 
 ## 11. Départ d'un membre
 
-`on_member_remove` → alerte admin uniquement (« compte toujours actif »).
-Jamais de désactivation automatique. Utiliser `/desactiver` si besoin.
+`on_member_remove` → alerte admin uniquement. Jamais de désactivation
+automatique (ADR-021 : famille/amis, peut revenir). L'alerte contient le
+nom d'utilisateur Jellyfin + l'ID Discord + les commandes prêtes à
+copier : `/desactiver identifiant:<nom>` (le membre a déjà quitté, donc
+`/desactiver` prend un identifiant texte, pas une mention) ou `/supprimer`
+pour une suppression définitive.
 
 ## 12. Ce que le bot ne touche pas
 
