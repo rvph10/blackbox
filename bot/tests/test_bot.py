@@ -133,6 +133,29 @@ async def test_delete_user_ok_et_erreur():
 
 
 @pytest.mark.asyncio
+async def test_apply_default_prefs():
+    captured = {}
+
+    def cb(url, **kwargs):
+        captured.update(kwargs["json"])
+
+    with aioresponses() as m:
+        m.get(
+            f"{jellyfin.JELLYFIN_URL}/Users/u1",
+            status=200,
+            payload={"Configuration": {"CastReceiverId": "x"}},
+        )
+        m.post(
+            f"{jellyfin.JELLYFIN_URL}/Users/u1/Configuration", status=204, callback=cb
+        )
+        async with aiohttp.ClientSession() as s:
+            await jellyfin._apply_default_prefs(s, "u1")
+    assert captured["SubtitleLanguagePreference"] == "fre"
+    assert captured["SubtitleMode"] == "Smart"
+    assert captured["CastReceiverId"] == "x"  # config existante préservée
+
+
+@pytest.mark.asyncio
 async def test_resolve_entry_par_nom_ou_id_discord(tmp_path, monkeypatch):
     import bot_commands
 

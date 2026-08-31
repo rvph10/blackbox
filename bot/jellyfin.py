@@ -119,7 +119,34 @@ async def create_user(name: str, password: str) -> dict:
         # Certaines versions ignorent Password dans /Users/New : on force.
         await _set_password(s, user_id, password)
         await _apply_policy(s, user_id)
+        await _apply_default_prefs(s, user_id)
     return user
+
+
+# Défauts orientés VOSTFR : audio VF quand elle existe, sinon VO + sous-titres
+# FR automatiques. Qui veut la VO permanente passe l'audio sur "Anglais".
+_DEFAULT_PREFS = {
+    "AudioLanguagePreference": "fre",
+    "PlayDefaultAudioTrack": False,
+    "SubtitleLanguagePreference": "fre",
+    "SubtitleMode": "Smart",
+}
+
+
+async def _apply_default_prefs(session: aiohttp.ClientSession, user_id: str) -> None:
+    async with session.get(f"{JELLYFIN_URL}/Users/{user_id}", headers=_HEADERS) as resp:
+        resp.raise_for_status()
+        config = (await resp.json()).get("Configuration", {})
+    config.update(_DEFAULT_PREFS)
+    async with session.post(
+        f"{JELLYFIN_URL}/Users/{user_id}/Configuration",
+        headers=_HEADERS,
+        json=config,
+    ) as resp:
+        if resp.status not in (200, 204):
+            raise JellyfinError(
+                f"préférences user {user_id} : HTTP {resp.status} {await resp.text()}"
+            )
 
 
 async def reset_password(user_id: str, new_password: str) -> None:
