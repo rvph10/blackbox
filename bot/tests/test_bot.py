@@ -151,7 +151,8 @@ async def test_apply_default_prefs():
         async with aiohttp.ClientSession() as s:
             await jellyfin._apply_default_prefs(s, "u1")
     assert captured["SubtitleLanguagePreference"] == "fre"
-    assert captured["SubtitleMode"] == "Smart"
+    assert captured["SubtitleMode"] == "Always"
+    assert captured["AudioLanguagePreference"] == "eng"
     assert captured["CastReceiverId"] == "x"  # config existante préservée
 
 

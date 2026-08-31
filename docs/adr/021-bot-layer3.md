@@ -25,7 +25,7 @@ le Discord, les règles ne sont qu'un garde-fou.
 | Sujet | Décision |
 |---|---|
 | Déclencheur | `on_member_join` — compte créé dès l'arrivée (intent privilégié **Server Members**) |
-| Compte Jellyfin | créé par API (`POST /Users/New`), policy appliquée (pas admin, 2 bibliothèques, téléchargement + accès distant ON, **3 flux simultanés**, débit distant plafonné 12 Mbit/s, pas de suppression de contenu) + préférences par défaut (audio FR, sous-titres FR en mode « Smart » → VOSTFR automatique quand pas de VF) |
+| Compte Jellyfin | créé par API (`POST /Users/New`), policy appliquée (pas admin, 2 bibliothèques, téléchargement + accès distant ON, **3 flux simultanés**, débit distant plafonné 12 Mbit/s, pas de suppression de contenu) + préférences par défaut **VOSTFR** (audio VO, sous-titres FR toujours affichés — les fans de VF changent 2 réglages dans leur profil) |
 | Nom d'utilisateur | pseudo Discord nettoyé (`[a-z0-9]`), suffixe numérique si collision ; nom affiché stocké en `note` |
 | Mot de passe | 20 caractères aléatoires (`secrets`), **jamais stocké**, envoyé une seule fois en MP |
 | Livraison | MP au membre (identifiants + `stream.` / `requests.blackbox.homes` + apps). Si le MP échoue (privacy Discord) → message dans le salon admin, remise en main propre |

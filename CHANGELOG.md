@@ -15,8 +15,8 @@
 - Bot : MP d'accueil réduit aux identifiants + renvoi vers `#welcome` (le
   pitch y est posté à la main). `WELCOME_INFO_CHANNEL_ID`.
 - Bot : le provisioning pose des **préférences de langue par défaut** sur
-  les nouveaux comptes Jellyfin (audio FR, sous-titres FR en mode
-  « Smart » → VOSTFR auto quand pas de VF). `jellyfin._apply_default_prefs`.
+  les nouveaux comptes Jellyfin — **VOSTFR** (audio VO, sous-titres FR
+  toujours). `jellyfin._apply_default_prefs`.
 - Jellyfin : **limite de débit distant 12 Mbit/s** par compte
   (`NEW_USER_POLICY` côté bot aussi) + « Known Proxies » corrigé
   (`cloudflared` → `traefik`) pour voir les vraies IP et appliquer la

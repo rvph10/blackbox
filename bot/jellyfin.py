@@ -123,13 +123,14 @@ async def create_user(name: str, password: str) -> dict:
     return user
 
 
-# Défauts orientés VOSTFR : audio VF quand elle existe, sinon VO + sous-titres
-# FR automatiques. Qui veut la VO permanente passe l'audio sur "Anglais".
+# Défauts VOSTFR pour tout le monde : audio en VO (repli "Anglais"),
+# sous-titres FR toujours affichés. Qui préfère la VF passe l'audio sur
+# "Français" et le mode sous-titres sur "Aucun" dans son profil Jellyfin.
 _DEFAULT_PREFS = {
-    "AudioLanguagePreference": "fre",
+    "AudioLanguagePreference": "eng",
     "PlayDefaultAudioTrack": False,
     "SubtitleLanguagePreference": "fre",
-    "SubtitleMode": "Smart",
+    "SubtitleMode": "Always",
 }
 
 
