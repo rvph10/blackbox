@@ -60,9 +60,10 @@ Réglages appliqués dans **Dashboard → Playback → Transcoding** :
 | Plugin | Version | Rôle | Action après install |
 |---|---|---|---|
 | File Transformation | 2.5.11.0 | Dépendance technique — permet aux autres plugins d'injecter du JS/CSS dans jellyfin-web sans patcher les fichiers | Aucune, doit juste rester actif |
-| Skin Manager | 2.0.2.0 | Gestionnaire de thèmes | Thème **JellyFlix** sélectionné — ne pas changer sans consulter |
+| Skin Manager | 2.0.2.0 | Gestionnaire de thèmes | Thème **Jellyfish** sélectionné — voir « Thème / apparence » ci-dessous |
+| Jellyfin Tweaks | 4.0.0.0 | Force des réglages d'affichage client (localStorage) pour tous les appareils | `EnableBackdropsByDefault` + `EnableDetailsBannerByDefault` = **on** (requis par le thème Jellyfish) |
 | Intro Skipper | 1.10.11.23 | Détecte et skip les intros/génériques de séries | Nécessite une analyse (`Analyze episodes`) une fois du contenu série présent — rien à faire tant que la bibliothèque est vide |
-| Jellyfin Enhanced | 12.4.1.0 | Raccourcis clavier, styles sous-titres, intégration Jellyseerr (auto-request), etc. | Voir réglages détaillés ci-dessous |
+| Jellyfin Enhanced | 12.5.0.0 | Raccourcis clavier, styles sous-titres, intégration Jellyseerr (auto-request), etc. | Voir réglages détaillés ci-dessous |
 | Playback Reporting | 17.0.0.0 | Statistiques de lecture | Passif, rien à configurer. Piste : remplacer/compléter Jellystat pour le watcher de seuil (§4 du brief) une fois assez de données |
 | LogoSwap | 1.5.0.0 | Remplacement du logo Jellyfin par un logo perso | Pas encore utilisé (pas de logo Blackbox prêt) |
 | Webhook | 21.0.0.0 | Envoie des notifications (nouveau contenu, lecture démarrée...) vers une URL externe | Pas encore configuré — cible prévue : le futur bot Discord (§8 du brief) |
@@ -70,14 +71,44 @@ Réglages appliqués dans **Dashboard → Playback → Transcoding** :
 ### Réglages Jellyfin Enhanced appliqués
 
 Activés : `AutoPause`, `AutoResume`, `RandomButton`, `PauseScreen`,
-`QualityTags` (avec tous les sous-tags : résolution, source, HDR, format
-spécial, codec vidéo, info audio), `AutoSkipIntro`/`AutoSkipOutro`.
+`AutoSkipIntro`/`AutoSkipOutro`.
 
-Désactivés : `AutoPip` (optionnel selon usage), intégration Seerr (pas
-encore de Jellyseerr déployé).
+Désactivés : `QualityTagsEnabled` **et** `RatingTagsEnabled` — les badges
+sur les affiches chargeaient l'interface (choix esthétique, 2026-08-31).
+Pour les réactiver : Dashboard → Plugins → Jellyfin Enhanced → Tags. Après
+un changement de ces réglages, bumper `ClearLocalStorageTimestamp` (bouton
+« clear localStorage on all clients » du plugin) sinon les anciens badges
+restent en cache navigateur. `AutoPip` désactivé (optionnel selon usage).
 
 Police de sous-titres : Noto Sans (meilleure couverture des caractères
 accentués/non-latins que la police par défaut).
+
+## Thème / apparence
+
+Thème **Jellyfish** ([n00bcodr/Jellyfish](https://github.com/n00bcodr/Jellyfish)),
+appliqué en CSS personnalisé (Dashboard → Général → CSS personnalisé, =
+`branding.xml`). **Épinglé sur un commit** pour éviter qu'une mise à jour
+amont casse l'UI :
+
+```css
+@import url(https://cdn.jsdelivr.net/gh/n00bcodr/Jellyfish@9735998467cb492e14b6404114e08eca638a90cc/theme.css);
+@import url(https://cdn.jsdelivr.net/gh/n00bcodr/Jellyfish@9735998467cb492e14b6404114e08eca638a90cc/10.11_fixes.css);
+```
+
+Le second import corrige des soucis d'alignement propres à Jellyfin 10.11.
+Skin Manager pointe sur le même contenu (cohérence, pas de clobber).
+
+Le thème a besoin de **Backdrops** + **Details Banner** activés côté
+affichage — forcés pour tous les appareils par le plugin **Jellyfin
+Tweaks** (pas un réglage serveur, c'est du localStorage client).
+
+Pour changer de version : mettre à jour le hash de commit dans les deux
+`@import` (via l'API : `POST /System/Configuration/branding` avec
+`X-Emby-Token`), puis purger le cache Cloudflare de `stream.blackbox.homes`
+et vider les données de site du navigateur une fois (service worker).
+
+Ancien thème : Ultrachromic / Monochromic (CTalvio) — retiré le
+2026-08-31, jugé trop plat.
 
 ## Bibliothèques
 
