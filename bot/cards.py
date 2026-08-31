@@ -1,4 +1,4 @@
-"""Cartes générées (Pillow) — classement et bienvenue (ADR-022).
+"""Cartes générées (Pillow) — classement, bienvenue et /messtats (ADR-022).
 
 Avatars ronds récupérés depuis le CDN Discord, couronne dessinée par code
 sur le n°1. Rendu ~1 s, PNG ~150 Ko.
@@ -29,6 +29,13 @@ _GOLD = (241, 196, 15)
 _SILVER = (191, 199, 213)
 _BRONZE = (205, 127, 50)
 _PODIUM_COLOURS = [_GOLD, _SILVER, _BRONZE]
+
+_TIER_COLOURS = {
+    "Figurant": (120, 130, 145),
+    "Second rôle": (90, 155, 235),
+    "Premier rôle": (170, 120, 235),
+    "Réalisateur": _GOLD,
+}
 
 
 def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
@@ -223,6 +230,92 @@ def render_welcome(name: str, avatar: Image.Image | None) -> io.BytesIO:
         font=_font(22),
         fill=_MUTED,
     )
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+def render_stats(
+    *,
+    name: str,
+    avatar: Image.Image | None,
+    seconds: float,
+    tier: str,
+    next_tier_name: str | None,
+    next_tier_remaining: float,
+    rank: int,
+    total_members: int,
+    genre: str | None,
+) -> io.BytesIO:
+    W, H = 1000, 430
+    img = Image.new("RGB", (W, H), _BG)
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle([24, 24, W - 24, H - 24], radius=20, fill=_CARD)
+
+    accent = _TIER_COLOURS.get(tier, _GOLD)
+
+    d = 150
+    ax, ay = 66, 58
+    av = _avatar_or_placeholder(avatar, d, name, rank)
+    img.paste(av, (ax, ay), av)
+    draw.ellipse([ax - 4, ay - 4, ax + d + 4, ay + d + 4], outline=accent, width=4)
+
+    draw.text(
+        (ax - 6, ay + d + 20), _trim(name, 15), font=_font(28, bold=True), fill=_WHITE
+    )
+    pill = tier.upper()
+    pf = _font(17, bold=True)
+    py = ay + d + 62
+    pw = draw.textlength(pill, font=pf)
+    draw.rounded_rectangle(
+        [ax - 6, py, ax - 6 + pw + 26, py + 32], radius=16, fill=accent
+    )
+    draw.text((ax - 6 + 13, py + 6), pill, font=pf, fill=_BG)
+
+    rx = 296
+    draw.text((rx, 52), "TEMPS DE VISIONNAGE", font=_font(17, bold=True), fill=_MUTED)
+    draw.text((rx, 74), _fmt_duration(seconds), font=_font(56, bold=True), fill=_WHITE)
+
+    row_y = 166
+    if total_members:
+        draw.text((rx, row_y), "Classement", font=_font(19), fill=_MUTED)
+        draw.text(
+            (rx + 200, row_y - 2),
+            f"{rank} / {total_members}",
+            font=_font(22, bold=True),
+            fill=_WHITE,
+        )
+        row_y += 42
+    if genre:
+        draw.text((rx, row_y), "Genre favori", font=_font(19), fill=_MUTED)
+        draw.text(
+            (rx + 200, row_y - 2),
+            _trim(genre, 20),
+            font=_font(22, bold=True),
+            fill=_WHITE,
+        )
+
+    by = H - 96
+    bx0, bx1 = rx, W - 60
+    draw.text((bx0, by - 28), "PROCHAIN PALIER", font=_font(15, bold=True), fill=_MUTED)
+    draw.rounded_rectangle([bx0, by, bx1, by + 20], radius=10, fill=_BG)
+    if next_tier_name:
+        span = seconds + next_tier_remaining
+        frac = max(seconds / span, 0.03) if span else 0.03
+        draw.rounded_rectangle(
+            [bx0, by, bx0 + (bx1 - bx0) * frac, by + 20], radius=10, fill=accent
+        )
+        draw.text(
+            (bx0, by + 30),
+            f"{next_tier_name} — encore {_fmt_duration(next_tier_remaining)}",
+            font=_font(18),
+            fill=_MUTED,
+        )
+    else:
+        draw.rounded_rectangle([bx0, by, bx1, by + 20], radius=10, fill=accent)
+        draw.text((bx0, by + 30), "palier maximum atteint", font=_font(18), fill=accent)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")

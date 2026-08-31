@@ -258,6 +258,34 @@ def test_render_scoreboard_png_complet_et_partiel():
     assert _is_png(partial)
 
 
+def test_render_stats_png():
+    avec_palier = cards.render_stats(
+        name="rvph",
+        avatar=None,
+        seconds=12.5 * 3600,
+        tier="Second rôle",
+        next_tier_name="Premier rôle",
+        next_tier_remaining=47 * 3600,
+        rank=2,
+        total_members=5,
+        genre="Science-Fiction",
+    )
+    assert _is_png(avec_palier)
+    # palier max + pas de genre + personne d'autre classé
+    maxed = cards.render_stats(
+        name="kong",
+        avatar=None,
+        seconds=300 * 3600,
+        tier="Réalisateur",
+        next_tier_name=None,
+        next_tier_remaining=0.0,
+        rank=1,
+        total_members=1,
+        genre=None,
+    )
+    assert _is_png(maxed)
+
+
 # --- seerr_hook : webhook Jellyseerr ------------------------------------
 def test_make_app_route():
     app = seerr_hook.make_app(object())

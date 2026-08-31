@@ -10,6 +10,7 @@ import logging
 import discord
 from discord import app_commands
 
+import cards
 import db
 import jellyfin
 import jellystat
@@ -133,21 +134,29 @@ def register(tree: app_commands.CommandTree) -> None:
         seconds = activity.get(entry["jf_user_id"], 0.0)
         ranking = sorted(activity.values(), reverse=True)
         rank = ranking.index(seconds) + 1 if seconds in ranking else len(ranking) + 1
-        genre = await jellystat.top_genre(entry["jf_user_id"])
 
-        lines = [
-            f"**{interaction.user.display_name}**",
-            f"Temps total : {seconds / 3600:.1f} h",
-            f"Palier : {tier_for_seconds(seconds)}",
-        ]
+        try:
+            genre = await jellystat.top_genre(entry["jf_user_id"])
+        except Exception:
+            logger.exception("messtats : genre indisponible")
+            genre = None
+
         nxt = next_tier(seconds)
-        if nxt:
-            lines.append(f"Prochain palier : {nxt[0]} dans {nxt[1] / 3600:.1f} h")
-        if genre:
-            lines.append(f"Genre le plus regardé : {genre}")
-        if ranking:
-            lines.append(f"Rang : {rank} / {len(ranking)}")
-        await interaction.followup.send("\n".join(lines))
+        avatar = await cards.fetch_avatar(
+            interaction.user.display_avatar.replace(size=256).url
+        )
+        png = cards.render_stats(
+            name=interaction.user.display_name,
+            avatar=avatar,
+            seconds=seconds,
+            tier=tier_for_seconds(seconds),
+            next_tier_name=nxt[0] if nxt else None,
+            next_tier_remaining=nxt[1] if nxt else 0.0,
+            rank=rank,
+            total_members=len(ranking),
+            genre=genre,
+        )
+        await interaction.followup.send(file=discord.File(png, filename="messtats.png"))
 
     @tree.command(
         name="roulette", description="Un film au hasard que tu n'as pas encore vu"

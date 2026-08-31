@@ -108,7 +108,7 @@ provisionnés automatiquement.
 |---|---|---|
 | `/status` | tous | Jellyfin en ligne / hors ligne + nb de lectures en cours |
 | `/moncompte` | tous | rappel de l'identifiant ; `reinitialiser:True` → nouveau mot de passe en MP |
-| `/messtats` | tous | heures cumulées, palier, prochain palier, genre préféré, rang |
+| `/messtats` | tous | **carte-image** (Pillow) : avatar, heures cumulées, palier + couleur, barre de progression vers le palier suivant, rang, genre préféré |
 | `/roulette` | tous | un film non vu au hasard |
 | `/creer-compte @m` | SysAdmin | provisioning manuel |
 | `/lier @m <user>` | SysAdmin | mappe un compte Jellyfin existant |
