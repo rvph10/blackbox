@@ -10,6 +10,7 @@
 *.pem
 secrets/
 infra/docker/prod/traefik/lapi-key
+infra/docker/prod/recyclarr/secrets.yml
 
 # OS / editors
 .DS_Store

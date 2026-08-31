@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://schemas.recyclarr.dev/v8/config-schema.json
+################################################################################
+## TRaSH Guides — [French MULTi.VO] HD Bluray + WEB (1080p)
+## https://trash-guides.info/Sonarr/sonarr-setup-quality-profiles-french-en/
+##
+## Même logique que radarr.yml : MULTi, VO de référence, pas de Remux.
+## Modèle complet :
+##   recyclarr config create --template sonarr/french-multi-vo-bluray-web-1080p
+################################################################################
+
+sonarr:
+  series:
+    base_url: !secret sonarr_url
+    api_key: !secret sonarr_api_key
+
+    quality_definition:
+      type: series
+
+    quality_profiles:
+      - trash_id: 4c48f506c1116a3a57ae33f12346bd15  # [French MULTi.VO] HD Bluray + WEB (1080p)
+        reset_unmatched_scores:
+          enabled: true
+
+    custom_format_groups:
+      add:
+        - trash_id: 158188097a58d7687dee647e04af0da3  # [Optional] Golden Rule HD
+        - trash_id: a23c8675c79118544fd74153394fa589  # [Unwanted] Unwanted Formats French

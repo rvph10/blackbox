@@ -22,6 +22,13 @@
 - Radarr : profil `HD - 720p/1080p` **sans Remux** + `Bluray-1080p`
   plafonné ~25 Mbit/s. 13 remux existants supprimés et re-cherchés en
   version légère (~445 Go libérés). `setup-arr-stack.md`.
+- **Recyclarr** (nouveau conteneur, cron `@daily`) : synchronise les
+  Custom Formats + profils de qualité TRaSH Guides vers Radarr/Sonarr.
+  Profil `[French MULTi.VO] HD Bluray + WEB` (MULTi VF+VO, VO de
+  référence, pas de Remux) appliqué à tous les films/séries. 57 Custom
+  Formats créés par app. Config versionnée
+  (`infra/docker/prod/recyclarr/`), `secrets.yml` gitignoré.
+  `setup-arr-stack.md` §7.
 - CrowdSec : whitelist `crowdsec/whitelists-blackbox.yaml` pour les chemins
   `/HomeScreen/` — le plugin Home Screen Sections sert les affiches en URLs
   sans extension, ce qui faisait bannir à tort tout membre ouvrant

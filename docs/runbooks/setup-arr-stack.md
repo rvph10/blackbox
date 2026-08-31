@@ -55,7 +55,7 @@ conteneur redémarré pour recharger proprement.
 | Root folder | `/data/tvshows` | `/data/movies` |
 | Download client | qBittorrent, `gluetun:8080`, catégorie `tv-sonarr` | qBittorrent, `gluetun:8080`, catégorie `movies-radarr` |
 | Indexeurs | The Pirate Bay (sync Prowlarr) | The Pirate Bay + YTS (sync Prowlarr) |
-| Quality Profile | — | `HD - 720p/1080p` (pas Ultra-HD, cohérent avec la stratégie VAAPI 1080p — ADR-006) |
+| Quality Profile | `[French MULTi.VO] HD Bluray + WEB (1080p)` (Recyclarr, §7) | `[French MULTi.VO] HD Bluray + WEB` (Recyclarr, §7) |
 | Minimum Availability | — | `Released` |
 
 Clés API (Settings → General de chaque app, à utiliser pour Bazarr/Seerr) :
@@ -78,8 +78,11 @@ direct.
 13 remux déjà présents ont été supprimés (fichier + torrent) et re-cherchés
 en version légère (~445 Go libérés). À revoir après la fibre : un profil
 « Archive » séparé pourrait réautoriser le remux pour la lecture directe.
-Un cran plus loin : Recyclarr / Custom Formats (TRaSH Guides) pour noter
-les groupes d'encodage — à mettre en place.
+
+Ce profil `HD - 720p/1080p` a depuis été **remplacé par le profil Recyclarr
+`[French MULTi.VO] HD Bluray + WEB`** (§7), qui exclut le Remux par
+construction et ajoute les Custom Formats TRaSH. Il est conservé mais
+inutilisé.
 
 ## 4. Bazarr
 
@@ -127,3 +130,43 @@ curl -s -H "X-API-KEY: <clé>" http://localhost:6767/api/providers
 # Seerr : settings.json directement
 cat ~/blackbox/prod/data/jellyseerr/config/settings.json
 ```
+
+## 7. Recyclarr — profils de qualité TRaSH Guides
+
+Conteneur `recyclarr` (`ghcr.io/recyclarr/recyclarr:8`), cron `@daily`.
+Synchronise les Custom Formats + profils de qualité des
+[TRaSH Guides](https://trash-guides.info/) vers Radarr et Sonarr.
+
+**Config** : `infra/docker/prod/recyclarr/configs/{radarr,sonarr}.yml`
+(versionnés). Profil retenu : **`[French MULTi.VO] HD Bluray + WEB`**
+(Radarr) / `… (1080p)` (Sonarr) :
+
+- **MULTi** : releases avec piste VF *et* VO. Chaque membre choisit sa
+  langue audio par défaut dans son profil Jellyfin.
+- **VO de référence** : meilleure qualité de source, dispo plus vite pour
+  les nouveautés. Bascule possible vers `french-multi-vf` si trop de films
+  démarrent en anglais (une ligne `trash_id` à changer + re-sync).
+- **Pas de Remux** (Bluray + WEB seulement) — cf. §3.
+
+**Secrets** : `infra/docker/prod/recyclarr/secrets.yml` (gitignoré,
+`chmod 600` sur le NucBox) contient `radarr_url` / `radarr_api_key` /
+`sonarr_url` / `sonarr_api_key`, référencés par `!secret` dans la config.
+Modèle : `secrets.yml.example`.
+
+**Sync manuel** (le cron le fait chaque jour) :
+```bash
+ssh nucbox "cd ~/blackbox/prod && docker compose exec -T recyclarr recyclarr sync"
+```
+
+Après le premier sync : basculer les films/séries existants sur le nouveau
+profil (`PUT /api/v3/movie/editor` + `/series/editor`). Les anciens profils
+(`HD - 720p/1080p` etc.) sont conservés mais inutilisés.
+
+**Pièges** :
+- Les noms d'instance (`movies:`, `series:`) doivent être **uniques sur
+  tout le fichier**, pas seulement par app — deux `main:` → sync silencieux
+  qui ne fait rien (`Duplicate instances` en debug).
+- `minFormatScore` du profil est à `0` : une release au score CF négatif
+  n'est pas récupérée. Si un contenu ne se télécharge jamais, vérifier son
+  score dans Radarr (Activity → onglet du film) et au besoin baisser
+  `minFormatScore` via l'UI.

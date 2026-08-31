@@ -124,6 +124,23 @@ services:
       - "6767:6767"
     restart: unless-stopped
 
+  # Synchronise les Custom Formats / profils de qualité TRaSH Guides vers
+  # Radarr et Sonarr (cron quotidien). Config dans ./recyclarr/configs,
+  # secrets.yml gitignoré. Voir docs/runbooks/setup-arr-stack.md §7.
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:8
+    container_name: recyclarr
+    user: "${PUID}:${PGID}"
+    environment:
+      - TZ=${TZ}
+      - CRON_SCHEDULE=@daily
+    volumes:
+      - ./recyclarr:/config
+    restart: unless-stopped
+    depends_on:
+      - radarr
+      - sonarr
+
   # Jellyseerr a été abandonné (fusionné dans Seerr, seerr-team, février 2026).
   # Migration automatique depuis les données Jellyseerr existantes, aucune
   # perte. Voir docs/adr/007-arr-stack.md.

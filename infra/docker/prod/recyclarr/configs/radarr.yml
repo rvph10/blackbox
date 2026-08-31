@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://schemas.recyclarr.dev/v8/config-schema.json
+################################################################################
+## TRaSH Guides — [French MULTi.VO] HD Bluray + WEB
+## https://trash-guides.info/Radarr/radarr-setup-quality-profiles-french-en/
+##
+## Choix : MULTi (piste VF **et** VO présentes) avec la VO comme référence.
+## Chaque membre règle "langue audio préférée" dans son profil Jellyfin.
+## Pas de Remux (cf. setup-arr-stack.md — VDSL montant limité jusqu'à la fibre).
+## Modèle complet (toutes les options en commentaire) :
+##   recyclarr config create --template radarr/french-multi-vo-hd-bluray-web
+################################################################################
+
+radarr:
+  movies:
+    base_url: !secret radarr_url
+    api_key: !secret radarr_api_key
+
+    quality_definition:
+      type: movie
+
+    quality_profiles:
+      - trash_id: 2572ce3ea4eef1c19d59e0e20ed1cea7  # [French MULTi.VO] HD Bluray + WEB
+        reset_unmatched_scores:
+          enabled: true
+
+    custom_format_groups:
+      add:
+        - trash_id: f8bf8eab4617f12dfdbd16303d8da245  # [Optional] Golden Rule HD
+        - trash_id: 59f7ab9ff64d0026b011b985b1cc8670  # [Unwanted] Unwanted Formats French
