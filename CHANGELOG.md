@@ -4,6 +4,10 @@
 
 ### 2026-08-31
 
+- CrowdSec : whitelist `crowdsec/whitelists-blackbox.yaml` pour les chemins
+  `/HomeScreen/` — le plugin Home Screen Sections sert les affiches en URLs
+  sans extension, ce qui faisait bannir à tort tout membre ouvrant
+  l'accueil (`http-crawl-non_statics`). Révision ADR-016.
 - ADR-023 : **home Jellyfin façon Netflix** via le plugin **Home Screen
   Sections** (+ Plugin Pages, dépendance). Films et séries mélangés, 12
   sections curées (Continue Watching, Because You Watched, My List, Latest

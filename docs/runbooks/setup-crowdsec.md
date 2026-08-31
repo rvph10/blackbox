@@ -116,6 +116,13 @@ l'active (cohérent avec les notifs Layer 1, ADR-009).
 - **403 sur tout, y compris toi** : une décision englobe ton IP.
   `cscli decisions list`, `cscli decisions delete --ip <toi>`, et vérifier
   que ton réseau est dans `clientTrustedIPs`.
+- **Ban `http-crawl-non_statics` en naviguant normalement** : c'est un
+  faux positif. Le SPA Jellyfin + le plugin Home Screen Sections
+  (`/HomeScreen/CachedImage/...`) génèrent beaucoup d'URLs sans extension.
+  Un whitelist parser `crowdsec/whitelists-blackbox.yaml` couvre déjà
+  `/HomeScreen/`. Si un autre chemin déclenche, l'ajouter au whitelist et
+  tester avec `cscli explain --file <ligne> --type traefik -v`
+  (`evt.Whitelisted → true` = OK).
 - **Plugin Traefik en erreur (clé)** : `traefik/lapi-key` vide ou mauvaise.
   Regénérer via `cscli bouncers add` (supprimer l'ancien d'abord :
   `cscli bouncers delete traefik-bouncer`).

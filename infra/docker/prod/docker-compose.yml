@@ -155,6 +155,7 @@ services:
       - ./data/crowdsec/config:/etc/crowdsec
       - ./data/crowdsec/data:/var/lib/crowdsec/data
       - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
+      - ./crowdsec/whitelists-blackbox.yaml:/etc/crowdsec/parsers/s02-enrich/whitelists-blackbox.yaml:ro
       - ./data/traefik/logs:/var/log/traefik:ro
       - ./data/jellyfin/config/log:/var/log/jellyfin:ro
     restart: unless-stopped

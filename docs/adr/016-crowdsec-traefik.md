@@ -75,10 +75,25 @@ est générée par `cscli bouncers add` puis écrite dans ce fichier sur le
 NucBox (hors Git, hors Ansible) — même principe que les `.env`. Le fichier
 de config lui-même, sans secret, reste versionné.
 
+## Révision 2026-08-31 — faux positif Home Screen Sections
+
+Le plugin Jellyfin **Home Screen Sections** (ADR-023) sert chaque affiche
+via une URL sans extension (`/HomeScreen/CachedImage/<hash>`). Une home
+modulaire = 50+ de ces requêtes d'un coup → `crowdsecurity/http-crawl-non_statics`
+bannissait **tout membre** qui ouvrait l'accueil (constaté sur le proprio,
+2 bans en 1 h).
+
+Correctif : whitelist parser `infra/docker/prod/crowdsec/whitelists-blackbox.yaml`
+(montée dans `/etc/crowdsec/parsers/s02-enrich/`), qui ignore les chemins
+`/HomeScreen/` — endpoint first-party, trafic légitime. Le reste de la
+protection est intact (probing, CVE, `LePresidente/jellyfin-bf`, SSH).
+Vérifié via `cscli explain` (`evt.Whitelisted → true`).
+
 ## Conséquences
 
 - `infra/docker/prod/` : `traefik/{traefik.yml,dynamic.yml}`,
-  `crowdsec/acquis.yaml` ; services `traefik` et `crowdsec` dans le compose
+  `crowdsec/acquis.yaml`, `crowdsec/whitelists-blackbox.yaml` ; services
+  `traefik` et `crowdsec` dans le compose
   (aucun port publié) ; `cloudflared` dépend désormais de `traefik`
 - `infra/terraform/main.tf` : ingress → `http://traefik:80`
 - Rôle Ansible `deploy` : déploie la config Traefik/CrowdSec (pas
