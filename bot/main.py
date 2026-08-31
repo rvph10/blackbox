@@ -12,7 +12,8 @@ import os
 
 import discord
 from aiohttp import web
-from discord.ext import commands, tasks
+from discord import app_commands
+from discord.ext import tasks
 from dotenv import load_dotenv
 
 import bot_commands
@@ -34,6 +35,9 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("blackbox-bot")
 
+# Le bot ne fait pas de voix : couper l'avertissement PyNaCl au démarrage.
+discord.VoiceClient.warn_nacl = False
+
 _TZ = dt.timezone(dt.timedelta(hours=1))  # Europe/Brussels (approx., pas de DST)
 _TIER_RECOMPUTE_AT = dt.time(hour=5, minute=0, tzinfo=_TZ)
 _SCOREBOARD_CHECK_AT = dt.time(hour=19, minute=0, tzinfo=_TZ)
@@ -46,11 +50,16 @@ REQUIRED_ENV = (
 )
 
 
-class BlackboxBot(commands.Bot):
+class BlackboxBot(discord.Client):
+    """Client Discord pur : uniquement des slash-commands, aucune commande à
+    préfixe — d'où `discord.Client` plutôt que `commands.Bot` (qui réclame
+    l'intent privilégié « message content »)."""
+
     def __init__(self) -> None:
         intents = discord.Intents.default()
         intents.members = True
-        super().__init__(command_prefix="!", intents=intents)
+        super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(self)
         self._web_runner: web.AppRunner | None = None
 
     async def setup_hook(self) -> None:
@@ -146,6 +155,9 @@ class BlackboxBot(commands.Bot):
     async def now_playing_panel(self) -> None:
         try:
             await now_playing.update(self)
+        except (OSError, discord.ConnectionClosed) as exc:
+            # Blip réseau / gateway en cours de reconnexion : sans intérêt.
+            logger.warning("panneau live différé (réseau) : %s", exc)
         except Exception:
             logger.exception("mise à jour du panneau live a échoué")
 

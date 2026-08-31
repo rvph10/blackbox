@@ -2,6 +2,15 @@
 
 ## [Non publié]
 
+### 2026-08-31
+
+- Bot : logs de démarrage nettoyés. `BlackboxBot` passe de
+  `commands.Bot` à `discord.Client` (le bot n'a que des slash-commands,
+  aucune commande à préfixe) → plus d'avertissement « message content
+  intent ». `discord.VoiceClient.warn_nacl = False` → plus d'avertissement
+  PyNaCl. Les blips réseau du panneau live (gateway en reconnexion) ne
+  loggent plus de traceback.
+
 ### 2026-08-30
 
 - Bot : **annonces « nouveau contenu » via Jellyseerr → écouteur HTTP du
