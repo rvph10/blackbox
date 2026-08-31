@@ -56,6 +56,7 @@ PUBLIC_REQUESTS_URL=https://requests.blackbox.homes
 SCOREBOARD_CHANNEL_ID=1543646643629461628
 NOW_PLAYING_CHANNEL_ID=1543666526400422089
 WELCOME_CHANNEL_ID=1542926415484166194
+WELCOME_INFO_CHANNEL_ID=1542926487680721017
 CONTENT_CHANNEL_ID=1542926415484166194
 SEERR_WEBHOOK_SECRET=<openssl rand -hex 24>
 SEERR_URL=http://seerr:5055
@@ -149,12 +150,20 @@ passe plus par lui).
 
 ## 10. Accueil des nouveaux (à l'arrivée)
 
-À `on_member_join`, en plus du provisioning : message d'accueil **public**
-dans le salon `WELCOME_CHANNEL_ID` (`#annonces`), qui pingue le nouvel
-arrivant, avec un texte **aléatoire** (pool éditable dans
-`bot/welcome_lines.py`) + la carte de bienvenue (avatar, **sans**
-identifiants — ceux-là restent en MP). `/creer-compte` ne poste **pas** de
-message public (le membre est déjà là depuis un moment).
+Trois messages à l'arrivée :
+
+1. **Message public** dans `WELCOME_CHANNEL_ID` (`#annonces`) : pingue le
+   nouvel arrivant, texte **aléatoire** (pool `bot/welcome_lines.py`) +
+   carte de bienvenue (avatar, sans identifiants).
+2. **MP privé** : identifiants Jellyfin uniquement + renvoi vers
+   `<#WELCOME_INFO_CHANNEL_ID>`. Le pitch (comment se connecter, demander
+   un film, apps, règles) est un **message statique posté à la main dans
+   `#welcome`** — le bot ne le duplique pas.
+3. Repli : si les MP du membre sont fermés, alerte admin avec les
+   identifiants à transmettre en main propre.
+
+`/creer-compte` ne poste **pas** de message public (le membre est déjà là
+depuis un moment) mais envoie le MP.
 
 ## 11. Départ d'un membre
 

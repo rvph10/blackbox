@@ -19,7 +19,7 @@ import cards
 import db
 import jellyfin
 import welcome_lines
-from config import PUBLIC_REQUESTS_URL, PUBLIC_STREAM_URL, WELCOME_CHANNEL_ID
+from config import WELCOME_CHANNEL_ID, WELCOME_INFO_CHANNEL_ID
 from notify import admin_alert
 
 logger = logging.getLogger("blackbox-bot.provisioning")
@@ -47,19 +47,17 @@ async def _unique_username(base: str) -> str:
 
 
 def welcome_message(username: str, password: str) -> str:
+    # Le pitch (comment se connecter, demander un film, apps) vit dans le
+    # salon #welcome, posté à la main. Le MP du bot ne fait que livrer le
+    # secret et renvoyer vers ce salon.
     return (
-        f"Bienvenue sur **Blackbox** !\n\n"
-        f"Ton compte est prêt. Garde ce message, le mot de passe n'est affiché "
-        f"qu'une fois (tu pourras le changer dans ton profil Jellyfin).\n\n"
+        f"Bienvenue sur **Blackbox** ! Ton compte Jellyfin est prêt.\n\n"
         f"**Identifiant :** `{username}`\n"
         f"**Mot de passe :** `{password}`\n\n"
-        f"**Regarder** — {PUBLIC_STREAM_URL}\n"
-        f"Apps : Jellyfin (officielle, Android/iOS/TV), Findroid (Android), "
-        f"Streamyfin, ou Infuse (Apple).\n\n"
-        f"**Demander un film ou une série** — {PUBLIC_REQUESTS_URL}\n"
-        f"Connecte-toi avec les mêmes identifiants (le compte se crée tout seul "
-        f"à la première connexion).\n\n"
-        f"Un souci ? Le salon `#bugs-et-problèmes` sur le Discord."
+        f"Garde ce message : le mot de passe n'est affiché qu'une fois "
+        f"(changeable dans ton profil Jellyfin).\n\n"
+        f"Comment te connecter, demander un film, quelle appli installer : "
+        f"tout est dans <#{WELCOME_INFO_CHANNEL_ID}>."
     )
 
 

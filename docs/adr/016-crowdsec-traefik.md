@@ -75,6 +75,17 @@ est générée par `cscli bouncers add` puis écrite dans ce fichier sur le
 NucBox (hors Git, hors Ansible) — même principe que les `.env`. Le fichier
 de config lui-même, sans secret, reste versionné.
 
+## Révision 2026-08-31 — Jellyfin doit faire confiance à Traefik
+
+En ajoutant Traefik devant Jellyfin, la config Jellyfin « Known Proxies »
+est restée sur `cloudflared` (qui ne parle plus directement à Jellyfin).
+Conséquence : Jellyfin voyait toutes les connexions venir du conteneur
+Traefik (`172.18.x`), traitait tout le monde comme local (pas de limite de
+débit distante, vraies IP absentes des logs). Corrigé : Known Proxies →
+`traefik`, LAN networks = `192.168.129.0/24` + `100.64.0.0/10`. Voir
+[setup-jellyfin.md](../runbooks/setup-jellyfin.md) § Réseau. Traefik reçoit
+déjà la vraie IP via `forwardedHeadersTrustedIPs` (cloudflared).
+
 ## Révision 2026-08-31 — faux positif Home Screen Sections
 
 Le plugin Jellyfin **Home Screen Sections** (ADR-023) sert chaque affiche

@@ -48,6 +48,15 @@ def test_generate_password_longueur_et_charset():
     assert provisioning.generate_password() != provisioning.generate_password()
 
 
+def test_welcome_message():
+    import config
+
+    msg = provisioning.welcome_message("bob", "s3cr3t")
+    assert "`bob`" in msg and "`s3cr3t`" in msg
+    assert f"<#{config.WELCOME_INFO_CHANNEL_ID}>" in msg
+    assert "http" not in msg  # le pitch/liens vivent dans #welcome
+
+
 def test_welcome_lines_pick():
     import welcome_lines
 

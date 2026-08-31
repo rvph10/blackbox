@@ -44,6 +44,23 @@ Réglages appliqués dans **Dashboard → Playback → Transcoding** :
 
 - Extract chapter images : désactivé (tâche coûteuse, gain visuel mineur)
 
+## Réseau / accès distant
+
+**Dashboard → Networking** :
+
+| Réglage | Valeur | Pourquoi |
+|---|---|---|
+| Known proxies | `traefik` | La chaîne publique est `cloudflared → traefik → jellyfin` (ADR-016). Sans ça, Jellyfin voit toutes les connexions venir du conteneur Traefik (`172.18.x`) → croit tout le monde en local → n'applique aucune limite distante, et les logs n'ont pas les vraies IP. **Ne pas** mettre `cloudflared` (il ne parle plus à Jellyfin directement). |
+| LAN networks | `192.168.129.0/24`, `100.64.0.0/10` | LAN + Tailscale = lecture directe pleine qualité. Tout le reste (via `stream.blackbox.homes`) est traité comme distant. |
+
+**Dashboard → Users → [chaque compte] → Maximum streaming bitrate (internet)** :
+`12 Mbps`. Le VDSL montant est à ~20 Mbit/s jusqu'à la fibre ; au-delà de
+12, Jellyfin transcode la vidéo (VAAPI, ~27× temps réel) pour que le flux
+rentre. Le bot applique déjà cette valeur aux nouveaux comptes
+(`NEW_USER_POLICY` → `RemoteClientBitrateLimit`). À relever après la fibre.
+
+Un changement dans Networking demande un **redémarrage** de Jellyfin.
+
 ## Repositories de plugins
 
 **Dashboard → Plugins → Repositories → Add**

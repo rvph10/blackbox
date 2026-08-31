@@ -62,6 +62,25 @@ Clés API (Settings → General de chaque app, à utiliser pour Bazarr/Seerr) :
 - Sonarr : `836e05333a32436394a73375b01d7ea1`
 - Radarr : `cab7b0384dca4214939d159081851558`
 
+### Profil de qualité — pas de Remux (2026-08-31)
+
+Le profil `HD - 720p/1080p` a **Remux-1080p, Remux-2160p et BR-DISK
+désactivés**, et `Bluray-1080p` **plafonné** (Settings → Quality :
+preferred ~18 Mbit/s, max ~25 Mbit/s).
+
+Raison : tout le streaming sort par le VDSL montant (~20 Mbit/s jusqu'à la
+fibre). Un remux à 30-40 Mbit/s est **toujours** transcodé par Jellyfin
+avant de sortir → on regarde une version ré-encodée à 12 Mbit/s de toute
+façon, pour 3-4× le poids disque et la bande passante. Un bon encode
+1080p (~15 Mbit/s) est visuellement équivalent et souvent lisible en
+direct.
+
+13 remux déjà présents ont été supprimés (fichier + torrent) et re-cherchés
+en version légère (~445 Go libérés). À revoir après la fibre : un profil
+« Archive » séparé pourrait réautoriser le remux pour la lecture directe.
+Un cran plus loin : Recyclarr / Custom Formats (TRaSH Guides) pour noter
+les groupes d'encodage — à mettre en place.
+
 ## 4. Bazarr
 
 - URL : `http://192.168.129.175:6767`

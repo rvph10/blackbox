@@ -4,6 +4,24 @@
 
 ### 2026-08-31
 
+- Bot : commandes admin `/reactiver` et `/supprimer` (suppression
+  définitive du compte Jellyfin + mapping, avec confirmation par le nom
+  d'utilisateur), `/comptes` (liste des mappings Discord ↔ Jellyfin +
+  état). `/desactiver` accepte un identifiant texte (nom Jellyfin ou ID
+  Discord) → marche même si le membre a quitté ; l'alerte de départ est
+  actionnable. `jellyfin.delete_user`, `db.delete_member`.
+- Bot : `/messtats` renvoie une **carte-image** (avatar, palier coloré,
+  barre de progression vers le palier suivant, rang, genre).
+- Bot : MP d'accueil réduit aux identifiants + renvoi vers `#welcome` (le
+  pitch y est posté à la main). `WELCOME_INFO_CHANNEL_ID`.
+- Jellyfin : **limite de débit distant 12 Mbit/s** par compte
+  (`NEW_USER_POLICY` côté bot aussi) + « Known Proxies » corrigé
+  (`cloudflared` → `traefik`) pour voir les vraies IP et appliquer la
+  logique distant/local. Films remux qui saturaient le VDSL montant →
+  transcodés proprement. Révision ADR-016, `setup-jellyfin.md`.
+- Radarr : profil `HD - 720p/1080p` **sans Remux** + `Bluray-1080p`
+  plafonné ~25 Mbit/s. 13 remux existants supprimés et re-cherchés en
+  version légère (~445 Go libérés). `setup-arr-stack.md`.
 - CrowdSec : whitelist `crowdsec/whitelists-blackbox.yaml` pour les chemins
   `/HomeScreen/` — le plugin Home Screen Sections sert les affiches en URLs
   sans extension, ce qui faisait bannir à tort tout membre ouvrant

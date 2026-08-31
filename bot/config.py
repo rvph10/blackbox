@@ -56,8 +56,14 @@ NOW_PLAYING_CHANNEL_ID = int(
 NOW_PLAYING_REFRESH_SECONDS = 45
 
 # --- Accueil des nouveaux membres -------------------------------------
+# Salon où le bot poste le message d'arrivée public (#annonces).
 WELCOME_CHANNEL_ID = int(
     os.environ.get("WELCOME_CHANNEL_ID", "1542926415484166194") or "0"
+)
+# Salon #welcome : le pitch statique (comment se connecter, demander,
+# apps) y est posté à la main. Le MP du bot renvoie ici.
+WELCOME_INFO_CHANNEL_ID = int(
+    os.environ.get("WELCOME_INFO_CHANNEL_ID", "1542926487680721017") or "0"
 )
 
 # --- Annonces de contenu (webhook Jellyseerr → bot) --------------------
@@ -84,6 +90,10 @@ NEW_USER_POLICY = {
     "EnableUserPreferenceAccess": True,
     "EnableAllDevices": True,
     "MaxActiveSessions": 3,
+    # Plafond de débit pour les clients "internet" (tout passe par le tunnel
+    # Cloudflare + VDSL ~20 Mbit/s montant jusqu'à la fibre). Au-delà,
+    # Jellyfin transcode la vidéo (VAAPI) pour que le flux rentre.
+    "RemoteClientBitrateLimit": 12_000_000,
 }
 
 
