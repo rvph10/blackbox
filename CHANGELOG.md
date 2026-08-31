@@ -4,14 +4,6 @@
 
 ### 2026-08-31
 
-- Jellyfin : nouveau thème **Jellyfish** (n00bcodr) à la place
-  d'Ultrachromic/Monochromic, jugé trop plat. Appliqué en CSS perso
-  (`branding.xml`), épinglé sur un commit. Plugin **Jellyfin Tweaks**
-  installé pour forcer Backdrops + Details Banner sur tous les appareils
-  (requis par le thème → fond d'écran = backdrop du contenu).
-- Jellyfin : badges qualité **et** notes désactivés sur les affiches
-  (`Jellyfin Enhanced` : `QualityTagsEnabled` + `RatingTagsEnabled` off,
-  `ClearLocalStorageTimestamp` bumpé pour vider le cache des clients).
 - Bot : logs de démarrage nettoyés. `BlackboxBot` passe de
   `commands.Bot` à `discord.Client` (le bot n'a que des slash-commands,
   aucune commande à préfixe) → plus d'avertissement « message content
