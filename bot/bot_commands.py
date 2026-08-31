@@ -1,7 +1,8 @@
 """Slash commands du bot.
 
 Publiques : /status /moncompte /messtats /roulette
-Admin (rôle SysAdmin) : /creer-compte /lier /desactiver /reactiver /supprimer
+Admin (rôle SysAdmin) : /creer-compte /lier /comptes /desactiver /reactiver
+/supprimer
 """
 
 import logging
@@ -290,8 +291,58 @@ def register(tree: app_commands.CommandTree) -> None:
             f"par {interaction.user.mention}."
         )
 
-    for cmd in (creer_compte, lier, desactiver, reactiver, supprimer):
+    @tree.command(
+        name="comptes",
+        description="[admin] Liste les comptes liés et leur état (actif / désactivé)",
+    )
+    @admin_only
+    async def comptes(interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        members = await db.all_members()
+        if not members:
+            await interaction.followup.send("Aucun compte lié.", ephemeral=True)
+            return
+        try:
+            jf_users = await jellyfin.list_users()
+        except (jellyfin.JellyfinError, OSError):
+            jf_users = []
+
+        lines, counts = _account_rows(members, jf_users)
+        embed = discord.Embed(
+            title=f"Comptes liés ({len(members)})", description="\n".join(lines)
+        )
+        embed.set_footer(
+            text=f"{counts['actif']} actif(s) · {counts['désactivé']} désactivé(s) "
+            f"· {counts['orphelin']} orphelin(s)"
+        )
+        if not jf_users:
+            embed.description = (
+                "Jellyfin injoignable — états non vérifiés.\n\n" + embed.description
+            )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+    for cmd in (creer_compte, lier, desactiver, reactiver, supprimer, comptes):
         cmd.on_error = _admin_error
+
+
+def _account_rows(
+    members: list[dict], jf_users: list[dict]
+) -> tuple[list[str], dict[str, int]]:
+    """Une ligne par mapping + décompte par état (actif / désactivé / orphelin)."""
+    by_id = {u["Id"]: u for u in jf_users}
+    lines: list[str] = []
+    counts = {"actif": 0, "désactivé": 0, "orphelin": 0}
+    for m in sorted(members, key=lambda x: x["jf_username"].casefold()):
+        u = by_id.get(m["jf_user_id"])
+        if u is None:
+            state, key = "⚠ compte Jellyfin introuvable", "orphelin"
+        elif u.get("Policy", {}).get("IsDisabled"):
+            state, key = "désactivé", "désactivé"
+        else:
+            state, key = "actif", "actif"
+        counts[key] += 1
+        lines.append(f"`{m['jf_username']}` — <@{m['discord_id']}> — {state}")
+    return lines, counts
 
 
 async def _resolve_entry(identifiant: str) -> dict | None:

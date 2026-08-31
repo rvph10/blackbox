@@ -139,6 +139,25 @@ async def test_resolve_entry_par_nom_ou_id_discord(tmp_path, monkeypatch):
     assert await bot_commands._resolve_entry("inconnu") is None
 
 
+def test_account_rows():
+    import bot_commands
+
+    members = [
+        {"jf_user_id": "a", "jf_username": "zoe", "discord_id": 1},
+        {"jf_user_id": "b", "jf_username": "amy", "discord_id": 2},
+        {"jf_user_id": "gone", "jf_username": "bob", "discord_id": 3},
+    ]
+    jf_users = [
+        {"Id": "a", "Policy": {"IsDisabled": False}},
+        {"Id": "b", "Policy": {"IsDisabled": True}},
+    ]
+    lines, counts = bot_commands._account_rows(members, jf_users)
+    assert lines[0].startswith("`amy`") and "désactivé" in lines[0]  # trié par nom JF
+    assert lines[1].startswith("`bob`") and "introuvable" in lines[1]
+    assert lines[2].startswith("`zoe`") and "actif" in lines[2]
+    assert counts == {"actif": 1, "désactivé": 1, "orphelin": 1}
+
+
 @pytest.mark.asyncio
 async def test_delete_member(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "BOT_DB_PATH", str(tmp_path / "t.db"))

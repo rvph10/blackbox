@@ -112,6 +112,7 @@ provisionnés automatiquement.
 | `/roulette` | tous | un film non vu au hasard |
 | `/creer-compte @m` | SysAdmin | provisioning manuel |
 | `/lier @m <user>` | SysAdmin | mappe un compte Jellyfin existant |
+| `/comptes` | SysAdmin | liste tous les mappings Discord ↔ Jellyfin + état (actif / désactivé / orphelin), en éphémère |
 | `/desactiver <identifiant>` | SysAdmin | `IsDisabled: true` côté Jellyfin + note. `identifiant` = nom d'utilisateur Jellyfin **ou** ID Discord (marche même si le membre a quitté le serveur) |
 | `/reactiver <identifiant>` | SysAdmin | `IsDisabled: false` (miroir de `/desactiver`) |
 | `/supprimer <identifiant> <confirmation>` | SysAdmin | **suppression définitive** du compte Jellyfin (`DELETE /Users`) + du mapping en base. `confirmation` doit être le nom d'utilisateur Jellyfin exact. Le compte Jellyseerr éventuel reste à retirer à la main. |
