@@ -4,6 +4,16 @@
 
 ### 2026-08-31
 
+- ADR-023 : **home Jellyfin façon Netflix** via le plugin **Home Screen
+  Sections** (+ Plugin Pages, dépendance). Films et séries mélangés, 12
+  sections curées (Continue Watching, Because You Watched, My List, Latest
+  Movies/Shows, Genre, Watch Again, Discover/My Requests via Jellyseerr,
+  Upcoming via Radarr/Sonarr, My Media). Défaut posé par l'admin,
+  `AllowUserOverride` actif. Théme géré à part (JellyTheme via Skin
+  Manager). Tentative préalable d'un thème CSS seul (Jellyfish) écartée
+  puis rollback. Runbook `setup-jellyfin.md` remis à jour (dérive
+  JellyFlix/QualityTags corrigée). Piège documenté : `Clear site data`
+  navigateur obligatoire après install (File Transformation).
 - Bot : logs de démarrage nettoyés. `BlackboxBot` passe de
   `commands.Bot` à `discord.Client` (le bot n'a que des slash-commands,
   aucune commande à préfixe) → plus d'avertissement « message content

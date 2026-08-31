@@ -170,6 +170,7 @@ blackbox/
 | [020](docs/adr/020-retention-maintainerr.md) | Rétention de la bibliothèque : Maintainerr (règles temporelles, collection « Bientôt retiré », revue manuelle) |
 | [021](docs/adr/021-bot-layer3.md) | Bot Discord Layer 3 : provisioning de comptes Jellyfin + gamification + classement (bot stateful) |
 | [022](docs/adr/022-panneau-live-lectures.md) | Panneau « en direct » des lectures dans un salon dédié (remplace `/streams`) |
+| [023](docs/adr/023-home-accueil-netflix.md) | Home Jellyfin façon Netflix : plugin Home Screen Sections (films + séries mélangés, rangées par genre, reco) |
 
 ## Runbooks
 
