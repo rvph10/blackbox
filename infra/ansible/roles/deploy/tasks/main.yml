@@ -13,6 +13,7 @@
     - /home/kong/blackbox/prod
     - /home/kong/blackbox/prod/traefik
     - /home/kong/blackbox/prod/crowdsec
+    - /home/kong/blackbox/prod/recyclarr/configs
     - /home/kong/blackbox/bot
     - /home/kong/blackbox/scripts/gluetun-healthcheck
     - /home/kong/blackbox/scripts/backup
@@ -25,7 +26,7 @@
     mode: "0644"
   notify: docker compose up
 
-- name: Déployer la config Traefik + CrowdSec (hors lapi-key, secret manuel)
+- name: Déployer la config Traefik + CrowdSec + Recyclarr (hors secrets manuels)
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../../docker/prod/{{ item }}"
     dest: "/home/kong/blackbox/prod/{{ item }}"
@@ -34,6 +35,9 @@
     - traefik/traefik.yml
     - traefik/dynamic.yml
     - crowdsec/acquis.yaml
+    - crowdsec/whitelists-blackbox.yaml
+    - recyclarr/configs/radarr.yml
+    - recyclarr/configs/sonarr.yml
   notify: docker compose up
 
 # CrowdSec démarre avant Traefik (traefik depends_on crowdsec) : l'access.log
